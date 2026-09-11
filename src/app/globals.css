@@ -1,26 +1,403 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eef3f0;
+  --foreground: #14201b;
+  --muted: #5c6f66;
+  --accent: #2f6a58;
+  --accent-soft: #d7e8e0;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-border: rgba(20, 32, 27, 0.12);
+  --hero-scrim: linear-gradient(
+    105deg,
+    rgba(14, 28, 22, 0.78) 0%,
+    rgba(14, 28, 22, 0.55) 42%,
+    rgba(14, 28, 22, 0.22) 100%
+  );
+  --glow: rgba(47, 106, 88, 0.22);
+  --ring: rgba(47, 106, 88, 0.35);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235c6f66' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.dark {
+  --background: #0b1210;
+  --foreground: #e8efea;
+  --muted: #9aada3;
+  --accent: #8fbfad;
+  --accent-soft: rgba(143, 191, 173, 0.14);
+  --surface: rgba(18, 28, 24, 0.78);
+  --surface-border: rgba(232, 239, 234, 0.14);
+  --hero-scrim: linear-gradient(105deg, rgba(5, 10, 8, 0.88) 0%, rgba(5, 10, 8, 0.68) 45%, rgba(5, 10, 8, 0.35) 100%);
+  --glow: rgba(143, 191, 173, 0.18);
+  --ring: rgba(143, 191, 173, 0.4);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239aada3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --font-sans: var(--font-roboto);
+  --font-display: var(--font-roboto);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roboto), sans-serif;
+}
+
+@layer base {
+  a[href],
+  button:not(:disabled):not([disabled]),
+  [role="button"]:not(:disabled):not([disabled]):not([aria-disabled="true"]),
+  [role="link"],
+  summary,
+  label[for],
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  button[disabled],
+  [aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Shared native select look (except phone country picker). */
+select:not(.PhoneInputCountrySelect) {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border);
+  background-color: color-mix(in srgb, var(--background) 70%, transparent);
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  padding-inline: 1rem 2.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+select:not(.PhoneInputCountrySelect):focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+select:not(.PhoneInputCountrySelect):disabled {
+  opacity: 0.6;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1) translate3d(-1.5%, 1%, 0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-ken-burns {
+  animation: ken-burns 28s ease-out forwards;
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-ken-burns,
+  .animate-soft-pulse {
+    animation: none !important;
+  }
+}
+
+.PhoneInputField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--background) 70%, transparent);
+  padding-inline: 0.75rem;
+  color: var(--foreground);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.PhoneInputField:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.PhoneInputField .PhoneInputCountry {
+  position: relative;
+  align-self: stretch;
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputField .PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1rem;
+  box-shadow: none;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.PhoneInputField .PhoneInputCountryIconImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.PhoneInputField .PhoneInputCountrySelectArrow {
+  border-color: var(--muted);
+  opacity: 0.8;
+  color: var(--foreground);
+}
+
+.PhoneInputField .PhoneInputInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  color: var(--foreground);
+}
+
+.PhoneInputField .PhoneInputInput::placeholder {
+  color: var(--muted);
+}
+
+.AvailabilityCalendar .fc {
+  --fc-border-color: var(--surface-border);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--accent-soft);
+  --fc-today-bg-color: color-mix(in srgb, var(--accent) 8%, transparent);
+  --fc-button-bg-color: var(--accent);
+  --fc-button-border-color: var(--accent);
+  --fc-button-hover-bg-color: color-mix(in srgb, var(--accent) 85%, black);
+  --fc-button-hover-border-color: color-mix(in srgb, var(--accent) 85%, black);
+  --fc-button-active-bg-color: color-mix(in srgb, var(--accent) 75%, black);
+  --fc-button-active-border-color: color-mix(in srgb, var(--accent) 75%, black);
+  --fc-button-text-color: #fff;
+  --fc-event-bg-color: var(--accent);
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: #fff;
+  font-family: inherit;
+  color: var(--foreground);
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-axis,
+.AvailabilityCalendar .fc .fc-timegrid-slot-label {
+  width: 5.25rem;
+  min-width: 5.25rem;
+}
+
+.AvailabilityCalendar .fc .fc-col-header-cell.fc-day-sat,
+.AvailabilityCalendar .fc .fc-col-header-cell.fc-day-sun,
+.AvailabilityCalendar .fc .fc-timegrid-col.fc-day-sat,
+.AvailabilityCalendar .fc .fc-timegrid-col.fc-day-sun,
+.AvailabilityCalendar .fc .fc-day-sat .fc-timegrid-col-frame,
+.AvailabilityCalendar .fc .fc-day-sun .fc-timegrid-col-frame {
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+}
+
+.AvailabilityCalendar .fc .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion,
+.AvailabilityCalendar .fc .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+  color: color-mix(in srgb, var(--muted) 70%, var(--foreground));
+}
+
+.AvailabilityCalendar .fc .fc-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.AvailabilityCalendar .fc .fc-button {
+  border-radius: 0.5rem;
+  text-transform: none;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.AvailabilityCalendarNavBtn {
+  display: inline-flex;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border);
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: opacity 0.2s ease;
+}
+
+.AvailabilityCalendarNavBtn:hover {
+  opacity: 0.9;
+}
+
+.AvailabilityCalendarNavBtnWide {
+  padding-inline: 0.9rem;
+  font-size: 0.875rem;
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-slot {
+  height: 2.1rem;
+  cursor: pointer;
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-col-events {
+  margin: 0 !important;
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-event-harness {
+  left: 1px !important;
+  right: 1px !important;
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-event {
+  margin: 1px 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.AvailabilityCalendar .fc .fc-event {
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available {
+  z-index: 2;
+  cursor: pointer !important;
+  background-color: var(--accent) !important;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available.fc-event-selected,
+.AvailabilityCalendar .fc .fc-event.fc-event-selected {
+  background-color: color-mix(in srgb, var(--accent) 70%, black) !important;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-booked {
+  z-index: 1;
+  cursor: default;
+  background-color: color-mix(in srgb, var(--muted) 55%, #7a6a5a) !important;
+  opacity: 0.92;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-booked.fc-event-booked-mine {
+  cursor: pointer;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-booked .fc-event-main {
+  color: #fff;
+}
+
+.AvailabilityCalendar .fc .fc-event .fc-event-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.AvailabilityCalendar .fc .fc-event .fc-event-main-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.AvailabilityCalendar .fc .fc-event .fc-event-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+}
+
+.AvailabilityCalendar .fc .fc-event .fc-event-title {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  line-height: 1.1;
+  overflow: hidden;
+}
+
+.AvailabilityCalendar .fc .fc-col-header-cell-cushion,
+.AvailabilityCalendar .fc .fc-timegrid-axis-cushion,
+.AvailabilityCalendar .fc .fc-timegrid-slot-label-cushion {
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 700;
 }

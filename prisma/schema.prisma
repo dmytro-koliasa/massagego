@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  nameEn         String?
+  nameUk         String?
+  email          String
+  emailVerified  DateTime?
+  image          String?
+  descriptionEn  String?
+  descriptionUk  String?
+  massageTypes   String    @default("[]")
+  city           String?
+  address        String?
+  passwordHash   String?
+  /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
+  portal         String
+  accounts       Account[]
+  sessions       Session[]
+  masseurBookings Booking[] @relation("MasseurBookings")
+  clientBookings  Booking[] @relation("ClientBookings")
+  availabilitySlots AvailabilitySlot[]
+  galleryImages  GalleryImage[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([email, portal])
+  @@index([portal])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Same Google account may link to both a masseur and a client user.
+  @@unique([provider, providerAccountId, userId])
+  @@index([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  masseurId     String
+  /// Authenticated client who owns this booking. Required for new bookings.
+  clientUserId  String?
+  clientName    String
+  clientPhone   String
+  clientEmail   String?
+  preferredDate String?
+  preferredTime String?
+  slotStart     DateTime?
+  massageType   String?
+  note          String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  masseur User  @relation("MasseurBookings", fields: [masseurId], references: [id], onDelete: Cascade)
+  client  User? @relation("ClientBookings", fields: [clientUserId], references: [id], onDelete: SetNull)
+
+  @@index([masseurId])
+  @@index([masseurId, slotStart])
+  @@index([clientUserId])
+  @@index([clientUserId, status])
+  @@index([clientUserId, slotStart])
+}
+
+model AvailabilitySlot {
+  id        String   @id @default(cuid())
+  masseurId String
+  start     DateTime
+  end       DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  masseur User @relation(fields: [masseurId], references: [id], onDelete: Cascade)
+
+  @@unique([masseurId, start])
+  @@index([masseurId, start])
+}
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  masseurId String
+  url       String
+  width     Int
+  height    Int
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  masseur User @relation(fields: [masseurId], references: [id], onDelete: Cascade)
+
+  @@index([masseurId, sortOrder])
+}
