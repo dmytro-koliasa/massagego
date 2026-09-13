@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useLanguage } from "@/components/language-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Preloader } from "@/components/preloader";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Portal } from "@/lib/portals";
 import { portalHomePath } from "@/lib/portals";
@@ -34,6 +36,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const portal = resolvePortal(pathname);
   const isHome = pathname === "/";
+  const [signingOut, setSigningOut] = useState(false);
 
   const signOutTarget = pathname.startsWith("/client")
     ? portalHomePath("client")
@@ -53,75 +56,93 @@ export function SiteHeader() {
     session?.user?.email?.trim() ||
     t.masseurFallbackName;
 
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    await signOut({ callbackUrl: signOutTarget });
+  }
+
   return (
-    <header
-      className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
-        isHome
-          ? "border-white/10 bg-[#101110]/55 text-white"
-          : "border-surface-border bg-background/80 text-foreground"
-      }`}
-    >
-      <div className="mx-auto flex h-[4.25rem] w-full max-w-6xl items-center justify-between gap-4 px-[15px]">
-        <Link
-          href="/"
-          className={`font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
-            isHome ? "text-white" : "text-foreground"
-          }`}
-        >
-          MassageGo
-        </Link>
+    <>
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
+          isHome
+            ? "border-white/10 bg-[#101110]/55 text-white"
+            : "border-surface-border bg-background/80 text-foreground"
+        }`}
+      >
+        <div className="mx-auto flex h-[4.25rem] w-full max-w-6xl items-center justify-between gap-4 px-[15px]">
+          <Link
+            href="/"
+            className={`font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
+              isHome ? "text-white" : "text-foreground"
+            }`}
+          >
+            MassageGo
+          </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <LanguageSwitcher tone={isHome ? "onDark" : "default"} />
-          <ThemeToggle tone={isHome ? "onDark" : "default"} />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher tone={isHome ? "onDark" : "default"} />
+            <ThemeToggle tone={isHome ? "onDark" : "default"} />
 
-          {isHome ? null : status === "loading" ? (
-            <span className="h-11 w-36 animate-pulse rounded-lg bg-accent-soft" />
-          ) : session?.user ? (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden min-w-0 text-right sm:block">
-                <p className="truncate text-sm font-medium tracking-[0.01em] text-foreground">
-                  {displayName}
-                </p>
-                <p className="text-xs text-muted">{portalLabel}</p>
+            {isHome ? null : status === "loading" ? (
+              <span className="h-11 w-36 animate-pulse rounded-lg bg-accent-soft" />
+            ) : session?.user ? (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="hidden min-w-0 text-right sm:block">
+                  <p className="truncate text-sm font-medium tracking-[0.01em] text-foreground">
+                    {displayName}
+                  </p>
+                  <p className="text-xs text-muted">{portalLabel}</p>
+                </div>
+
+                <div
+                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-surface-border bg-accent-soft"
+                  title={`${displayName} · ${portalLabel}`}
+                >
+                  {session.user.image ? (
+                    <Image
+                      key={session.user.image}
+                      src={session.user.image}
+                      alt=""
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                      unoptimized={shouldSkipImageOptimization(session.user.image)}
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-xs font-semibold tracking-[0.04em] text-foreground">
+                      {initialsFromName(
+                        localizedName || session.user.name,
+                        session.user.email,
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <span className="rounded-lg bg-accent-soft px-3 py-1.5 text-sm font-medium tracking-[0.02em] text-muted sm:hidden">
+                  {portalLabel}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="flex h-11 items-center rounded-lg border border-surface-border bg-surface px-4 text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t.dashboardSignOut}
+                </button>
               </div>
-
-              <div
-                className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-surface-border bg-accent-soft"
-                title={`${displayName} · ${portalLabel}`}
-              >
-                {session.user.image ? (
-                  <Image
-                    key={session.user.image}
-                    src={session.user.image}
-                    alt=""
-                    fill
-                    sizes="44px"
-                    className="object-cover"
-                    unoptimized={shouldSkipImageOptimization(session.user.image)}
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-xs font-semibold tracking-[0.04em] text-foreground">
-                    {initialsFromName(localizedName || session.user.name, session.user.email)}
-                  </span>
-                )}
-              </div>
-
-              <span className="rounded-lg bg-accent-soft px-3 py-1.5 text-sm font-medium tracking-[0.02em] text-muted sm:hidden">
-                {portalLabel}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: signOutTarget })}
-                className="flex h-11 items-center rounded-lg border border-surface-border bg-surface px-4 text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-              >
-                {t.dashboardSignOut}
-              </button>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {signingOut ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
+          <Preloader label={t.authPleaseWait} />
+        </div>
+      ) : null}
+    </>
   );
 }

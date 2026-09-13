@@ -71,7 +71,8 @@ export const phoneSchema = z
   .trim()
   .min(1)
   .max(PHONE_MAX)
-  .refine(isAllowedBookingPhone, { message: "invalid_phone" });
+  .refine(isAllowedBookingPhone, { message: "invalid_phone" })
+  .transform((value) => parsePhoneNumber(value).format("E.164"));
 
 export const massageTypeSchema = z
   .string()
@@ -95,6 +96,12 @@ export function zodErrorCode(error: z.ZodError): string {
       (issue.code === "too_small" || issue.message === "weak_password")
     ) {
       return "weak_password";
+    }
+    if (
+      path === "passwordConfirm" ||
+      issue.message === "password_mismatch"
+    ) {
+      return "password_mismatch";
     }
     if (path === "email") {
       return "invalid_email";

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { BackNavLink } from "@/components/back-nav-link";
 import { useLanguage } from "@/components/language-provider";
 import { MasseurAuthPanel } from "@/components/masseur-auth-panel";
+import { Preloader } from "@/components/preloader";
 
 export default function MasseurEntryPage() {
   const { t } = useLanguage();
@@ -66,6 +67,14 @@ export default function MasseurEntryPage() {
     Boolean(session?.user?.id) &&
     session?.user?.portal === "masseur";
 
+  if (waitingForRedirect) {
+    return (
+      <main className="relative flex flex-1 flex-col items-center justify-center bg-background">
+        <Preloader label={t.authPleaseWait} />
+      </main>
+    );
+  }
+
   return (
     <main className="relative flex flex-1 flex-col bg-background py-10">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-[15px] text-center">
@@ -76,14 +85,10 @@ export default function MasseurEntryPage() {
           <p className="text-muted">{t.masseurPageSupport}</p>
         </div>
 
-        {waitingForRedirect ? (
-          <p className="text-sm text-muted">{t.authPleaseWait}</p>
-        ) : (
-          <MasseurAuthPanel
-            portal="masseur"
-            callbackUrl="/masseur/dashboard"
-          />
-        )}
+        <MasseurAuthPanel
+          portal="masseur"
+          callbackUrl="/masseur/dashboard"
+        />
 
         <BackNavLink href="/">{t.backHome}</BackNavLink>
       </div>

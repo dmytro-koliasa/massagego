@@ -73,5 +73,20 @@ export const bookingCancelSchema = z.union([
   }),
 ]);
 
+/** Masseur books a slot on behalf of a walk-in / phone client. */
+export const masseurBookingCreateSchema = z.object({
+  clientName: requiredText(NAME_MAX),
+  clientPhone: phoneSchema,
+  slotStart: isoLikeDate,
+  note: z
+    .string()
+    .trim()
+    .max(NOTE_MAX)
+    .optional()
+    .transform((value) => value ?? ""),
+  massageType: z.string().trim().optional(),
+});
+
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
 export type BookingCancelInput = z.infer<typeof bookingCancelSchema>;
+export type MasseurBookingCreateInput = z.infer<typeof masseurBookingCreateSchema>;

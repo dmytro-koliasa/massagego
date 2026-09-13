@@ -2,6 +2,7 @@
 
 import {
 	forwardRef,
+	FormEvent,
 	useCallback,
 	useEffect,
 	useImperativeHandle,
@@ -13,8 +14,25 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
+import PhoneInput, { type Country } from 'react-phone-number-input/max';
+import flags from 'react-phone-number-input/flags';
+import 'react-phone-number-input/style.css';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
+import { PHONE_COUNTRIES_EU_UA } from '@/lib/phone-countries';
+import {
+	clampInternationalPhone,
+	nationalPhoneInsert,
+} from '@/lib/phone';
+import {
+	getMassageTypeLabel,
+	type MassageTypeValue,
+} from '@/lib/massage-types';
+import {
+	masseurBookingCreateSchema,
+	NAME_MAX,
+	zodErrorCode,
+} from '@/lib/validation';
 
 const SLOT_MS = 60 * 60 * 1000;
 const DAY_START_HOUR = 5;
@@ -39,6 +57,13 @@ function alignToHourIso(date: Date) {
 	const aligned = new Date(date);
 	aligned.setMinutes(0, 0, 0);
 	return aligned.toISOString();
+}
+
+/** Slot can no longer be edited once its start time has begun (e.g. 8:01 for 8:00–9:00). */
+function isSlotExpired(startIso: string) {
+	const startMs = Date.parse(startIso);
+	if (Number.isNaN(startMs)) return false;
+	return startMs <= Date.now();
 }
 
 function getMonthName(date: Date, locale: 'en' | 'uk') {
@@ -193,8 +218,14 @@ function mergeSlotsWithPending(
 	return [...byStart.values()].sort((a, b) => a.start.localeCompare(b.start));
 }
 
-export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle, object>(
-	function MasseurAvailabilityCalendar(_, ref) {
+export type AvailabilityCalendarProps = {
+	massageTypes?: MassageTypeValue[];
+};
+
+export const MasseurAvailabilityCalendar = forwardRef<
+	AvailabilityCalendarHandle,
+	AvailabilityCalendarProps
+>(function MasseurAvailabilityCalendar({ massageTypes = [] }, ref) {
 		const { t, locale } = useLanguage();
 		const calendarRef = useRef<FullCalendar | null>(null);
 		const [serverSlots, setServerSlots] = useState<AvailabilitySlot[]>([]);
@@ -207,6 +238,15 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 		x: number;
 		y: number;
 	} | null>(null);
+	const [slotAction, setSlotAction] = useState<{
+		startIso: string;
+		mode: 'choose' | 'book';
+	} | null>(null);
+	const [bookName, setBookName] = useState('');
+	const [bookPhone, setBookPhone] = useState<string | undefined>();
+	const [bookPhoneCountry, setBookPhoneCountry] = useState<Country>('UA');
+	const [bookMassageType, setBookMassageType] = useState('');
+	const [bookPending, setBookPending] = useState(false);
 
 	const showSlotTip = useCallback((text: string, el: HTMLElement, clientX: number) => {
 		const rect = resolveHoverAnchorRect(el, clientX);
@@ -308,7 +348,7 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 						display: 'block' as const,
 						classNames: booked ? ['fc-event-booked'] : ['fc-event-available'],
 						borderColor: 'transparent',
-						extendedProps: { hint },
+						extendedProps: { hint, startIso: slot.start },
 					};
 				}),
 			[
@@ -368,6 +408,10 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 				toast.error(t.availabilitySlotBookedLocked);
 				return;
 			}
+			if (isSlotExpired(startIso)) {
+				toast.error(t.availabilityBookSlotPast);
+				return;
+			}
 
 			const isActive = slots.some(slot => slot.start === startIso);
 			setPendingChanges(current => {
@@ -375,6 +419,131 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 				next.set(startIso, !isActive);
 				return next;
 			});
+		}
+
+		function openAvailableSlotActions(startIso: string) {
+			if (bookedStarts.has(startIso)) {
+				toast.error(t.availabilitySlotBookedLocked);
+				return;
+			}
+			if (isSlotExpired(startIso)) {
+				toast.error(t.availabilityBookSlotPast);
+				return;
+			}
+			hideSlotTip();
+			setBookName('');
+			setBookPhone(undefined);
+			setBookPhoneCountry('UA');
+			setBookMassageType('');
+			setSlotAction({ startIso, mode: 'choose' });
+		}
+
+		function resolveSlotStartIso(date: Date) {
+			const aligned = alignToHourIso(date);
+			const exact = slotsRef.current.find(slot => slot.start === aligned);
+			if (exact) return exact.start;
+
+			const time = date.getTime();
+			const covering = slotsRef.current.find(slot => {
+				const start = Date.parse(slot.start);
+				return (
+					!Number.isNaN(start) &&
+					time >= start - 1000 &&
+					time < start + SLOT_MS
+				);
+			});
+			return covering?.start ?? aligned;
+		}
+
+		function closeSlotAction() {
+			if (bookPending) return;
+			setSlotAction(null);
+		}
+
+		function makeSlotUnavailable() {
+			if (!slotAction) return;
+			const startIso = slotAction.startIso;
+			if (isSlotExpired(startIso)) {
+				toast.error(t.availabilityBookSlotPast);
+				setSlotAction(null);
+				return;
+			}
+			setSlotAction(null);
+			setPendingChanges(current => {
+				const next = new Map(current);
+				next.set(startIso, false);
+				return next;
+			});
+		}
+
+		async function submitClientBooking(event: FormEvent<HTMLFormElement>) {
+			event.preventDefault();
+			if (!slotAction) return;
+
+			const parsed = masseurBookingCreateSchema.safeParse({
+				clientName: bookName,
+				clientPhone: bookPhone ?? '',
+				slotStart: slotAction.startIso,
+				massageType: massageTypes.length > 0 ? bookMassageType : undefined,
+			});
+			if (!parsed.success) {
+				const code = zodErrorCode(parsed.error);
+				if (code === 'invalid_phone') {
+					toast.error(t.bookingInvalidPhone);
+				} else if (code === 'invalid_massage_type' || massageTypes.length > 0 && !bookMassageType) {
+					toast.error(t.bookingMassageTypeRequired);
+				} else {
+					toast.error(t.availabilityBookClientNameRequired);
+				}
+				return;
+			}
+
+			setBookPending(true);
+			try {
+				const response = await fetch('/api/masseur/bookings', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(parsed.data),
+				});
+				if (!response.ok) {
+					const data = (await response.json().catch(() => ({}))) as {
+						error?: string;
+					};
+					if (data.error === 'slot_taken') {
+						toast.error(t.bookingSlotTaken);
+					} else if (data.error === 'slot_unavailable') {
+						toast.error(t.availabilityBookSlotPast);
+					} else if (data.error === 'invalid_phone') {
+						toast.error(t.bookingInvalidPhone);
+					} else if (data.error === 'invalid_massage_type') {
+						toast.error(t.bookingMassageTypeRequired);
+					} else if (
+						data.error === 'unauthorized' ||
+						data.error === 'forbidden'
+					) {
+						toast.error(t.availabilityBookUnauthorized);
+					} else {
+						toast.error(t.availabilityBookError);
+					}
+					return;
+				}
+
+				setPendingChanges(current => {
+					const next = new Map(current);
+					next.delete(slotAction.startIso);
+					return next;
+				});
+				setSlotAction(null);
+				toast.success(t.availabilityBookSuccess);
+				const currentRange = rangeRef.current;
+				if (currentRange) {
+					await loadSlots(currentRange.from, currentRange.to);
+				}
+			} catch {
+				toast.error(t.availabilityBookError);
+			} finally {
+				setBookPending(false);
+			}
 		}
 
 		function setAllWeekAvailable(active: boolean) {
@@ -617,14 +786,22 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 						}}
 						eventDidMount={info => {
 							const hint = info.event.extendedProps.hint;
-							if (typeof hint !== 'string' || !hint) return;
+							if (typeof hint === 'string' && hint) {
+								const onMove = (e: MouseEvent) =>
+									showSlotTipRef.current(hint, info.el, e.clientX);
+								const onLeave = () => hideSlotTipRef.current();
+								info.el.addEventListener('mouseenter', onMove);
+								info.el.addEventListener('mousemove', onMove);
+								info.el.addEventListener('mouseleave', onLeave);
+							}
 
-							const onMove = (e: MouseEvent) =>
-								showSlotTipRef.current(hint, info.el, e.clientX);
-							const onLeave = () => hideSlotTipRef.current();
-							info.el.addEventListener('mouseenter', onMove);
-							info.el.addEventListener('mousemove', onMove);
-							info.el.addEventListener('mouseleave', onLeave);
+							if (!info.el.classList.contains('fc-event-available')) return;
+							const main = info.el.querySelector('.fc-event-main');
+							if (!main || main.querySelector('.fc-event-edit-icon')) return;
+							const icon = document.createElement('span');
+							icon.className = 'fc-event-edit-icon';
+							icon.setAttribute('aria-hidden', 'true');
+							main.appendChild(icon);
 						}}
 						datesSet={arg => {
 							hideSlotTip();
@@ -637,10 +814,29 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 						}}
 						select={arg => {
 							arg.view.calendar.unselect();
-							toggleSlot(alignToHourIso(arg.start));
+							const startIso = resolveSlotStartIso(arg.start);
+							if (bookedStartsRef.current.has(startIso)) {
+								toast.error(t.availabilitySlotBookedLocked);
+								return;
+							}
+							const isActive = slotsRef.current.some(slot => slot.start === startIso);
+							if (isActive) {
+								openAvailableSlotActions(startIso);
+								return;
+							}
+							toggleSlot(startIso);
 						}}
 						eventClick={arg => {
-							toggleSlot(alignToHourIso(arg.event.start ?? new Date()));
+							const fromProps = arg.event.extendedProps.startIso;
+							const startIso =
+								typeof fromProps === 'string' && fromProps
+									? fromProps
+									: resolveSlotStartIso(arg.event.start ?? new Date());
+							if (arg.el.classList.contains('fc-event-booked')) {
+								toast.error(t.availabilitySlotBookedLocked);
+								return;
+							}
+							openAvailableSlotActions(startIso);
 						}}
 						eventTextColor='#ffffff'
 						eventBorderColor='transparent'
@@ -656,6 +852,195 @@ export const MasseurAvailabilityCalendar = forwardRef<AvailabilityCalendarHandle
 						style={{ left: hoverTip.x, top: hoverTip.y - 8 }}
 					>
 						{hoverTip.text}
+					</div>
+				) : null}
+
+				{slotAction ? (
+					<div
+						className='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
+						role='presentation'
+						onClick={closeSlotAction}
+					>
+						<div
+							role='dialog'
+							aria-modal='true'
+							aria-labelledby='availability-slot-action-title'
+							className='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
+							onClick={event => event.stopPropagation()}
+						>
+							{(() => {
+								const start = new Date(slotAction.startIso);
+								const end = new Date(start.getTime() + SLOT_MS);
+								const hours = formatHourRange(start, end, locale);
+								const dayLabel = new Intl.DateTimeFormat(
+									locale === 'uk' ? 'uk-UA' : 'en-GB',
+									{
+										weekday: 'short',
+										day: 'numeric',
+										month: 'short',
+									},
+								).format(start);
+								return (
+									<>
+										<p
+											id='availability-slot-action-title'
+											className='text-base font-medium text-foreground'
+										>
+											{slotAction.mode === 'choose'
+												? t.availabilitySlotActionTitle
+												: t.availabilityBookForClient}
+										</p>
+										<p className='mt-1 text-sm text-muted'>
+											{dayLabel}, {hours.start} - {hours.end}
+										</p>
+									</>
+								);
+							})()}
+
+							{slotAction.mode === 'choose' ? (
+								<div className='mt-5 flex flex-col gap-2'>
+									<button
+										type='button'
+										onClick={makeSlotUnavailable}
+										className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40'
+									>
+										{t.availabilityMakeUnavailable}
+									</button>
+									<button
+										type='button'
+										onClick={() =>
+											setSlotAction(current =>
+												current ? { ...current, mode: 'book' } : current,
+											)
+										}
+										className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90'
+									>
+										{t.availabilityBookForClient}
+									</button>
+									<button
+										type='button'
+										onClick={closeSlotAction}
+										className='mt-1 flex h-10 w-full items-center justify-center text-sm text-muted transition hover:text-foreground'
+									>
+										{t.availabilityBookCancel}
+									</button>
+								</div>
+							) : (
+								<form onSubmit={submitClientBooking} className='mt-5 space-y-3' noValidate>
+									{massageTypes.length > 0 ? (
+										<label className='block text-left'>
+											<span className='mb-1.5 block text-sm text-muted'>
+												{t.bookingMassageType}
+											</span>
+											<select
+												required
+												value={bookMassageType}
+												onChange={event => setBookMassageType(event.target.value)}
+												className='h-11 w-full text-foreground'
+											>
+												<option value=''>{t.bookingMassageTypePlaceholder}</option>
+												{massageTypes.map(id => (
+													<option key={id} value={id}>
+														{getMassageTypeLabel(id, locale)}
+													</option>
+												))}
+											</select>
+										</label>
+									) : null}
+
+									<label className='block text-left'>
+										<span className='mb-1.5 block text-sm text-muted'>
+											{t.availabilityBookClientName}
+										</span>
+										<input
+											required
+											type='text'
+											value={bookName}
+											maxLength={NAME_MAX}
+											onChange={event => setBookName(event.target.value)}
+											className='h-11 w-full rounded-lg border border-surface-border bg-background px-3 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+										/>
+									</label>
+
+									<label className='block text-left'>
+										<span className='mb-1.5 block text-sm text-muted'>
+											{t.availabilityBookClientPhone}
+										</span>
+										<PhoneInput
+											international
+											countryCallingCodeEditable={false}
+											defaultCountry='UA'
+											countries={[...PHONE_COUNTRIES_EU_UA]}
+											addInternationalOption={false}
+											flags={flags}
+											limitMaxLength
+											value={bookPhone}
+											onChange={value =>
+												setBookPhone(
+													clampInternationalPhone(value, bookPhoneCountry),
+												)
+											}
+											onCountryChange={country => {
+												if (!country) return;
+												setBookPhoneCountry(country);
+												setBookPhone(current =>
+													clampInternationalPhone(current, country),
+												);
+											}}
+											className='PhoneInputField'
+											numberInputProps={{
+												name: 'tel',
+												autoComplete: 'tel',
+												required: true,
+												className:
+													'PhoneInputInput h-11 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none',
+												onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
+													const inserted =
+														(event.nativeEvent as InputEvent).data ?? '';
+													const input = event.currentTarget;
+													const start =
+														input.selectionStart ?? input.value.length;
+													const end =
+														input.selectionEnd ?? input.value.length;
+													const next = nationalPhoneInsert(
+														input.value,
+														start,
+														end,
+														inserted,
+														bookPhoneCountry,
+													);
+													if (!next.exceeds) return;
+													event.preventDefault();
+													setBookPhone(next.value);
+												},
+											}}
+										/>
+									</label>
+
+									<div className='flex flex-wrap justify-end gap-2 pt-2'>
+										<button
+											type='button'
+											disabled={bookPending}
+											onClick={() =>
+												setSlotAction(current =>
+													current ? { ...current, mode: 'choose' } : current,
+												)
+											}
+											className='h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
+										>
+											{t.availabilityBookBack}
+										</button>
+										<button
+											type='submit'
+											disabled={bookPending}
+											className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+										>
+											{bookPending ? t.authPleaseWait : t.availabilityBookSubmit}
+										</button>
+									</div>
+								</form>
+							)}
+						</div>
 					</div>
 				) : null}
 

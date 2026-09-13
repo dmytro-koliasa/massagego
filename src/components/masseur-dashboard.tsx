@@ -637,7 +637,10 @@ export function DashboardView({ profile }: { profile: Profile }) {
 
 				<MasseurGallery editable />
 
-				<MasseurAvailabilityCalendar ref={availabilityRef} />
+				<MasseurAvailabilityCalendar
+					ref={availabilityRef}
+					massageTypes={massageTypes}
+				/>
 			</div>
 
 			<div className='fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-background/90 py-3 backdrop-blur-md'>

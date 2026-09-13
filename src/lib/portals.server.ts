@@ -37,3 +37,9 @@ export async function findPortalUserByEmail(email: string, portal: Portal) {
     where: { email_portal: { email, portal } },
   });
 }
+
+export async function findPortalUserByPhone(phone: string, portal: Portal) {
+  return prisma.user.findUnique({
+    where: { phone_portal: { phone, portal } },
+  });
+}

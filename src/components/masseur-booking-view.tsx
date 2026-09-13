@@ -7,16 +7,15 @@ import PhoneInput, {
   type Country,
 } from "react-phone-number-input/max";
 import flags from "react-phone-number-input/flags";
-import {
-  getCountryCallingCode,
-  getExampleNumber,
-} from "libphonenumber-js/max";
-import examples from "libphonenumber-js/mobile/examples";
 import "react-phone-number-input/style.css";
 import { ClientBookingCalendar } from "@/components/client-booking-calendar";
 import { BackNavLink } from "@/components/back-nav-link";
 import { MasseurGallery } from "@/components/masseur-gallery";
 import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
+import {
+  clampInternationalPhone,
+  nationalPhoneInsert,
+} from "@/lib/phone";
 import {
   bookingCreateSchema,
   NAME_MAX,
@@ -47,47 +46,6 @@ type MasseurProfile = {
     height: number;
   }[];
 };
-
-function getMaxNationalLength(country: Country) {
-  return getExampleNumber(country, examples)?.nationalNumber.length ?? 15;
-}
-
-function clampInternationalPhone(
-  value: string | undefined,
-  country: Country,
-): string | undefined {
-  if (!value) return value;
-  const callingCode = getCountryCallingCode(country);
-  const maxNational = getMaxNationalLength(country);
-  const prefix = `+${callingCode}`;
-  if (!value.startsWith(prefix)) return value;
-  const national = value.slice(prefix.length);
-  if (national.length <= maxNational) return value;
-  return `${prefix}${national.slice(0, maxNational)}`;
-}
-
-function nationalPhoneInsert(
-  inputValue: string,
-  selectionStart: number,
-  selectionEnd: number,
-  inserted: string,
-  country: Country,
-) {
-  const insertedDigits = inserted.replace(/\D/g, "");
-  const callingCode = String(getCountryCallingCode(country));
-  const maxNational = getMaxNationalLength(country);
-  const nextDigits =
-    inputValue.slice(0, selectionStart).replace(/\D/g, "") +
-    insertedDigits +
-    inputValue.slice(selectionEnd).replace(/\D/g, "");
-  const national = nextDigits.startsWith(callingCode)
-    ? nextDigits.slice(callingCode.length)
-    : nextDigits;
-  return {
-    exceeds: insertedDigits.length > 0 && national.length > maxNational,
-    value: `+${callingCode}${national.slice(0, maxNational)}`,
-  };
-}
 
 export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
   const { t, locale } = useLanguage();

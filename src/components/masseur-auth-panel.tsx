@@ -4,6 +4,11 @@ import { FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import PhoneInput, {
+  type Country,
+} from "react-phone-number-input/max";
+import flags from "react-phone-number-input/flags";
+import "react-phone-number-input/style.css";
 import { useLanguage } from "@/components/language-provider";
 import {
   AUTH_INTENT_COOKIE,
@@ -12,7 +17,14 @@ import {
   type Portal,
 } from "@/lib/portals";
 import { createNativeValidationHandlers } from "@/lib/native-validation";
+import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
 import {
+  clampInternationalPhone,
+  nationalPhoneInsert,
+} from "@/lib/phone";
+import {
+  clientLoginSchema,
+  clientRegisterSchema,
   EMAIL_MAX,
   loginSchema,
   NAME_MAX,
@@ -42,6 +54,7 @@ export function MasseurAuthPanel({
   callbackUrl,
 }: AuthPanelProps) {
   const resolvedPortal: Portal = portal ?? role ?? "masseur";
+  const isClient = resolvedPortal === "client";
   const resolvedCallback =
     callbackUrl ??
     (resolvedPortal === "masseur" ? "/masseur/dashboard" : "/client");
@@ -49,10 +62,17 @@ export function MasseurAuthPanel({
   const { t } = useLanguage();
   const router = useRouter();
   const validation = createNativeValidationHandlers(t);
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>(
+    resolvedPortal === "client" ? "register" : "login",
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState<string | undefined>();
+  const [phoneCountry, setPhoneCountry] = useState<Country>("UA");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [pending, setPending] = useState(false);
   const [googleConfigured, setGoogleConfigured] = useState(true);
 
@@ -61,6 +81,7 @@ export function MasseurAuthPanel({
   }, [resolvedPortal, mode]);
 
   useEffect(() => {
+    if (isClient) return;
     let cancelled = false;
     fetch("/api/auth/google-status")
       .then((response) => response.json())
@@ -75,7 +96,7 @@ export function MasseurAuthPanel({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isClient]);
 
   async function handleCredentials(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,11 +107,76 @@ export function MasseurAuthPanel({
     );
 
     try {
+      if (isClient) {
+        if (mode === "register") {
+          const parsed = clientRegisterSchema.safeParse({
+            name,
+            phone: phone ?? "",
+            password,
+            passwordConfirm,
+            portal: "client",
+            role: "client",
+          });
+          if (!parsed.success) {
+            toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
+            return;
+          }
+
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parsed.data),
+          });
+
+          if (!response.ok) {
+            const data = (await response.json()) as { error?: string };
+            toast.error(mapRegisterError(data.error, t));
+            return;
+          }
+
+          const result = await signIn("credentials", {
+            phone: parsed.data.phone,
+            password: parsed.data.password,
+            redirect: false,
+          });
+
+          if (result?.error) {
+            toast.error(t.authGenericError);
+            return;
+          }
+        } else {
+          const parsed = clientLoginSchema.safeParse({
+            phone: phone ?? "",
+            password,
+          });
+          if (!parsed.success) {
+            toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
+            return;
+          }
+
+          const result = await signIn("credentials", {
+            phone: parsed.data.phone,
+            password: parsed.data.password,
+            redirect: false,
+          });
+
+          if (result?.error) {
+            toast.error(t.authInvalidPhoneCredentials);
+            return;
+          }
+        }
+
+        router.push(resolvedCallback);
+        router.refresh();
+        return;
+      }
+
       if (mode === "register") {
         const parsed = registerSchema.safeParse({
           name,
           email,
           password,
+          passwordConfirm,
           portal: resolvedPortal,
           role: resolvedPortal,
         });
@@ -182,10 +268,12 @@ export function MasseurAuthPanel({
       </div>
 
       <div className="mt-6 space-y-5">
-        <form onSubmit={handleCredentials} className="space-y-4">
-          <p className="text-left text-sm font-medium text-muted">
-            {t.authCredentialsOption}
-          </p>
+        <form onSubmit={handleCredentials} className="space-y-4" noValidate>
+          {!isClient ? (
+            <p className="text-left text-sm font-medium text-muted">
+              {t.authCredentialsOption}
+            </p>
+          ) : null}
 
           {mode === "register" ? (
             <Field
@@ -201,31 +289,121 @@ export function MasseurAuthPanel({
             />
           ) : null}
 
-          <Field
-            id="email"
-            label={t.authEmail}
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={setEmail}
-            required
-            maxLength={EMAIL_MAX}
-            validation={validation}
-          />
-          <Field
+          {isClient ? (
+            <label className="block text-left">
+              <span className="mb-1.5 block text-sm text-muted">
+                {t.authPhone}
+              </span>
+              <PhoneInput
+                international
+                countryCallingCodeEditable={false}
+                defaultCountry="UA"
+                countries={[...PHONE_COUNTRIES_EU_UA]}
+                addInternationalOption={false}
+                flags={flags}
+                limitMaxLength
+                value={phone}
+                onChange={(value) =>
+                  setPhone(clampInternationalPhone(value, phoneCountry))
+                }
+                onCountryChange={(country) => {
+                  if (!country) return;
+                  setPhoneCountry(country);
+                  setPhone((current) =>
+                    clampInternationalPhone(current, country),
+                  );
+                }}
+                className="PhoneInputField"
+                numberInputProps={{
+                  name: "tel",
+                  autoComplete: "tel",
+                  required: true,
+                  className:
+                    "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                  onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
+                    const inserted =
+                      (event.nativeEvent as InputEvent).data ?? "";
+                    const input = event.currentTarget;
+                    const start =
+                      input.selectionStart ?? input.value.length;
+                    const end = input.selectionEnd ?? input.value.length;
+                    const next = nationalPhoneInsert(
+                      input.value,
+                      start,
+                      end,
+                      inserted,
+                      phoneCountry,
+                    );
+                    if (!next.exceeds) return;
+                    event.preventDefault();
+                    setPhone(next.value);
+                  },
+                }}
+              />
+            </label>
+          ) : (
+            <Field
+              id="email"
+              label={t.authEmail}
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={setEmail}
+              required
+              maxLength={EMAIL_MAX}
+              validation={validation}
+            />
+          )}
+
+          <PasswordField
             id="password"
             label={t.authPassword}
-            type="password"
             autoComplete={
               mode === "register" ? "new-password" : "current-password"
             }
             value={password}
             onChange={setPassword}
+            visible={showPassword}
+            onToggleVisible={() => setShowPassword((value) => !value)}
+            showLabel={t.authShowPassword}
+            hideLabel={t.authHidePassword}
             required
             minLength={PASSWORD_MIN}
             maxLength={PASSWORD_MAX}
             validation={validation}
           />
+
+          {mode === "register" ? (
+            <PasswordField
+              id="passwordConfirm"
+              label={t.authPasswordConfirm}
+              autoComplete="new-password"
+              value={passwordConfirm}
+              onChange={setPasswordConfirm}
+              visible={showPasswordConfirm}
+              onToggleVisible={() =>
+                setShowPasswordConfirm((value) => !value)
+              }
+              showLabel={t.authShowPassword}
+              hideLabel={t.authHidePassword}
+              required
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              validation={validation}
+            />
+          ) : null}
+
+          {mode === "login" ? (
+            <div className="text-left">
+              <button
+                type="button"
+                onClick={() => toast.message(t.authForgotPasswordHint)}
+                className="text-sm text-accent underline-offset-2 transition hover:underline"
+              >
+                {t.authForgotPassword}
+              </button>
+            </div>
+          ) : null}
 
           <button
             type="submit"
@@ -240,28 +418,32 @@ export function MasseurAuthPanel({
           </button>
         </form>
 
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-surface-border" />
-          <span className="text-xs uppercase tracking-[0.14em] text-muted">
-            {t.authOr}
-          </span>
-          <span className="h-px flex-1 bg-surface-border" />
-        </div>
+        {!isClient ? (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-surface-border" />
+              <span className="text-xs uppercase tracking-[0.14em] text-muted">
+                {t.authOr}
+              </span>
+              <span className="h-px flex-1 bg-surface-border" />
+            </div>
 
-        <div className="space-y-3">
-          <p className="text-left text-sm font-medium text-muted">
-            {t.authGoogleOption}
-          </p>
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={pending}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-[var(--radius-control)] border border-surface-border bg-background text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <GoogleIcon />
-            {mode === "login" ? t.authContinueGoogle : t.authRegisterGoogle}
-          </button>
-        </div>
+            <div className="space-y-3">
+              <p className="text-left text-sm font-medium text-muted">
+                {t.authGoogleOption}
+              </p>
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={pending}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-[var(--radius-control)] border border-surface-border bg-background text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <GoogleIcon />
+                {mode === "login" ? t.authContinueGoogle : t.authRegisterGoogle}
+              </button>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -337,6 +519,100 @@ function Field({
   );
 }
 
+function PasswordField({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+  required,
+  minLength,
+  maxLength,
+  validation,
+  visible,
+  onToggleVisible,
+  showLabel,
+  hideLabel,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete?: string;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  validation: ReturnType<typeof createNativeValidationHandlers>;
+  visible: boolean;
+  onToggleVisible: () => void;
+  showLabel: string;
+  hideLabel: string;
+}) {
+  return (
+    <label className="block text-left">
+      <span className="mb-1.5 block text-sm text-muted">{label}</span>
+      <div className="relative">
+        <input
+          id={id}
+          name={id}
+          type={visible ? "text" : "password"}
+          value={value}
+          autoComplete={autoComplete}
+          required={required}
+          minLength={minLength}
+          maxLength={maxLength}
+          onInvalid={validation.onInvalid}
+          onInput={validation.onInput}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-12 w-full rounded-[var(--radius-control)] border border-surface-border bg-background px-4 pr-12 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+        />
+        <button
+          type="button"
+          onClick={onToggleVisible}
+          aria-label={visible ? hideLabel : showLabel}
+          className="absolute top-1/2 right-3 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted transition hover:text-foreground"
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+    </label>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 3l18 18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10.6 10.7a2.75 2.75 0 0 0 3.7 3.7M9.5 5.2A10.6 10.6 0 0 1 12 5c6 0 9.5 7 9.5 7a16.7 16.7 0 0 1-3.2 3.9M6.2 6.3C4.1 7.8 2.5 12 2.5 12s3.5 7 9.5 7c1.5 0 2.9-.4 4.1-1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
@@ -367,8 +643,14 @@ function mapRegisterError(
   switch (code) {
     case "email_taken":
       return t.authEmailTaken;
+    case "phone_taken":
+      return t.authPhoneTaken;
     case "weak_password":
       return t.authWeakPassword;
+    case "password_mismatch":
+      return t.authPasswordMismatch;
+    case "invalid_phone":
+      return t.authInvalidPhone;
     case "invalid_email":
     case "missing_fields":
       return t.authMissingFields;

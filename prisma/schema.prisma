@@ -16,6 +16,8 @@ model User {
   slug           String?   @unique
   email          String
   emailVerified  DateTime?
+  /// E.164 phone for client credentials auth (optional for masseurs / Google).
+  phone          String?
   image          String?
   descriptionEn  String?
   descriptionUk  String?
@@ -35,6 +37,7 @@ model User {
   updatedAt      DateTime  @updatedAt
 
   @@unique([email, portal])
+  @@unique([phone, portal])
   @@index([portal])
 }
 

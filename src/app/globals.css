@@ -148,6 +148,24 @@ select:not(.PhoneInputCountrySelect):disabled {
   }
 }
 
+@keyframes preloader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.preloader {
+  box-sizing: border-box;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  border: 3px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  animation: preloader-spin 0.7s linear infinite;
+  will-change: transform;
+}
+
 .animate-fade-up {
   animation: fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -342,6 +360,47 @@ select:not(.PhoneInputCountrySelect):disabled {
   z-index: 2;
   cursor: pointer !important;
   background-color: var(--accent) !important;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available .fc-event-main {
+  position: relative;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available .fc-event-edit-icon {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 55%, black);
+  transition: opacity 0.15s ease;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available .fc-event-edit-icon::before {
+  content: "";
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  background-color: #fff;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 20h4.5L19 9.5 14.5 5 4 15.5V20z' stroke='black' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M12.5 7l4.5 4.5' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 20h4.5L19 9.5 14.5 5 4 15.5V20z' stroke='black' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M12.5 7l4.5 4.5' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available:hover .fc-event-edit-icon {
+  opacity: 1;
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-available:hover .fc-event-title {
+  opacity: 0;
 }
 
 .AvailabilityCalendar .fc .fc-event.fc-event-available.fc-event-selected,

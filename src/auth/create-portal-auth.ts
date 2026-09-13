@@ -6,10 +6,10 @@ import type { Adapter } from "next-auth/adapters";
 import { compare } from "bcryptjs";
 import type { Portal } from "@/lib/portals";
 import { portalHomePath } from "@/lib/portals";
-import { findPortalUserByEmail, readAuthIntentCookie } from "@/lib/portals.server";
+import { findPortalUserByEmail, findPortalUserByPhone, readAuthIntentCookie } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
-import { loginSchema, NAME_MAX } from "@/lib/validation";
+import { clientLoginSchema, loginSchema, NAME_MAX } from "@/lib/validation";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 
 const googleConfigured =
@@ -66,7 +66,7 @@ export function createPortalAuth(portal: Portal) {
     ...config,
     adapter: createPortalPrismaAdapter(portal),
     providers: [
-      ...(googleConfigured
+      ...(googleConfigured && portal === "masseur"
         ? [
             Google({
               clientId: process.env.AUTH_GOOGLE_ID,
@@ -87,9 +87,40 @@ export function createPortalAuth(portal: Portal) {
         name: "credentials",
         credentials: {
           email: { label: "Email", type: "email" },
+          phone: { label: "Phone", type: "text" },
           password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
+          if (portal === "client") {
+            const parsed = clientLoginSchema.safeParse({
+              phone: credentials?.phone,
+              password: credentials?.password,
+            });
+            if (!parsed.success) {
+              return null;
+            }
+
+            const { phone, password } = parsed.data;
+            const user = await findPortalUserByPhone(phone, portal);
+
+            if (!user?.passwordHash) {
+              return null;
+            }
+
+            const valid = await compare(password, user.passwordHash);
+            if (!valid) {
+              return null;
+            }
+
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              portal,
+            };
+          }
+
           const parsed = loginSchema.safeParse({
             email: credentials?.email,
             password: credentials?.password,
