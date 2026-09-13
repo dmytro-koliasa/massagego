@@ -333,6 +333,12 @@ select:not(.PhoneInputCountrySelect):disabled {
   cursor: pointer;
 }
 
+/* Client sessions calendar: empty hours are not interactive. */
+.AvailabilityCalendar.AvailabilityCalendar--bookingsOnly .fc .fc-timegrid-slot,
+.AvailabilityCalendar.AvailabilityCalendar--bookingsOnly .fc .fc-timegrid-slot-lane {
+  cursor: default;
+}
+
 .AvailabilityCalendar .fc .fc-timegrid-col-events {
   margin: 0 !important;
 }
@@ -399,7 +405,7 @@ select:not(.PhoneInputCountrySelect):disabled {
   opacity: 1;
 }
 
-.AvailabilityCalendar .fc .fc-event.fc-event-available:hover .fc-event-title {
+.AvailabilityCalendar .fc .fc-event.fc-event-available:hover:has(.fc-event-edit-icon) .fc-event-title {
   opacity: 0;
 }
 
@@ -453,7 +459,7 @@ select:not(.PhoneInputCountrySelect):disabled {
   opacity: 1;
 }
 
-.AvailabilityCalendar .fc .fc-event.fc-event-booked:hover .fc-event-title {
+.AvailabilityCalendar .fc .fc-event.fc-event-booked:hover:has(.fc-event-edit-icon) .fc-event-title {
   opacity: 0;
 }
 
