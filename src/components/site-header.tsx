@@ -30,6 +30,36 @@ function initialsFromName(
   return source.slice(0, 2).toUpperCase();
 }
 
+function HeaderNavLink({
+  href,
+  label,
+  active,
+  onDark,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  onDark: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`rounded-lg px-2.5 py-2 text-sm font-medium tracking-[0.02em] transition sm:px-3 ${
+        onDark
+          ? active
+            ? "bg-white/12 text-white"
+            : "text-white/72 hover:bg-white/8 hover:text-white"
+          : active
+            ? "bg-accent-soft text-foreground"
+            : "text-muted hover:bg-accent-soft/70 hover:text-foreground"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export function SiteHeader() {
   const { t, locale } = useLanguage();
   const { data: session, status } = useSession();
@@ -72,16 +102,36 @@ export function SiteHeader() {
         }`}
       >
         <div className="mx-auto flex h-[4.25rem] w-full max-w-6xl items-center justify-between gap-4 px-[15px]">
-          <Link
-            href="/"
-            className={`font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
-              isHome ? "text-white" : "text-foreground"
-            }`}
-          >
-            MassageGo
-          </Link>
+          <div className="flex min-w-0 items-center gap-4 sm:gap-6">
+            <Link
+              href="/"
+              className={`shrink-0 font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
+                isHome ? "text-white" : "text-foreground"
+              }`}
+            >
+              MassageGo
+            </Link>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+            <nav
+              aria-label={t.roleGroupLabel}
+              className="mt-1.5 flex items-center gap-1 sm:gap-2"
+            >
+              <HeaderNavLink
+                href="/masseur"
+                label={t.masseurTitle}
+                active={pathname.startsWith("/masseur")}
+                onDark={isHome}
+              />
+              <HeaderNavLink
+                href="/client/login"
+                label={t.clientTitle}
+                active={pathname.startsWith("/client")}
+                onDark={isHome}
+              />
+            </nav>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <LanguageSwitcher tone={isHome ? "onDark" : "default"} />
             <ThemeToggle tone={isHome ? "onDark" : "default"} />
 
