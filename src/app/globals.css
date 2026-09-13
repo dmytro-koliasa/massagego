@@ -273,8 +273,8 @@ select:not(.PhoneInputCountrySelect):disabled {
 
 .AvailabilityCalendar .fc .fc-timegrid-axis,
 .AvailabilityCalendar .fc .fc-timegrid-slot-label {
-  width: 5.25rem;
-  min-width: 5.25rem;
+  width: calc(5.25rem + 20px);
+  min-width: calc(5.25rem + 20px);
 }
 
 .AvailabilityCalendar .fc .fc-col-header-cell.fc-day-sat,
@@ -463,4 +463,17 @@ select:not(.PhoneInputCountrySelect):disabled {
   color: var(--foreground);
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.AvailabilityCalendar .fc .fc-col-header-cell-cushion {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  box-sizing: border-box;
+}
+
+.AvailabilityCalendar .fc .fc-timegrid-axis-cushion,
+.AvailabilityCalendar .fc .fc-timegrid-slot-label-cushion {
+  padding-left: 10px;
+  padding-right: 10px;
+  box-sizing: border-box;
 }
