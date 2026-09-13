@@ -65,7 +65,13 @@ export async function GET(request: Request) {
         slotStart: { gte: from, lt: to },
         status: { not: "cancelled" },
       },
-      select: { id: true, slotStart: true, clientName: true },
+      select: {
+        id: true,
+        slotStart: true,
+        clientName: true,
+        clientPhone: true,
+        massageType: true,
+      },
     }),
   ]);
 
@@ -74,7 +80,12 @@ export async function GET(request: Request) {
       .filter((booking) => booking.slotStart)
       .map((booking) => [
         booking.slotStart!.toISOString(),
-        { id: booking.id, clientName: booking.clientName },
+        {
+          id: booking.id,
+          clientName: booking.clientName,
+          clientPhone: booking.clientPhone,
+          massageType: booking.massageType,
+        },
       ]),
   );
 
@@ -90,6 +101,9 @@ export async function GET(request: Request) {
           end: slot.end.toISOString(),
           status: booked ? ("booked" as const) : ("available" as const),
           clientName: booked?.clientName ?? null,
+          clientPhone: booked?.clientPhone ?? null,
+          massageType: booked?.massageType ?? null,
+          bookingId: booked?.id ?? null,
         },
       ];
     }),
@@ -105,6 +119,9 @@ export async function GET(request: Request) {
       end: new Date(start.getTime() + SLOT_MS).toISOString(),
       status: "booked",
       clientName: booked.clientName,
+      clientPhone: booked.clientPhone,
+      massageType: booked.massageType,
+      bookingId: booked.id,
     });
   }
 

@@ -92,8 +92,17 @@ export function createPortalAuth(portal: Portal) {
         },
         async authorize(credentials) {
           if (portal === "client") {
+            // Auth.js posts credentials as x-www-form-urlencoded; "+" may become
+            // a space or be stripped. Normalize to E.164 before Zod.
+            const raw =
+              typeof credentials?.phone === "string"
+                ? credentials.phone.trim()
+                : "";
+            const digits = raw.replace(/\D/g, "");
+            const phoneValue = digits ? `+${digits}` : raw;
+
             const parsed = clientLoginSchema.safeParse({
-              phone: credentials?.phone,
+              phone: phoneValue,
               password: credentials?.password,
             });
             if (!parsed.success) {

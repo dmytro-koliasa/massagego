@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 
 const MAX_SIZE = 5 * 1024 * 1024;
-const MAX_GALLERY_IMAGES = 20;
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_GALLERY_IMAGES = 3;
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 
 async function requireMasseur() {
   const session = await auth();

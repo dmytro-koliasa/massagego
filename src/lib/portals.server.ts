@@ -39,7 +39,7 @@ export async function findPortalUserByEmail(email: string, portal: Portal) {
 }
 
 export async function findPortalUserByPhone(phone: string, portal: Portal) {
-  return prisma.user.findUnique({
-    where: { phone_portal: { phone, portal } },
+  return prisma.user.findFirst({
+    where: { phone, portal },
   });
 }

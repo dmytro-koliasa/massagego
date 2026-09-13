@@ -125,11 +125,20 @@ export function MasseurAuthPanel({
           const response = await fetch("/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(parsed.data),
+            body: JSON.stringify({
+              name: parsed.data.name,
+              phone: parsed.data.phone,
+              password: parsed.data.password,
+              passwordConfirm: parsed.data.passwordConfirm,
+              portal: "client",
+              role: "client",
+            }),
           });
 
           if (!response.ok) {
-            const data = (await response.json()) as { error?: string };
+            const data = (await response.json().catch(() => ({}))) as {
+              error?: string;
+            };
             toast.error(mapRegisterError(data.error, t));
             return;
           }
@@ -138,10 +147,14 @@ export function MasseurAuthPanel({
             phone: parsed.data.phone,
             password: parsed.data.password,
             redirect: false,
+            callbackUrl: resolvedCallback,
           });
 
-          if (result?.error) {
-            toast.error(t.authGenericError);
+          if (!result || result.error) {
+            toast.success(t.authAccountCreatedSignIn);
+            setMode("login");
+            setPassword("");
+            setPasswordConfirm("");
             return;
           }
         } else {

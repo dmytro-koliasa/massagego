@@ -51,6 +51,9 @@ type AvailabilitySlot = {
 	end: string;
 	status: SlotStatus;
 	clientName?: string | null;
+	clientPhone?: string | null;
+	massageType?: string | null;
+	bookingId?: string | null;
 };
 
 function alignToHourIso(date: Date) {
@@ -123,6 +126,24 @@ function formatHourRange(start: Date, end: Date, locale: 'en' | 'uk') {
 
 function fillTimeHint(template: string, start: string, end: string) {
 	return template.replaceAll('{start}', start).replaceAll('{end}', end);
+}
+
+function fillBookedSlotHint(
+	template: string,
+	hours: { start: string; end: string },
+	details: {
+		clientLabel: string;
+		clientName: string;
+		typeLabel: string;
+		massageType: string;
+		phoneLabel: string;
+		clientPhone: string;
+	},
+) {
+	return fillTimeHint(template, hours.start, hours.end)
+		.replaceAll('{client}', `${details.clientLabel}: ${details.clientName}`)
+		.replaceAll('{type}', `${details.typeLabel}: ${details.massageType}`)
+		.replaceAll('{phone}', `${details.phoneLabel}: ${details.clientPhone}`);
 }
 
 /** Slot lanes span the full week; pin the tip to the day column under the pointer. */
@@ -208,6 +229,8 @@ function mergeSlotsWithPending(
 					end: new Date(time + SLOT_MS).toISOString(),
 					status: 'available',
 					clientName: null,
+					clientPhone: null,
+					massageType: null,
 				});
 			}
 		} else {
@@ -240,13 +263,17 @@ export const MasseurAvailabilityCalendar = forwardRef<
 	} | null>(null);
 	const [slotAction, setSlotAction] = useState<{
 		startIso: string;
-		mode: 'choose' | 'book';
+		mode: 'choose' | 'book' | 'booked';
+		clientName?: string | null;
+		clientPhone?: string | null;
+		massageType?: string | null;
 	} | null>(null);
 	const [bookName, setBookName] = useState('');
 	const [bookPhone, setBookPhone] = useState<string | undefined>();
 	const [bookPhoneCountry, setBookPhoneCountry] = useState<Country>('UA');
 	const [bookMassageType, setBookMassageType] = useState('');
 	const [bookPending, setBookPending] = useState(false);
+	const [resolvePending, setResolvePending] = useState(false);
 
 	const showSlotTip = useCallback((text: string, el: HTMLElement, clientX: number) => {
 		const rect = resolveHoverAnchorRect(el, clientX);
@@ -328,13 +355,25 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						new Date(slot.end),
 						locale,
 					);
+					const clientName = slot.clientName?.trim() || '—';
+					const clientPhone = slot.clientPhone?.trim() || '—';
+					const massageType = slot.massageType?.trim()
+						? getMassageTypeLabel(slot.massageType, locale)
+						: '—';
 					const label = booked
 						? slot.clientName
 							? `${t.availabilityBookedSlotLabel}: ${slot.clientName}`
 							: t.availabilityBookedSlotLabel
 						: t.availabilitySlotLabel;
 					const hint = booked
-						? `${label} ${hours.start} - ${hours.end}`
+						? fillBookedSlotHint(t.availabilitySlotBookedHint, hours, {
+								clientLabel: t.availabilityBookClientName,
+								clientName,
+								typeLabel: t.bookingMassageType,
+								massageType,
+								phoneLabel: t.availabilityBookClientPhone,
+								clientPhone,
+							})
 						: fillTimeHint(
 								t.availabilitySlotAvailableHint,
 								hours.start,
@@ -348,7 +387,14 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						display: 'block' as const,
 						classNames: booked ? ['fc-event-booked'] : ['fc-event-available'],
 						borderColor: 'transparent',
-						extendedProps: { hint, startIso: slot.start },
+						extendedProps: {
+							hint,
+							startIso: slot.start,
+							clientName: slot.clientName ?? null,
+							clientPhone: slot.clientPhone ?? null,
+							massageType: slot.massageType ?? null,
+							booked,
+						},
 					};
 				}),
 			[
@@ -357,6 +403,10 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				t.availabilitySlotLabel,
 				t.availabilityBookedSlotLabel,
 				t.availabilitySlotAvailableHint,
+				t.availabilitySlotBookedHint,
+				t.availabilityBookClientName,
+				t.availabilityBookClientPhone,
+				t.bookingMassageType,
 			],
 		);
 
@@ -378,6 +428,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							end: string;
 							status?: SlotStatus;
 							clientName?: string | null;
+							clientPhone?: string | null;
+							massageType?: string | null;
+							bookingId?: string | null;
 						}>;
 					};
 					setServerSlots(
@@ -387,6 +440,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							end: slot.end,
 							status: slot.status === 'booked' ? 'booked' : 'available',
 							clientName: slot.clientName ?? null,
+							clientPhone: slot.clientPhone ?? null,
+							massageType: slot.massageType ?? null,
+							bookingId: slot.bookingId ?? null,
 						})),
 					);
 				} catch {
@@ -423,7 +479,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 
 		function openAvailableSlotActions(startIso: string) {
 			if (bookedStarts.has(startIso)) {
-				toast.error(t.availabilitySlotBookedLocked);
+				openBookedSlotActions(startIso);
 				return;
 			}
 			if (isSlotExpired(startIso)) {
@@ -436,6 +492,22 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			setBookPhoneCountry('UA');
 			setBookMassageType('');
 			setSlotAction({ startIso, mode: 'choose' });
+		}
+
+		function openBookedSlotActions(startIso: string) {
+			if (isSlotExpired(startIso)) {
+				toast.error(t.availabilityBookSlotPast);
+				return;
+			}
+			const slot = slotsRef.current.find(item => item.start === startIso);
+			hideSlotTip();
+			setSlotAction({
+				startIso,
+				mode: 'booked',
+				clientName: slot?.clientName ?? null,
+				clientPhone: slot?.clientPhone ?? null,
+				massageType: slot?.massageType ?? null,
+			});
 		}
 
 		function resolveSlotStartIso(date: Date) {
@@ -456,12 +528,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		}
 
 		function closeSlotAction() {
-			if (bookPending) return;
+			if (bookPending || resolvePending) return;
 			setSlotAction(null);
 		}
 
 		function makeSlotUnavailable() {
-			if (!slotAction) return;
+			if (!slotAction || slotAction.mode === 'booked') return;
 			const startIso = slotAction.startIso;
 			if (isSlotExpired(startIso)) {
 				toast.error(t.availabilityBookSlotPast);
@@ -474,6 +546,58 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				next.set(startIso, false);
 				return next;
 			});
+		}
+
+		async function resolveBookedSlot(availability: 'available' | 'unavailable') {
+			if (!slotAction || slotAction.mode !== 'booked' || resolvePending) return;
+			if (isSlotExpired(slotAction.startIso)) {
+				toast.error(t.availabilityBookSlotPast);
+				setSlotAction(null);
+				return;
+			}
+
+			setResolvePending(true);
+			try {
+				const response = await fetch('/api/masseur/bookings/resolve', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						slotStart: slotAction.startIso,
+						availability,
+					}),
+				});
+				if (!response.ok) {
+					const data = (await response.json().catch(() => ({}))) as {
+						error?: string;
+					};
+					if (data.error === 'slot_unavailable') {
+						toast.error(t.availabilityBookSlotPast);
+					} else {
+						toast.error(t.availabilityBookedResolveError);
+					}
+					return;
+				}
+
+				setPendingChanges(current => {
+					const next = new Map(current);
+					next.delete(slotAction.startIso);
+					return next;
+				});
+				setSlotAction(null);
+				toast.success(
+					availability === 'available'
+						? t.availabilityBookedResolveSuccessAvailable
+						: t.availabilityBookedResolveSuccessUnavailable,
+				);
+				const currentRange = rangeRef.current;
+				if (currentRange) {
+					await loadSlots(currentRange.from, currentRange.to);
+				}
+			} catch {
+				toast.error(t.availabilityBookedResolveError);
+			} finally {
+				setResolvePending(false);
+			}
 		}
 
 		async function submitClientBooking(event: FormEvent<HTMLFormElement>) {
@@ -795,7 +919,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 								info.el.addEventListener('mouseleave', onLeave);
 							}
 
-							if (!info.el.classList.contains('fc-event-available')) return;
+							if (
+								!info.el.classList.contains('fc-event-available') &&
+								!info.el.classList.contains('fc-event-booked')
+							) {
+								return;
+							}
 							const main = info.el.querySelector('.fc-event-main');
 							if (!main || main.querySelector('.fc-event-edit-icon')) return;
 							const icon = document.createElement('span');
@@ -816,7 +945,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							arg.view.calendar.unselect();
 							const startIso = resolveSlotStartIso(arg.start);
 							if (bookedStartsRef.current.has(startIso)) {
-								toast.error(t.availabilitySlotBookedLocked);
+								openBookedSlotActions(startIso);
 								return;
 							}
 							const isActive = slotsRef.current.some(slot => slot.start === startIso);
@@ -832,8 +961,11 @@ export const MasseurAvailabilityCalendar = forwardRef<
 								typeof fromProps === 'string' && fromProps
 									? fromProps
 									: resolveSlotStartIso(arg.event.start ?? new Date());
-							if (arg.el.classList.contains('fc-event-booked')) {
-								toast.error(t.availabilitySlotBookedLocked);
+							if (
+								arg.el.classList.contains('fc-event-booked') ||
+								arg.event.extendedProps.booked
+							) {
+								openBookedSlotActions(startIso);
 								return;
 							}
 							openAvailableSlotActions(startIso);
@@ -886,18 +1018,74 @@ export const MasseurAvailabilityCalendar = forwardRef<
 											id='availability-slot-action-title'
 											className='text-base font-medium text-foreground'
 										>
-											{slotAction.mode === 'choose'
-												? t.availabilitySlotActionTitle
-												: t.availabilityBookForClient}
+											{slotAction.mode === 'book'
+												? t.availabilityBookForClient
+												: slotAction.mode === 'booked'
+													? t.availabilityBookedSlotActionTitle
+													: t.availabilitySlotActionTitle}
 										</p>
 										<p className='mt-1 text-sm text-muted'>
 											{dayLabel}, {hours.start} - {hours.end}
 										</p>
+										{slotAction.mode === 'booked' ? (
+											<div className='mt-2 space-y-0.5 text-sm text-muted'>
+												{slotAction.clientName?.trim() ? (
+													<p>
+														{t.availabilityBookClientName}:{' '}
+														{slotAction.clientName.trim()}
+													</p>
+												) : null}
+												{slotAction.massageType?.trim() ? (
+													<p>
+														{t.bookingMassageType}:{' '}
+														{getMassageTypeLabel(
+															slotAction.massageType,
+															locale,
+														)}
+													</p>
+												) : null}
+												{slotAction.clientPhone?.trim() ? (
+													<p>
+														{t.availabilityBookClientPhone}:{' '}
+														{slotAction.clientPhone.trim()}
+													</p>
+												) : null}
+											</div>
+										) : null}
 									</>
 								);
 							})()}
 
-							{slotAction.mode === 'choose' ? (
+							{slotAction.mode === 'booked' ? (
+								<div className='mt-5 flex flex-col gap-2'>
+									<button
+										type='button'
+										disabled={resolvePending}
+										onClick={() => void resolveBookedSlot('available')}
+										className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+									>
+										{resolvePending
+											? t.authPleaseWait
+											: t.availabilityMakeAvailable}
+									</button>
+									<button
+										type='button'
+										disabled={resolvePending}
+										onClick={() => void resolveBookedSlot('unavailable')}
+										className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
+									>
+										{t.availabilityMakeUnavailable}
+									</button>
+									<button
+										type='button'
+										disabled={resolvePending}
+										onClick={closeSlotAction}
+										className='mt-1 flex h-10 w-full items-center justify-center text-sm text-muted transition hover:text-foreground disabled:opacity-60'
+									>
+										{t.availabilityBookCancel}
+									</button>
+								</div>
+							) : slotAction.mode === 'choose' ? (
 								<div className='mt-5 flex flex-col gap-2'>
 									<button
 										type='button'

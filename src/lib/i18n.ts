@@ -112,6 +112,8 @@ export const dictionaries = {
 		authPhoneTaken: 'An account with this phone number already exists.',
 		authInvalidPhone: 'Enter a valid phone number for your country.',
 		authPasswordMismatch: 'Passwords do not match.',
+		authAccountCreatedSignIn:
+			'Account created. Please sign in with your phone and password.',
 		authWeakPassword:
 			'Password must be at least 8 characters and include a letter, a number, and a symbol.',
 		authMissingFields: 'Please fill in all fields.',
@@ -172,6 +174,7 @@ export const dictionaries = {
 		galleryTitle: 'Gallery',
 		galleryEmptySupport:
 			'Add photos so clients can see them when placing an order.',
+		galleryLimitSupport: 'You can add up to 3 photos to the gallery.',
 		galleryAddPhoto: 'Add photo to gallery',
 		galleryLoading: 'Loading gallery…',
 		galleryLoadError: 'Could not load gallery.',
@@ -181,6 +184,8 @@ export const dictionaries = {
 		galleryDeleteError: 'Could not delete gallery photo.',
 		galleryDelete: 'Delete',
 		galleryDeleteConfirm: 'Delete this photo from the gallery?',
+		galleryDeleteCancel: 'Cancel',
+		galleryDeleteConfirmAction: 'Delete photo',
 		galleryCropTitle: 'Add gallery photo',
 		galleryCropApply: 'Save photo',
 		galleryCropApplyNext: 'Save and next',
@@ -196,8 +201,8 @@ export const dictionaries = {
 		galleryCropProgress: 'Photo {current} of {total}',
 		gallerySelectPhoto: 'Choose a photo',
 		gallerySelectPhotos: 'Choose one or more photos',
-		galleryTooMany: 'You can add up to 20 gallery photos.',
-		galleryInvalidType: 'Use a JPG, PNG, or WEBP image.',
+		galleryTooMany: 'You can add up to 3 gallery photos.',
+		galleryInvalidType: 'Use a JPG or PNG image.',
 		galleryTooLarge: 'Photo must be smaller than 5 MB.',
 		availabilityTitle: 'Weekly availability',
 		availabilitySupport:
@@ -209,9 +214,18 @@ export const dictionaries = {
 			'{start} - {end}\nClick to make available for booking',
 		availabilitySlotAvailableHint:
 			'{start} - {end}\nClick to make unavailable or book the slot for a client',
+		availabilitySlotBookedHint:
+			'{start} - {end}\n{client}\n{type}\n{phone}\nClick to make available or unavailable',
 		availabilitySlotActionTitle: 'What do you want to do with this slot?',
 		availabilityMakeUnavailable: 'Make unavailable',
+		availabilityMakeAvailable: 'Make available',
 		availabilityBookForClient: 'Book slot for a client',
+		availabilityBookedSlotActionTitle: 'This slot is booked. What should we do?',
+		availabilityBookedResolveError: 'Could not update this booked slot.',
+		availabilityBookedResolveSuccessAvailable:
+			'Booking cancelled. The slot is available again.',
+		availabilityBookedResolveSuccessUnavailable:
+			'Booking cancelled. The slot is unavailable.',
 		availabilityBookClientName: 'Client name',
 		availabilityBookClientPhone: 'Client phone',
 		availabilityBookClientNameRequired: 'Enter client name',
@@ -358,6 +372,8 @@ export const dictionaries = {
 		authPhoneTaken: 'Акаунт з таким номером телефону уже існує.',
 		authInvalidPhone: 'Введіть коректний номер телефону для вашої країни.',
 		authPasswordMismatch: 'Паролі не збігаються.',
+		authAccountCreatedSignIn:
+			'Акаунт створено. Увійдіть за телефоном і паролем.',
 		authWeakPassword:
 			'Пароль має містити щонайменше 8 символів, літеру, цифру та спецсимвол.',
 		authMissingFields: 'Будь ласка, заповніть усі поля.',
@@ -418,6 +434,7 @@ export const dictionaries = {
 		galleryTitle: 'Галерея',
 		galleryEmptySupport:
 			'Додайте фото, щоб клієнт бачив їх при оформленні замовлення.',
+		galleryLimitSupport: 'У галерею можна додати не більше 3 фото.',
 		galleryAddPhoto: 'Додати фото в галерею',
 		galleryLoading: 'Завантаження галереї…',
 		galleryLoadError: 'Не вдалося завантажити галерею.',
@@ -427,6 +444,8 @@ export const dictionaries = {
 		galleryDeleteError: 'Не вдалося видалити фото з галереї.',
 		galleryDelete: 'Видалити',
 		galleryDeleteConfirm: 'Видалити це фото з галереї?',
+		galleryDeleteCancel: 'Скасувати',
+		galleryDeleteConfirmAction: 'Видалити фото',
 		galleryCropTitle: 'Додати фото в галерею',
 		galleryCropApply: 'Зберегти фото',
 		galleryCropApplyNext: 'Зберегти і далі',
@@ -442,8 +461,8 @@ export const dictionaries = {
 		galleryCropProgress: 'Фото {current} з {total}',
 		gallerySelectPhoto: 'Оберіть фото',
 		gallerySelectPhotos: 'Оберіть одне або кілька фото',
-		galleryTooMany: 'Можна додати не більше 20 фото в галерею.',
-		galleryInvalidType: 'Використовуйте зображення JPG, PNG або WEBP.',
+		galleryTooMany: 'Можна додати не більше 3 фото в галерею.',
+		galleryInvalidType: 'Використовуйте зображення JPG або PNG.',
 		galleryTooLarge: 'Фото має бути меншим за 5 МБ.',
 		availabilityTitle: 'Тижнева доступність',
 		availabilitySupport:
@@ -454,9 +473,18 @@ export const dictionaries = {
 			'{start} - {end}\nНатисніть, щоб зробити доступним для бронювання',
 		availabilitySlotAvailableHint:
 			'{start} - {end}\nНатисніть, щоб зробити недоступним чи забронювати слот для клієнта',
+		availabilitySlotBookedHint:
+			'{start} - {end}\n{client}\n{type}\n{phone}\nНатисніть, щоб зробити доступним або недоступним',
 		availabilitySlotActionTitle: 'Що зробити з цим слотом?',
 		availabilityMakeUnavailable: 'Зробити недоступним',
+		availabilityMakeAvailable: 'Зробити доступним',
 		availabilityBookForClient: 'Забронювати слот для клієнта',
+		availabilityBookedSlotActionTitle: 'Слот заброньовано. Що зробити?',
+		availabilityBookedResolveError: 'Не вдалося оновити цей заброньований слот.',
+		availabilityBookedResolveSuccessAvailable:
+			'Бронь скасовано. Слот знову доступний.',
+		availabilityBookedResolveSuccessUnavailable:
+			'Бронь скасовано. Слот недоступний.',
 		availabilityBookClientName: 'Ім’я клієнта',
 		availabilityBookClientPhone: 'Телефон клієнта',
 		availabilityBookClientNameRequired: 'Введіть ім’я клієнта',

@@ -35,6 +35,7 @@ export function MasseurGallery({
   const [modalOpen, setModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const loadImages = useCallback(async () => {
@@ -118,11 +119,20 @@ export function MasseurGallery({
     }
   }
 
-  async function handleDelete(id: string) {
+  function requestDelete(id: string) {
     if (deletingId) return;
-    const confirmed = window.confirm(t.galleryDeleteConfirm);
-    if (!confirmed) return;
+    setDeleteTargetId(id);
+  }
 
+  function closeDeleteDialog() {
+    if (deletingId) return;
+    setDeleteTargetId(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargetId || deletingId) return;
+
+    const id = deleteTargetId;
     setDeletingId(id);
     try {
       const response = await fetch(`/api/masseur/gallery/${id}`, {
@@ -134,6 +144,7 @@ export function MasseurGallery({
       }
       setImages((current) => current.filter((image) => image.id !== id));
       setLightboxIndex((current) => (current >= 0 ? -1 : current));
+      setDeleteTargetId(null);
       toast.success(t.galleryDeleted);
     } catch {
       toast.error(t.galleryDeleteError);
@@ -148,13 +159,16 @@ export function MasseurGallery({
         <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">
           {t.galleryTitle}
         </h2>
+        {editable ? (
+          <p className="mt-1 text-sm text-muted">{t.galleryLimitSupport}</p>
+        ) : null}
         {images.length === 0 && !loading ? (
           <p className="mt-1 text-sm text-muted">{t.galleryEmptySupport}</p>
         ) : null}
         {editable ? (
           <button
             type="button"
-            disabled={uploading || loading}
+            disabled={uploading || loading || images.length >= 3}
             onClick={() => setModalOpen(true)}
             className="mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
@@ -216,7 +230,7 @@ export function MasseurGallery({
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
-                        void handleDelete(id);
+                        void requestDelete(id);
                       }}
                       aria-label={t.galleryDelete}
                       className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-surface-border bg-background text-foreground shadow-sm transition hover:border-accent/40 hover:text-accent disabled:opacity-60"
@@ -246,10 +260,53 @@ export function MasseurGallery({
         <GalleryCropModal
           open={modalOpen}
           pending={uploading}
-          remainingSlots={Math.max(0, 20 - images.length)}
+          remainingSlots={Math.max(0, 3 - images.length)}
           onClose={() => setModalOpen(false)}
           onSave={handleSave}
         />
+      ) : null}
+
+      {deleteTargetId ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4"
+          role="presentation"
+          onClick={closeDeleteDialog}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gallery-delete-title"
+            className="w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p
+              id="gallery-delete-title"
+              className="text-base font-medium text-foreground"
+            >
+              {t.galleryDeleteConfirm}
+            </p>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                disabled={Boolean(deletingId)}
+                onClick={closeDeleteDialog}
+                className="h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60"
+              >
+                {t.galleryDeleteCancel}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(deletingId)}
+                onClick={() => void confirmDelete()}
+                className="h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+              >
+                {deletingId
+                  ? t.authPleaseWait
+                  : t.galleryDeleteConfirmAction}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </section>
   );

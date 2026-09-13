@@ -14,6 +14,18 @@ import {
   resolvePortalInput,
 } from "@/lib/validation";
 
+function prismaErrorCode(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string"
+  ) {
+    return (error as { code: string }).code;
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -45,7 +57,6 @@ export async function POST(request: Request) {
           phone,
           passwordHash,
           portal: "client",
-          slug: null,
         },
         select: {
           id: true,
@@ -90,7 +101,12 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ user }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("[auth/register]", error);
+    const code = prismaErrorCode(error);
+    if (code === "P2002") {
+      return NextResponse.json({ error: "phone_taken" }, { status: 409 });
+    }
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

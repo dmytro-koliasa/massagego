@@ -87,6 +87,13 @@ export const masseurBookingCreateSchema = z.object({
   massageType: z.string().trim().optional(),
 });
 
+/** Cancel a booking and leave the hour available or free. */
+export const masseurBookingResolveSchema = z.object({
+  slotStart: isoLikeDate,
+  availability: z.enum(["available", "unavailable"]),
+});
+
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
 export type BookingCancelInput = z.infer<typeof bookingCancelSchema>;
 export type MasseurBookingCreateInput = z.infer<typeof masseurBookingCreateSchema>;
+export type MasseurBookingResolveInput = z.infer<typeof masseurBookingResolveSchema>;
