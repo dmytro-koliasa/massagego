@@ -1,11 +1,9 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
+import { deleteUpload, storeUpload } from "@/lib/uploads";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "gallery");
 const MAX_SIZE = 5 * 1024 * 1024;
 const MAX_GALLERY_IMAGES = 20;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -78,15 +76,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_dimensions" }, { status: 400 });
     }
 
-    await mkdir(UPLOAD_DIR, { recursive: true });
+    const url = await storeUpload({
+      folder: "gallery",
+      ownerId: gate.userId,
+      file,
+    });
 
-    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const filename = `${gate.userId}-${Date.now()}.${extension}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
-
-    const url = `/uploads/gallery/${filename}`;
     const last = await prisma.galleryImage.findFirst({
       where: { masseurId: gate.userId },
       orderBy: { sortOrder: "desc" },

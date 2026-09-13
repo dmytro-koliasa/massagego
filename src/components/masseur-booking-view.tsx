@@ -28,6 +28,7 @@ import {
   getMassageTypeLabel,
   type MassageTypeValue,
 } from "@/lib/massage-types";
+import { shouldSkipImageOptimization } from "@/lib/upload-url";
 
 type MasseurProfile = {
   id: string;
@@ -226,7 +227,7 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
                   fill
                   sizes="176px"
                   className="object-cover"
-                  unoptimized={masseur.image.startsWith("/uploads/")}
+                  unoptimized={shouldSkipImageOptimization(masseur.image)}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-3xl font-medium text-accent">

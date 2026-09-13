@@ -1,11 +1,9 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
+import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { clientProfileSchema, parseWithSchema } from "@/lib/validation";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "clients");
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -115,15 +113,11 @@ export async function POST(request: Request) {
       select: { image: true },
     });
 
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    const extension = file.type.split("/")[1] || "jpg";
-    const filename = `${client.userId}-${Date.now()}.${extension}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
-
-    const imagePath = `/uploads/clients/${filename}`;
+    const imagePath = await storeUpload({
+      folder: "clients",
+      ownerId: client.userId,
+      file,
+    });
 
     const user = await prisma.user.update({
       where: { id: client.userId },
@@ -131,7 +125,7 @@ export async function POST(request: Request) {
       select: profileSelect,
     });
 
-    await deleteLocalUpload(current?.image);
+    await deleteUpload(current?.image);
 
     return NextResponse.json({ user });
   } catch {
@@ -155,20 +149,10 @@ export async function DELETE() {
       select: profileSelect,
     });
 
-    await deleteLocalUpload(current?.image);
+    await deleteUpload(current?.image);
 
     return NextResponse.json({ user });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
-  }
-}
-
-async function deleteLocalUpload(image: string | null | undefined) {
-  if (!image?.startsWith("/uploads/clients/")) return;
-  const filename = path.basename(image);
-  try {
-    await unlink(path.join(UPLOAD_DIR, filename));
-  } catch {
-    // File may already be gone.
   }
 }

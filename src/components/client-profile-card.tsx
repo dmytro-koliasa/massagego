@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { useLanguage } from '@/components/language-provider';
+import { shouldSkipImageOptimization } from '@/lib/upload-url';
 import { clientProfileSchema, NAME_MAX } from '@/lib/validation';
 
 type ClientProfile = {
@@ -224,7 +225,7 @@ export function ClientProfileCard() {
 								fill
 								sizes='220px'
 								className='object-cover'
-								unoptimized={image.startsWith('/uploads/')}
+								unoptimized={shouldSkipImageOptimization(image)}
 							/>
 						) : (
 							<div className='flex h-full w-full items-center justify-center text-3xl font-medium text-accent'>

@@ -1,11 +1,8 @@
-import { unlink } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
-
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "gallery");
+import { deleteUpload } from "@/lib/uploads";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -35,15 +32,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     }
 
     await prisma.galleryImage.delete({ where: { id: image.id } });
-
-    if (image.url.startsWith("/uploads/gallery/")) {
-      const filename = path.basename(image.url);
-      try {
-        await unlink(path.join(UPLOAD_DIR, filename));
-      } catch {
-        // File may already be gone.
-      }
-    }
+    await deleteUpload(image.url);
 
     return NextResponse.json({ ok: true });
   } catch {

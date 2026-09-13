@@ -8,6 +8,7 @@ import { BackNavLink } from '@/components/back-nav-link';
 import { ClientProfileCard } from '@/components/client-profile-card';
 import { useLanguage } from '@/components/language-provider';
 import { ClientSessionsCalendar } from '@/components/client-sessions-calendar';
+import { shouldSkipImageOptimization } from '@/lib/upload-url';
 
 export type MasseurCard = {
 	id: string;
@@ -403,7 +404,7 @@ function Avatar({ name, image }: { name: string | null; image: string | null }) 
 					fill
 					sizes='56px'
 					className='object-cover'
-					unoptimized={image.startsWith('/uploads/')}
+					unoptimized={shouldSkipImageOptimization(image)}
 				/>
 			</div>
 		);

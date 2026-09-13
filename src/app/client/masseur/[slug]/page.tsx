@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth/client";
+import { portalHomePath } from "@/lib/portals";
 import { userHasPortal } from "@/lib/portals.server";
 import { parseMassageTypes } from "@/lib/massage-types";
 import { prisma } from "@/lib/prisma";
@@ -34,12 +35,12 @@ const masseurSelect = {
 export default async function MasseurBookingPage({ params }: PageProps) {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/client");
+    redirect(portalHomePath("client"));
   }
 
   const allowed = await userHasPortal(session.user.id, "client");
   if (!allowed) {
-    redirect("/client");
+    redirect(portalHomePath("client"));
   }
 
   const { slug } = await params;

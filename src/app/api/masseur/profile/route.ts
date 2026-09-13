@@ -1,5 +1,3 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import {
@@ -10,9 +8,9 @@ import {
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
+import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { masseurProfileSchema, parseWithSchema } from "@/lib/validation";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "masseurs");
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -186,15 +184,11 @@ export async function POST(request: Request) {
       select: { image: true },
     });
 
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    const extension = file.type.split("/")[1] || "jpg";
-    const filename = `${gate.userId}-${Date.now()}.${extension}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filepath, buffer);
-
-    const imagePath = `/uploads/masseurs/${filename}`;
+    const imagePath = await storeUpload({
+      folder: "masseurs",
+      ownerId: gate.userId,
+      file,
+    });
 
     const user = await prisma.user.update({
       where: { id: gate.userId },
@@ -202,7 +196,7 @@ export async function POST(request: Request) {
       select: profileSelect,
     });
 
-    await deleteLocalUpload(current?.image);
+    await deleteUpload(current?.image);
 
     return NextResponse.json({ user: toProfileResponse(user) });
   } catch {
@@ -226,20 +220,10 @@ export async function DELETE() {
       select: profileSelect,
     });
 
-    await deleteLocalUpload(current?.image);
+    await deleteUpload(current?.image);
 
     return NextResponse.json({ user: toProfileResponse(user) });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
-  }
-}
-
-async function deleteLocalUpload(image: string | null | undefined) {
-  if (!image?.startsWith("/uploads/masseurs/")) return;
-  const filename = path.basename(image);
-  try {
-    await unlink(path.join(UPLOAD_DIR, filename));
-  } catch {
-    // File may already be gone.
   }
 }

@@ -73,9 +73,12 @@ export function createPortalAuthConfig(portal: Portal): NextAuthConfig {
           return isLoggedIn;
         }
 
-        if (portal === "client" && path.startsWith("/client/")) {
+        if (portal === "client" && (path === "/client" || path.startsWith("/client/"))) {
+          if (path === "/client/login" || path.startsWith("/client/login/")) {
+            return true;
+          }
           if (isLoggedIn) return true;
-          const loginUrl = new URL("/client", request.nextUrl);
+          const loginUrl = new URL(portalHomePath("client"), request.nextUrl);
           loginUrl.searchParams.set("next", path);
           return Response.redirect(loginUrl);
         }

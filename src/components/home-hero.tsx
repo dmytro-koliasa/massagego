@@ -57,7 +57,7 @@ export function HomeHero() {
 							description={t.masseurDescription}
 						/>
 						<PathLink
-							href='/client'
+							href='/client/login'
 							title={t.clientTitle}
 							description={t.clientDescription}
 						/>

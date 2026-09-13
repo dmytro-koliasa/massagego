@@ -28,6 +28,7 @@ import {
 	masseurProfileSchema,
 	zodErrorCode,
 } from '@/lib/validation';
+import { shouldSkipImageOptimization } from '@/lib/upload-url';
 
 type Profile = {
 	id: string;
@@ -343,7 +344,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 										fill
 										sizes='220px'
 										className='object-cover'
-										unoptimized={image.startsWith('/uploads/')}
+										unoptimized={shouldSkipImageOptimization(image)}
 									/>
 								) : (
 									<div className='flex h-full w-full items-center justify-center text-3xl font-medium text-accent'>

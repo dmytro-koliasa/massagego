@@ -8,6 +8,8 @@ import { useLanguage } from "@/components/language-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Portal } from "@/lib/portals";
+import { portalHomePath } from "@/lib/portals";
+import { shouldSkipImageOptimization } from "@/lib/upload-url";
 
 function resolvePortal(pathname: string | null): Portal {
   if (pathname?.startsWith("/client")) return "client";
@@ -34,9 +36,9 @@ export function SiteHeader() {
   const isHome = pathname === "/";
 
   const signOutTarget = pathname.startsWith("/client")
-    ? "/client"
+    ? portalHomePath("client")
     : pathname.startsWith("/masseur")
-      ? "/masseur"
+      ? portalHomePath("masseur")
       : "/";
 
   const portalLabel =
@@ -96,7 +98,7 @@ export function SiteHeader() {
                     fill
                     sizes="44px"
                     className="object-cover"
-                    unoptimized={session.user.image.startsWith("/uploads/")}
+                    unoptimized={shouldSkipImageOptimization(session.user.image)}
                   />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center text-xs font-semibold tracking-[0.04em] text-foreground">

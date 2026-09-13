@@ -20,7 +20,7 @@ export function portalAuthBasePath(portal: Portal) {
 }
 
 export function portalHomePath(portal: Portal) {
-  return portal === "masseur" ? "/masseur" : "/client";
+  return portal === "masseur" ? "/masseur" : "/client/login";
 }
 
 export function portalDefaultCallback(portal: Portal) {
