@@ -333,9 +333,9 @@ select:not(.PhoneInputCountrySelect):disabled {
   cursor: pointer;
 }
 
-/* Client sessions calendar: empty hours are not interactive. */
-.AvailabilityCalendar.AvailabilityCalendar--bookingsOnly .fc .fc-timegrid-slot,
-.AvailabilityCalendar.AvailabilityCalendar--bookingsOnly .fc .fc-timegrid-slot-lane {
+/* Empty hours are not interactive on client calendars. */
+.AvailabilityCalendar.AvailabilityCalendar--noEmptyHover .fc .fc-timegrid-slot,
+.AvailabilityCalendar.AvailabilityCalendar--noEmptyHover .fc .fc-timegrid-slot-lane {
   cursor: default;
 }
 

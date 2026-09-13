@@ -76,8 +76,9 @@ export const dictionaries = {
 		bookingCancelSuccess: 'Booking cancelled.',
 		bookingCancelError: 'Could not cancel this booking.',
 		bookingCancelForbidden: 'You can only cancel your own bookings.',
+		bookingBookedByYou: 'Booked by you',
 		bookingBookedSlotHint:
-			'{start} - {end}\nBooked\nClick to cancel booking',
+			'{start} - {end}\nBooked by you\nClick to cancel booking',
 		bookingBookedByOtherHint: '{start} - {end}\nBooked',
 		bookingUnauthorized: 'Please sign in as a client to continue.',
 		bookingBackToList: 'Back to masseurs',
@@ -336,8 +337,9 @@ export const dictionaries = {
 		bookingCancelSuccess: 'Бронювання скасовано.',
 		bookingCancelError: 'Не вдалося скасувати бронювання.',
 		bookingCancelForbidden: 'Можна скасовувати лише власні бронювання.',
+		bookingBookedByYou: 'Заброньовано вами',
 		bookingBookedSlotHint:
-			'{start} - {end}\nЗаброньовано\nКлікніть, щоб відмінити бронювання',
+			'{start} - {end}\nЗаброньовано вами\nКлікніть, щоб відмінити бронювання',
 		bookingBookedByOtherHint: '{start} - {end}\nЗаброньовано',
 		bookingUnauthorized: 'Увійдіть як клієнт, щоб продовжити.',
 		bookingBackToList: 'До списку масажистів',

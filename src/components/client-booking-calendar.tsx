@@ -7,6 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
+import { getMassageTypeLabel } from '@/lib/massage-types';
 
 type SlotStatus = 'available' | 'booked';
 
@@ -17,11 +18,13 @@ type AvailabilitySlot = {
 	status: SlotStatus;
 	mine: boolean;
 	bookingId: string | null;
+	massageType: string | null;
 };
 
 type CancelTarget = {
 	startIso: string;
 	bookingId: string | null;
+	massageType: string | null;
 };
 
 type ClientBookingCalendarProps = {
@@ -195,13 +198,29 @@ export function ClientBookingCalendar({
 					new Date(slot.end),
 					locale,
 				);
-				const hint = booked
-					? fillTimeHint(
-							mine ? t.bookingBookedSlotHint : t.bookingBookedByOtherHint,
+				const hint = (() => {
+					if (!booked) return undefined;
+					if (!mine) {
+						return fillTimeHint(
+							t.bookingBookedByOtherHint,
 							hours.start,
 							hours.end,
-						)
-					: undefined;
+						);
+					}
+					const lines = fillTimeHint(
+						t.bookingBookedSlotHint,
+						hours.start,
+						hours.end,
+					).split('\n');
+					if (slot.massageType) {
+						lines.splice(
+							2,
+							0,
+							`${t.bookingMassageType}: ${getMassageTypeLabel(slot.massageType, locale)}`,
+						);
+					}
+					return lines.join('\n');
+				})();
 				return {
 					id: slot.id,
 					start: slot.start,
@@ -222,6 +241,7 @@ export function ClientBookingCalendar({
 						mine,
 						startIso: slot.start,
 						bookingId: slot.bookingId,
+						massageType: slot.massageType,
 						hint,
 					},
 				};
@@ -235,6 +255,7 @@ export function ClientBookingCalendar({
 			t.bookingSlotSelected,
 			t.bookingBookedSlotHint,
 			t.bookingBookedByOtherHint,
+			t.bookingMassageType,
 		],
 	);
 
@@ -261,6 +282,7 @@ export function ClientBookingCalendar({
 						status?: SlotStatus;
 						mine?: boolean;
 						bookingId?: string | null;
+						massageType?: string | null;
 					}>;
 				};
 				setSlots(
@@ -271,6 +293,10 @@ export function ClientBookingCalendar({
 						status: slot.status === 'booked' ? 'booked' : 'available',
 						mine: Boolean(slot.mine),
 						bookingId: typeof slot.bookingId === 'string' ? slot.bookingId : null,
+						massageType:
+							typeof slot.massageType === 'string' && slot.massageType.trim()
+								? slot.massageType
+								: null,
 					})),
 				);
 			} catch {
@@ -325,17 +351,21 @@ export function ClientBookingCalendar({
 				toast.error(t.bookingSlotTakenByOther);
 				return;
 			}
-			requestCancelBooking(startIso, slot.bookingId);
+			requestCancelBooking(startIso, slot.bookingId, slot.massageType);
 			return;
 		}
 
 		toggleSelected(slot.start);
 	}
 
-	function requestCancelBooking(startIso: string, bookingId: string | null) {
+	function requestCancelBooking(
+		startIso: string,
+		bookingId: string | null,
+		massageType: string | null,
+	) {
 		if (cancelPending || !bookingId) return;
 		hideSlotTip();
-		setCancelTarget({ startIso, bookingId });
+		setCancelTarget({ startIso, bookingId, massageType });
 	}
 
 	function closeCancelDialog() {
@@ -391,7 +421,7 @@ export function ClientBookingCalendar({
 
 	return (
 		<div className='text-left'>
-			<div className={`AvailabilityCalendar ${loading ? 'opacity-80' : ''}`}>
+			<div className={`AvailabilityCalendar AvailabilityCalendar--noEmptyHover ${loading ? 'opacity-80' : ''}`}>
 				{sortedSelected.length > 0 ? (
 					<div className='mb-5 space-y-1 text-base text-accent'>
 						<p className='font-medium'>{t.bookingSelectedSlot}:</p>
@@ -459,10 +489,7 @@ export function ClientBookingCalendar({
 					height='auto'
 					expandRows
 					nowIndicator
-					selectable
-					selectMirror={false}
-					selectOverlap
-					unselectAuto={false}
+					selectable={false}
 					editable={false}
 					eventStartEditable={false}
 					eventDurationEditable={false}
@@ -482,10 +509,6 @@ export function ClientBookingCalendar({
 							from: arg.start.toISOString(),
 							to: arg.end.toISOString(),
 						});
-					}}
-					select={arg => {
-						arg.view.calendar.unselect();
-						handleSlotInteraction(alignToHourIso(arg.start));
 					}}
 					eventClick={arg => {
 						const props = arg.event.extendedProps;
@@ -530,9 +553,16 @@ export function ClientBookingCalendar({
 						>
 							{t.bookingCancelConfirm}
 						</p>
-						<p className='mt-2 text-sm text-muted'>
-							{formatSelectedSlot(cancelTarget.startIso, locale)}
-						</p>
+						<div className='mt-2 space-y-1 text-sm text-muted'>
+							<p>{t.bookingBookedByYou}</p>
+							<p>{formatSelectedSlot(cancelTarget.startIso, locale)}</p>
+							{cancelTarget.massageType ? (
+								<p>
+									{t.bookingMassageType}:{' '}
+									{getMassageTypeLabel(cancelTarget.massageType, locale)}
+								</p>
+							) : null}
+						</div>
 						<div className='mt-5 flex flex-wrap justify-end gap-2'>
 							<button
 								type='button'

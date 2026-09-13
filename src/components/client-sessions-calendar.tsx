@@ -320,7 +320,7 @@ export function ClientSessionsCalendar() {
   return (
     <div className="text-left">
       <div
-        className={`AvailabilityCalendar AvailabilityCalendar--bookingsOnly ${loading ? "opacity-80" : ""}`}
+        className={`AvailabilityCalendar AvailabilityCalendar--noEmptyHover ${loading ? "opacity-80" : ""}`}
       >
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-1">

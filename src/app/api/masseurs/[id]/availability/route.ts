@@ -59,20 +59,30 @@ export async function GET(request: Request, context: RouteContext) {
           slotStart: { gte: rangeStart, lt: to },
           status: { not: "cancelled" },
         },
-        select: { id: true, slotStart: true, clientUserId: true },
+        select: {
+          id: true,
+          slotStart: true,
+          clientUserId: true,
+          massageType: true,
+        },
       }),
     ]);
 
     const bookedByStart = new Map(
       bookings
         .filter((booking) => booking.slotStart)
-        .map((booking) => [
-          booking.slotStart!.toISOString(),
-          {
-            bookingId: booking.id,
-            mine: booking.clientUserId === client.userId,
-          },
-        ]),
+        .map((booking) => {
+          const mine = booking.clientUserId === client.userId;
+          return [
+            booking.slotStart!.toISOString(),
+            {
+              bookingId: booking.id,
+              mine,
+              // Only expose details for the client's own booking.
+              massageType: mine ? booking.massageType : null,
+            },
+          ] as const;
+        }),
     );
 
     const byStart = new Map(
@@ -89,6 +99,7 @@ export async function GET(request: Request, context: RouteContext) {
             mine: booked?.mine ?? false,
             // Expose booking id only for the owner (cancel by id; no leak of others).
             bookingId: booked?.mine ? booked.bookingId : null,
+            massageType: booked?.mine ? booked.massageType : null,
           },
         ] as const;
       }),
@@ -105,6 +116,7 @@ export async function GET(request: Request, context: RouteContext) {
         status: "booked",
         mine: booked.mine,
         bookingId: booked.mine ? booked.bookingId : null,
+        massageType: booked.mine ? booked.massageType : null,
       });
     }
 
