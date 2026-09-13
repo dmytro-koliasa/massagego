@@ -12,6 +12,15 @@ import {
   type Portal,
 } from "@/lib/portals";
 import { createNativeValidationHandlers } from "@/lib/native-validation";
+import {
+  EMAIL_MAX,
+  loginSchema,
+  NAME_MAX,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  registerSchema,
+  zodErrorCode,
+} from "@/lib/validation";
 
 type AuthMode = "login" | "register";
 
@@ -78,21 +87,33 @@ export function MasseurAuthPanel({
 
     try {
       if (mode === "register") {
+        const parsed = registerSchema.safeParse({
+          name,
+          email,
+          password,
+          portal: resolvedPortal,
+          role: resolvedPortal,
+        });
+        if (!parsed.success) {
+          toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
+          return;
+        }
+
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            portal: resolvedPortal,
-            role: resolvedPortal,
-          }),
+          body: JSON.stringify(parsed.data),
         });
 
         if (!response.ok) {
           const data = (await response.json()) as { error?: string };
           toast.error(mapRegisterError(data.error, t));
+          return;
+        }
+      } else {
+        const parsed = loginSchema.safeParse({ email, password });
+        if (!parsed.success) {
+          toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
           return;
         }
       }
@@ -175,6 +196,7 @@ export function MasseurAuthPanel({
               value={name}
               onChange={setName}
               required
+              maxLength={NAME_MAX}
               validation={validation}
             />
           ) : null}
@@ -187,6 +209,7 @@ export function MasseurAuthPanel({
             value={email}
             onChange={setEmail}
             required
+            maxLength={EMAIL_MAX}
             validation={validation}
           />
           <Field
@@ -199,7 +222,8 @@ export function MasseurAuthPanel({
             value={password}
             onChange={setPassword}
             required
-            minLength={mode === "register" ? 8 : undefined}
+            minLength={PASSWORD_MIN}
+            maxLength={PASSWORD_MAX}
             validation={validation}
           />
 
@@ -278,6 +302,7 @@ function Field({
   autoComplete,
   required,
   minLength,
+  maxLength,
   validation,
 }: {
   id: string;
@@ -288,6 +313,7 @@ function Field({
   autoComplete?: string;
   required?: boolean;
   minLength?: number;
+  maxLength?: number;
   validation: ReturnType<typeof createNativeValidationHandlers>;
 }) {
   return (
@@ -301,6 +327,7 @@ function Field({
         autoComplete={autoComplete}
         required={required}
         minLength={minLength}
+        maxLength={maxLength}
         onInvalid={validation.onInvalid}
         onInput={validation.onInput}
         onChange={(event) => onChange(event.target.value)}
@@ -342,6 +369,7 @@ function mapRegisterError(
       return t.authEmailTaken;
     case "weak_password":
       return t.authWeakPassword;
+    case "invalid_email":
     case "missing_fields":
       return t.authMissingFields;
     default:

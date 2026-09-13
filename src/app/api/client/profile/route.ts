@@ -3,6 +3,7 @@ import path from "path";
 import { NextResponse } from "next/server";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
+import { clientProfileSchema, parseWithSchema } from "@/lib/validation";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "clients");
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -21,12 +22,6 @@ const profileSelect = {
   email: true,
   image: true,
 } as const;
-
-function normalizeText(value: unknown, maxLength: number) {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim().slice(0, maxLength);
-  return trimmed.length ? trimmed : null;
-}
 
 function toClientError(status: 401 | 403) {
   return NextResponse.json(
@@ -57,8 +52,12 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const nameEn = normalizeText(body.nameEn, 120);
-    const nameUk = normalizeText(body.nameUk, 120);
+    const parsed = parseWithSchema(clientProfileSchema, body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    const { nameEn, nameUk } = parsed.data;
 
     const data: {
       name?: string | null;

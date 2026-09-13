@@ -101,7 +101,8 @@ export const dictionaries = {
 		authPleaseWait: 'Please wait…',
 		authInvalidCredentials: 'Invalid email or password.',
 		authEmailTaken: 'An account with this email already exists.',
-		authWeakPassword: 'Password must be at least 8 characters.',
+		authWeakPassword:
+			'Password must be at least 8 characters and include a letter, a number, and a symbol.',
 		authMissingFields: 'Please fill in all fields.',
 		authGenericError: 'Something went wrong. Please try again.',
 		authGoogleUnavailable:
@@ -123,6 +124,13 @@ export const dictionaries = {
 		profileDescription: 'Description',
 		profileLanguageTabs: 'Profile languages',
 		profileGeneralTitle: 'General information',
+		profileBookingLinkTitle: 'Your booking link',
+		profileBookingLinkSupport:
+			'Share this link so clients can open your page and book a session.',
+		profileBookingLinkCopy: 'Copy link',
+		profileBookingLinkCopied: 'Booking link copied.',
+		profileBookingLinkMissing:
+			'Save your name in the profile to generate a public booking link.',
 		profileAddressTitle: 'Our address',
 		profileCity: 'City / locality',
 		profileCityPlaceholder: 'Enter city or locality',
@@ -315,7 +323,8 @@ export const dictionaries = {
 		authPleaseWait: 'Зачекайте…',
 		authInvalidCredentials: 'Невірний email або пароль.',
 		authEmailTaken: 'Акаунт з таким email уже існує.',
-		authWeakPassword: 'Пароль має містити щонайменше 8 символів.',
+		authWeakPassword:
+			'Пароль має містити щонайменше 8 символів, літеру, цифру та спецсимвол.',
 		authMissingFields: 'Будь ласка, заповніть усі поля.',
 		authGenericError: 'Щось пішло не так. Спробуйте ще раз.',
 		authGoogleUnavailable:
@@ -337,6 +346,13 @@ export const dictionaries = {
 		profileDescription: 'Опис',
 		profileLanguageTabs: 'Мови профілю',
 		profileGeneralTitle: 'Загальна інформація',
+		profileBookingLinkTitle: 'Ваше посилання для запису',
+		profileBookingLinkSupport:
+			'Надішліть це посилання клієнтам — вони відкриють вашу сторінку і зможуть записатися.',
+		profileBookingLinkCopy: 'Скопіювати',
+		profileBookingLinkCopied: 'Посилання скопійовано.',
+		profileBookingLinkMissing:
+			'Збережіть ім’я в профілі, щоб з’явилося публічне посилання для запису.',
 		profileAddressTitle: 'Наша адреса',
 		profileCity: 'Населений пункт',
 		profileCityPlaceholder: 'Вкажіть місто або населений пункт',

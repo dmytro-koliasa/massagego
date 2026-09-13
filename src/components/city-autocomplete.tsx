@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 type CitySuggestion = {
   id: string;
@@ -18,7 +19,6 @@ type CityAutocompleteProps = {
 };
 
 const DEBOUNCE_MS = 450;
-const MIN_QUERY_LENGTH = 2;
 
 export function CityAutocomplete({
   value,
@@ -55,7 +55,7 @@ export function CityAutocomplete({
     }
 
     const query = value.trim();
-    if (query.length < MIN_QUERY_LENGTH) {
+    if (query.length < CITY_QUERY_MIN) {
       setSuggestions([]);
       setOpen(false);
       setLoading(false);
@@ -131,7 +131,7 @@ export function CityAutocomplete({
           if (suggestions.length > 0) setOpen(true);
         }}
         placeholder={placeholder}
-        maxLength={120}
+        maxLength={CITY_MAX}
         className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
 

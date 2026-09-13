@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth/client";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
+import { CITY_MAX } from "@/lib/validation";
 
 const DEFAULT_PAGE_SIZE = 9;
 const MAX_PAGE_SIZE = 50;
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     : DEFAULT_PAGE_SIZE;
 
   const cityFilter =
-    cityParam && cityParam !== "all" ? cityParam.slice(0, 120) : null;
+    cityParam && cityParam !== "all" ? cityParam.slice(0, CITY_MAX) : null;
 
   const where = {
     portal: "masseur" as const,
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
       take: pageSize,
       select: {
         id: true,
+        slug: true,
         nameEn: true,
         nameUk: true,
         email: true,
@@ -88,6 +90,7 @@ export async function GET(request: Request) {
           take: pageSize,
           select: {
             id: true,
+            slug: true,
             nameEn: true,
             nameUk: true,
             email: true,

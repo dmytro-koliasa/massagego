@@ -4,12 +4,10 @@ import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import PhoneInput, {
-  isValidPhoneNumber,
   type Country,
 } from "react-phone-number-input/max";
 import flags from "react-phone-number-input/flags";
 import {
-  AsYouType,
   getCountryCallingCode,
   getExampleNumber,
 } from "libphonenumber-js/max";
@@ -18,6 +16,13 @@ import "react-phone-number-input/style.css";
 import { ClientBookingCalendar } from "@/components/client-booking-calendar";
 import { BackNavLink } from "@/components/back-nav-link";
 import { MasseurGallery } from "@/components/masseur-gallery";
+import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
+import {
+  bookingCreateSchema,
+  NAME_MAX,
+  NOTE_MAX,
+  zodErrorCode,
+} from "@/lib/validation";
 import { useLanguage } from "@/components/language-provider";
 import {
   getMassageTypeLabel,
@@ -46,15 +51,41 @@ function getMaxNationalLength(country: Country) {
   return getExampleNumber(country, examples)?.nationalNumber.length ?? 15;
 }
 
-function getFormattedMaxLength(country: Country) {
+function clampInternationalPhone(
+  value: string | undefined,
+  country: Country,
+): string | undefined {
+  if (!value) return value;
   const callingCode = getCountryCallingCode(country);
-  const nationalMax = getMaxNationalLength(country);
-  const formatter = new AsYouType(country);
-  let formatted = "";
-  for (const char of `+${callingCode}${"9".repeat(nationalMax)}`) {
-    formatted = formatter.input(char);
-  }
-  return formatted.length;
+  const maxNational = getMaxNationalLength(country);
+  const prefix = `+${callingCode}`;
+  if (!value.startsWith(prefix)) return value;
+  const national = value.slice(prefix.length);
+  if (national.length <= maxNational) return value;
+  return `${prefix}${national.slice(0, maxNational)}`;
+}
+
+function nationalPhoneInsert(
+  inputValue: string,
+  selectionStart: number,
+  selectionEnd: number,
+  inserted: string,
+  country: Country,
+) {
+  const insertedDigits = inserted.replace(/\D/g, "");
+  const callingCode = String(getCountryCallingCode(country));
+  const maxNational = getMaxNationalLength(country);
+  const nextDigits =
+    inputValue.slice(0, selectionStart).replace(/\D/g, "") +
+    insertedDigits +
+    inputValue.slice(selectionEnd).replace(/\D/g, "");
+  const national = nextDigits.startsWith(callingCode)
+    ? nextDigits.slice(callingCode.length)
+    : nextDigits;
+  return {
+    exceeds: insertedDigits.length > 0 && national.length > maxNational,
+    value: `+${callingCode}${national.slice(0, maxNational)}`,
+  };
 }
 
 export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
@@ -86,26 +117,37 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
     event.preventDefault();
     setPending(true);
 
-    if (selectedSlotStarts.length === 0) {
-      toast.error(t.bookingSlotRequired);
+    const parsed = bookingCreateSchema.safeParse({
+      masseurId: masseur.id,
+      clientName,
+      clientPhone: clientPhone ?? "",
+      massageType: hasMassageTypes ? massageType : undefined,
+      slotStarts: selectedSlotStarts,
+      note,
+    });
+
+    if (!parsed.success) {
+      const code = zodErrorCode(parsed.error);
+      if (code === "invalid_phone") {
+        toast.error(t.bookingInvalidPhone);
+      } else if (code === "invalid_slot" || parsed.error.issues.some((i) => i.path[0] === "slotStarts")) {
+        toast.error(t.bookingSlotRequired);
+      } else if (
+        code === "invalid_massage_type" ||
+        parsed.error.issues.some((i) => i.path[0] === "massageType")
+      ) {
+        toast.error(t.bookingMassageTypeRequired);
+      } else if (parsed.error.issues.some((i) => i.path[0] === "clientName")) {
+        toast.error(t.bookingClientNameRequired);
+      } else {
+        toast.error(t.bookingMissingFields);
+      }
       setPending(false);
       return;
     }
 
-    if (hasMassageTypes && !massageType) {
+    if (hasMassageTypes && !parsed.data.massageType) {
       toast.error(t.bookingMassageTypeRequired);
-      setPending(false);
-      return;
-    }
-
-    if (!clientName.trim()) {
-      toast.error(t.bookingClientNameRequired);
-      setPending(false);
-      return;
-    }
-
-    if (!clientPhone || !isValidPhoneNumber(clientPhone)) {
-      toast.error(t.bookingInvalidPhone);
       setPending(false);
       return;
     }
@@ -115,12 +157,12 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          masseurId: masseur.id,
-          clientName: clientName.trim(),
-          clientPhone,
-          massageType: hasMassageTypes ? massageType : undefined,
-          slotStarts: selectedSlotStarts,
-          note,
+          masseurId: parsed.data.masseurId,
+          clientName: parsed.data.clientName,
+          clientPhone: parsed.data.clientPhone,
+          massageType: hasMassageTypes ? parsed.data.massageType : undefined,
+          slotStarts: parsed.data.slotStarts,
+          note: parsed.data.note,
         }),
       });
 
@@ -128,6 +170,10 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
         const data = (await response.json()) as { error?: string };
         if (data.error === "missing_fields") {
           toast.error(t.bookingMissingFields);
+        } else if (data.error === "invalid_phone") {
+          toast.error(t.bookingInvalidPhone);
+        } else if (data.error === "invalid_massage_type") {
+          toast.error(t.bookingMassageTypeRequired);
         } else if (data.error === "unauthorized" || data.error === "forbidden") {
           toast.error(t.bookingUnauthorized);
         } else if (data.error === "slot_unavailable") {
@@ -288,6 +334,7 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
                     name="name"
                     autoComplete="name"
                     value={clientName}
+                    maxLength={NAME_MAX}
                     onChange={(event) => setClientName(event.target.value)}
                     className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
                   />
@@ -299,21 +346,50 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
                   </span>
                   <PhoneInput
                     international
+                    countryCallingCodeEditable={false}
                     defaultCountry="UA"
+                    countries={[...PHONE_COUNTRIES_EU_UA]}
+                    addInternationalOption={false}
                     flags={flags}
+                    limitMaxLength
                     value={clientPhone}
-                    onChange={setClientPhone}
+                    onChange={(value) =>
+                      setClientPhone(clampInternationalPhone(value, phoneCountry))
+                    }
                     onCountryChange={(country) => {
-                      if (country) setPhoneCountry(country);
+                      if (!country) return;
+                      setPhoneCountry(country);
+                      setClientPhone((current) =>
+                        clampInternationalPhone(current, country),
+                      );
                     }}
                     className="PhoneInputField"
                     numberInputProps={{
                       name: "tel",
                       autoComplete: "tel",
                       required: true,
-                      maxLength: getFormattedMaxLength(phoneCountry),
                       className:
-                        "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent px-3 text-foreground outline-none",
+                        "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                      onBeforeInput: (
+                        event: FormEvent<HTMLInputElement>,
+                      ) => {
+                        const inserted =
+                          (event.nativeEvent as InputEvent).data ?? "";
+                        const input = event.currentTarget;
+                        const start =
+                          input.selectionStart ?? input.value.length;
+                        const end = input.selectionEnd ?? input.value.length;
+                        const next = nationalPhoneInsert(
+                          input.value,
+                          start,
+                          end,
+                          inserted,
+                          phoneCountry,
+                        );
+                        if (!next.exceeds) return;
+                        event.preventDefault();
+                        setClientPhone(next.value);
+                      },
                     }}
                   />
                 </label>
@@ -327,7 +403,7 @@ export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={4}
-                  maxLength={1000}
+                  maxLength={NOTE_MAX}
                   placeholder={t.bookingNotePlaceholder}
                   className="w-full resize-y rounded-lg border border-surface-border bg-background/70 px-4 py-3 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
                 />

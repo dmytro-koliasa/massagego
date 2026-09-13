@@ -9,6 +9,8 @@ import { portalHomePath } from "@/lib/portals";
 import { findPortalUserByEmail, readAuthIntentCookie } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
+import { loginSchema, NAME_MAX } from "@/lib/validation";
+import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
@@ -20,13 +22,21 @@ function createPortalPrismaAdapter(portal: Portal): Adapter {
   return {
     ...base,
     createUser: async (data) => {
+      const slug =
+        portal === "masseur"
+          ? await allocateUniqueSlug(
+              buildSlugBase([data.name, data.email?.split("@")[0]]),
+            )
+          : null;
+
       return prisma.user.create({
         data: {
           email: data.email!,
           emailVerified: data.emailVerified ?? null,
-          name: data.name ?? null,
+          name: data.name?.trim().slice(0, NAME_MAX) || null,
           image: data.image ?? null,
           portal,
+          slug,
         },
       });
     },
@@ -80,17 +90,17 @@ export function createPortalAuth(portal: Portal) {
           password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
-          const email = credentials?.email;
-          const password = credentials?.password;
-
-          if (typeof email !== "string" || typeof password !== "string") {
+          const parsed = loginSchema.safeParse({
+            email: credentials?.email,
+            password: credentials?.password,
+          });
+          if (!parsed.success) {
             return null;
           }
 
-          const user = await findPortalUserByEmail(
-            email.toLowerCase().trim(),
-            portal,
-          );
+          const { email, password } = parsed.data;
+
+          const user = await findPortalUserByEmail(email, portal);
 
           if (!user?.passwordHash) {
             return null;

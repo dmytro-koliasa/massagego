@@ -19,11 +19,12 @@ export default async function MasseurDashboardPage() {
 
   const profile = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: {
+      select: {
       id: true,
       name: true,
       nameEn: true,
       nameUk: true,
+      slug: true,
       email: true,
       image: true,
       descriptionEn: true,

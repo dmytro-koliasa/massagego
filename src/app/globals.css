@@ -169,9 +169,11 @@ select:not(.PhoneInputCountrySelect):disabled {
 }
 
 .PhoneInputField {
+  --PhoneInputCountrySelectArrow-marginLeft: 10px;
+  --PhoneInputCountrySelect-marginRight: 0.25rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   height: 3rem;
   width: 100%;
   border-radius: 0.5rem;
@@ -214,6 +216,7 @@ select:not(.PhoneInputCountrySelect):disabled {
 }
 
 .PhoneInputField .PhoneInputCountrySelectArrow {
+  margin-left: var(--PhoneInputCountrySelectArrow-marginLeft) !important;
   border-color: var(--muted);
   opacity: 0.8;
   color: var(--foreground);
@@ -222,6 +225,7 @@ select:not(.PhoneInputCountrySelect):disabled {
 .PhoneInputField .PhoneInputInput {
   flex: 1;
   min-width: 0;
+  padding-left: 0.35rem;
   background: transparent;
   color: var(--foreground);
 }

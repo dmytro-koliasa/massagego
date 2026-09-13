@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
+import { bookingCancelSchema, parseWithSchema } from "@/lib/validation";
 
 function alignToHour(date: Date) {
   const aligned = new Date(date);
@@ -19,37 +20,31 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const bookingId =
-      typeof body.bookingId === "string" ? body.bookingId.trim() : "";
-    const masseurId =
-      typeof body.masseurId === "string" ? body.masseurId.trim() : "";
-    const slotStartRaw =
-      typeof body.slotStart === "string" ? body.slotStart.trim() : "";
+    const parsed = parseWithSchema(bookingCancelSchema, body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
 
     let booking: { id: string } | null = null;
 
-    if (bookingId) {
+    if ("bookingId" in parsed.data) {
       booking = await prisma.booking.findFirst({
         where: {
-          id: bookingId,
+          id: parsed.data.bookingId,
           clientUserId: client.userId,
           status: { not: "cancelled" },
         },
         select: { id: true },
       });
     } else {
-      if (!masseurId || !slotStartRaw) {
-        return NextResponse.json({ error: "missing_fields" }, { status: 400 });
-      }
-
-      const slotStart = alignToHour(new Date(slotStartRaw));
+      const slotStart = alignToHour(new Date(parsed.data.slotStart));
       if (Number.isNaN(slotStart.getTime())) {
         return NextResponse.json({ error: "invalid_slot" }, { status: 400 });
       }
 
       booking = await prisma.booking.findFirst({
         where: {
-          masseurId,
+          masseurId: parsed.data.masseurId,
           slotStart,
           clientUserId: client.userId,
           status: { not: "cancelled" },

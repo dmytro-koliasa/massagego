@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { userHasPortal } from "@/lib/portals.server";
+import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = "SereinMassageApp/1.0 (masseur-city-lookup; local-dev)";
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   const q = searchParams.get("q")?.trim() ?? "";
   const lang = searchParams.get("lang") === "en" ? "en" : "uk";
 
-  if (q.length < 2 || q.length > 120) {
+  if (q.length < CITY_QUERY_MIN || q.length > CITY_MAX) {
     return NextResponse.json({ results: [] });
   }
 

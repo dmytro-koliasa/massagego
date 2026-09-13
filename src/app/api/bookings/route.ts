@@ -5,6 +5,7 @@ import {
 } from "@/lib/massage-types";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
+import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
 const SLOT_MS = 60 * 60 * 1000;
 
@@ -14,22 +15,7 @@ function alignToHour(date: Date) {
   return aligned;
 }
 
-function parseSlotStarts(body: {
-  slotStart?: unknown;
-  slotStarts?: unknown;
-}) {
-  const rawStarts: string[] = [];
-
-  if (Array.isArray(body.slotStarts)) {
-    for (const item of body.slotStarts) {
-      if (typeof item === "string" && item.trim()) {
-        rawStarts.push(item.trim());
-      }
-    }
-  } else if (typeof body.slotStart === "string" && body.slotStart.trim()) {
-    rawStarts.push(body.slotStart.trim());
-  }
-
+function parseAlignedSlots(rawStarts: string[]) {
   const unique = new Map<string, Date>();
   for (const raw of rawStarts) {
     const start = alignToHour(new Date(raw));
@@ -131,24 +117,21 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const masseurId =
-      typeof body.masseurId === "string" ? body.masseurId.trim() : "";
-    const clientName =
-      typeof body.clientName === "string" ? body.clientName.trim().slice(0, 120) : "";
-    const clientPhone =
-      typeof body.clientPhone === "string"
-        ? body.clientPhone.trim().slice(0, 40)
-        : "";
-    const note =
-      typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
-    const massageTypeRaw =
-      typeof body.massageType === "string" ? body.massageType.trim() : "";
-
-    if (!masseurId || !clientName || !clientPhone) {
-      return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+    const parsed = parseWithSchema(bookingCreateSchema, body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const parsedSlots = parseSlotStarts(body);
+    const {
+      masseurId,
+      clientName,
+      clientPhone,
+      note,
+      massageType: massageTypeRaw,
+      slotStarts: rawStarts,
+    } = parsed.data;
+
+    const parsedSlots = parseAlignedSlots(rawStarts);
     if ("error" in parsedSlots) {
       return NextResponse.json({ error: parsedSlots.error }, { status: 400 });
     }
@@ -180,7 +163,10 @@ export async function POST(request: Request) {
         !isMassageTypeValue(massageTypeRaw) ||
         !offeredTypes.includes(massageTypeRaw)
       ) {
-        return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+        return NextResponse.json(
+          { error: "invalid_massage_type" },
+          { status: 400 },
+        );
       }
       massageType = massageTypeRaw;
     }

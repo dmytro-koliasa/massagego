@@ -20,6 +20,7 @@
     "@fullcalendar/timegrid": "^6.1.21",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
+    "libphonenumber-js": "^1.13.13",
     "next": "16.3.4",
     "next-auth": "^5.0.0-beta.32",
     "prisma": "^6.19.3",
@@ -29,7 +30,8 @@
     "react-phone-number-input": "^3.4.18",
     "react-photo-album": "^3.6.1",
     "sonner": "^2.0.8",
-    "yet-another-react-lightbox": "^3.32.2"
+    "yet-another-react-lightbox": "^3.32.2",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

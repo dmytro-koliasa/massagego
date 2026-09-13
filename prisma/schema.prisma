@@ -12,6 +12,8 @@ model User {
   name           String?
   nameEn         String?
   nameUk         String?
+  /// Public booking URL segment for masseurs, e.g. "olena-kyiv". Unique when set.
+  slug           String?   @unique
   email          String
   emailVerified  DateTime?
   image          String?

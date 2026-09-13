@@ -9,6 +9,8 @@ import {
 } from "@/lib/massage-types";
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
+import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
+import { masseurProfileSchema, parseWithSchema } from "@/lib/validation";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "masseurs");
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -24,6 +26,7 @@ const profileSelect = {
   name: true,
   nameEn: true,
   nameUk: true,
+  slug: true,
   email: true,
   image: true,
   descriptionEn: true,
@@ -33,17 +36,12 @@ const profileSelect = {
   address: true,
 } as const;
 
-function normalizeText(value: unknown, maxLength: number) {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim().slice(0, maxLength);
-  return trimmed.length ? trimmed : null;
-}
-
 function toProfileResponse(user: {
   id: string;
   name: string | null;
   nameEn: string | null;
   nameUk: string | null;
+  slug: string | null;
   email: string;
   image: string | null;
   descriptionEn: string | null;
@@ -92,28 +90,22 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const nameEn = normalizeText(body.nameEn, 120);
-    const nameUk = normalizeText(body.nameUk, 120);
-    const descriptionEn = normalizeText(body.descriptionEn, 2000);
-    const descriptionUk = normalizeText(body.descriptionUk, 2000);
-    const massageTypes = normalizeMassageTypesInput(body.massageTypes);
-
-    if (typeof body.city !== "string" || typeof body.address !== "string") {
-      return NextResponse.json(
-        { error: "address_required" },
-        { status: 400 },
-      );
+    const parsed = parseWithSchema(masseurProfileSchema, body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const city = body.city.trim().slice(0, 120);
-    const address = body.address.trim().slice(0, 300);
+    const {
+      nameEn,
+      nameUk,
+      descriptionEn,
+      descriptionUk,
+      city,
+      address,
+      massageTypes: massageTypesRaw,
+    } = parsed.data;
 
-    if (!city || !address) {
-      return NextResponse.json(
-        { error: "address_required" },
-        { status: 400 },
-      );
-    }
+    const massageTypes = normalizeMassageTypesInput(massageTypesRaw);
 
     const data: {
       name?: string | null;
@@ -124,6 +116,7 @@ export async function PATCH(request: Request) {
       city: string;
       address: string;
       massageTypes?: string;
+      slug?: string;
     } = {
       city,
       address,
@@ -138,14 +131,22 @@ export async function PATCH(request: Request) {
     }
 
     // Keep Auth.js `name` in sync for sessions / Google accounts.
+    // Assign a stable public slug once (from name), so booking links stay shareable.
     if (nameEn !== undefined || nameUk !== undefined) {
       const current = await prisma.user.findUnique({
         where: { id: gate.userId },
-        select: { nameEn: true, nameUk: true },
+        select: { nameEn: true, nameUk: true, name: true, slug: true },
       });
       const nextEn = nameEn !== undefined ? nameEn : current?.nameEn;
       const nextUk = nameUk !== undefined ? nameUk : current?.nameUk;
       data.name = nextEn || nextUk || null;
+
+      if (!current?.slug) {
+        data.slug = await allocateUniqueSlug(
+          buildSlugBase([nextEn, nextUk, current?.name]),
+          { excludeUserId: gate.userId },
+        );
+      }
     }
 
     const user = await prisma.user.update({

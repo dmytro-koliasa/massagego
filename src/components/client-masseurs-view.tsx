@@ -11,6 +11,7 @@ import { ClientSessionsCalendar } from '@/components/client-sessions-calendar';
 
 export type MasseurCard = {
 	id: string;
+	slug: string | null;
 	nameEn: string | null;
 	nameUk: string | null;
 	email: string;
@@ -25,6 +26,7 @@ type ViewMode = 'grid' | 'table';
 
 type LocalizedMasseur = {
 	id: string;
+	slug: string | null;
 	name: string;
 	description: string;
 	image: string | null;
@@ -121,6 +123,7 @@ export function ClientMasseursView() {
 
 				return {
 					id: masseur.id,
+					slug: masseur.slug,
 					name,
 					description,
 					image: masseur.image,
@@ -228,7 +231,7 @@ export function ClientMasseursView() {
 							{localizedMasseurs.map(masseur => (
 								<li key={masseur.id}>
 									<Link
-										href={`/client/${masseur.id}`}
+										href={`/client/masseur/${masseur.slug || masseur.id}`}
 										className='group flex h-full flex-col overflow-hidden rounded-xl border border-surface-border bg-background/50 p-5 transition duration-300 hover:-translate-y-0.5 hover:border-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]'
 									>
 										<div className='flex items-center gap-4'>
@@ -270,7 +273,7 @@ export function ClientMasseursView() {
 										>
 											<td className='px-4 py-3'>
 												<Link
-													href={`/client/${masseur.id}`}
+													href={`/client/masseur/${masseur.slug || masseur.id}`}
 													className='inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]'
 												>
 													<Avatar name={masseur.name} image={masseur.image} />
@@ -278,7 +281,7 @@ export function ClientMasseursView() {
 											</td>
 											<td className='px-4 py-3 font-display text-lg tracking-[-0.02em] text-foreground'>
 												<Link
-													href={`/client/${masseur.id}`}
+													href={`/client/masseur/${masseur.slug || masseur.id}`}
 													className='hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]'
 												>
 													{masseur.name}
@@ -286,7 +289,7 @@ export function ClientMasseursView() {
 											</td>
 											<td className='max-w-xl px-4 py-3 text-sm leading-relaxed text-muted'>
 												<Link
-													href={`/client/${masseur.id}`}
+													href={`/client/masseur/${masseur.slug || masseur.id}`}
 													className='block hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]'
 												>
 													{masseur.description || '—'}

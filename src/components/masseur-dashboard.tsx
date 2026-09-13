@@ -21,12 +21,20 @@ import {
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
 import { CityAutocomplete } from '@/components/city-autocomplete';
+import {
+	ADDRESS_MAX,
+	DESCRIPTION_MAX,
+	NAME_MAX,
+	masseurProfileSchema,
+	zodErrorCode,
+} from '@/lib/validation';
 
 type Profile = {
 	id: string;
 	name: string | null;
 	nameEn: string | null;
 	nameUk: string | null;
+	slug: string | null;
 	email: string;
 	image: string | null;
 	descriptionEn: string | null;
@@ -54,6 +62,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 		!Boolean(profile.city?.trim() && profile.address?.trim()),
 	);
 	const [image, setImage] = useState(profile.image);
+	const [slug, setSlug] = useState(profile.slug);
 	const [nameLocale, setNameLocale] = useState<'en' | 'uk'>('uk');
 	const [descriptionLocale, setDescriptionLocale] = useState<'en' | 'uk'>('uk');
 	const [pending, setPending] = useState(false);
@@ -104,8 +113,22 @@ export function DashboardView({ profile }: { profile: Profile }) {
 		const cityToSave = showAddressForm ? city.trim() : savedCity.trim();
 		const addressToSave = showAddressForm ? address.trim() : savedAddress.trim();
 
-		if (!cityToSave || !addressToSave) {
-			toast.error(t.profileAddressRequired);
+		const parsed = masseurProfileSchema.safeParse({
+			nameEn,
+			nameUk,
+			descriptionEn,
+			descriptionUk,
+			massageTypes,
+			city: cityToSave,
+			address: addressToSave,
+		});
+
+		if (!parsed.success) {
+			toast.error(
+				zodErrorCode(parsed.error) === 'address_required'
+					? t.profileAddressRequired
+					: t.profileSaveError,
+			);
 			return;
 		}
 
@@ -120,15 +143,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			const response = await fetch('/api/masseur/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					nameEn,
-					nameUk,
-					descriptionEn,
-					descriptionUk,
-					massageTypes,
-					city: cityToSave,
-					address: addressToSave,
-				}),
+				body: JSON.stringify(parsed.data),
 			});
 
 			if (!response.ok) {
@@ -151,6 +166,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			setSavedAddress(data.user.address ?? '');
 			setCity(data.user.city ?? '');
 			setAddress(data.user.address ?? '');
+			setSlug(data.user.slug);
 			setEditingAddress(false);
 			toast.success(t.profileSaved);
 			await updateSession();
@@ -162,11 +178,22 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	}
 
 	async function saveAddress() {
-		const trimmedCity = city.trim();
-		const trimmedAddress = address.trim();
+		const parsed = masseurProfileSchema.safeParse({
+			nameEn,
+			nameUk,
+			descriptionEn,
+			descriptionUk,
+			massageTypes,
+			city,
+			address,
+		});
 
-		if (!trimmedCity || !trimmedAddress) {
-			toast.error(t.profileAddressRequired);
+		if (!parsed.success) {
+			toast.error(
+				zodErrorCode(parsed.error) === 'address_required'
+					? t.profileAddressRequired
+					: t.profileSaveError,
+			);
 			return;
 		}
 
@@ -176,15 +203,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			const response = await fetch('/api/masseur/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					nameEn,
-					nameUk,
-					descriptionEn,
-					descriptionUk,
-					massageTypes,
-					city: trimmedCity,
-					address: trimmedAddress,
-				}),
+				body: JSON.stringify(parsed.data),
 			});
 
 			if (!response.ok) {
@@ -202,6 +221,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			setSavedAddress(data.user.address ?? '');
 			setCity(data.user.city ?? '');
 			setAddress(data.user.address ?? '');
+			setSlug(data.user.slug);
 			setEditingAddress(false);
 			toast.success(t.profileAddressSaved);
 			await updateSession();
@@ -396,6 +416,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 											? t.profileNamePlaceholderEn
 											: t.profileNamePlaceholderUk
 									}
+									maxLength={NAME_MAX}
 									className='mt-2 h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
 								/>
 							</div>
@@ -419,7 +440,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 											: setDescriptionUk(event.target.value)
 									}
 									rows={6}
-									maxLength={2000}
+									maxLength={DESCRIPTION_MAX}
 									placeholder={
 										descriptionLocale === 'en'
 											? t.profileDescriptionPlaceholderEn
@@ -494,6 +515,39 @@ export function DashboardView({ profile }: { profile: Profile }) {
 								</div>
 							</div>
 
+							{slug ? (
+								<div className='rounded-lg border border-surface-border bg-background/50 p-4 text-left'>
+									<p className='text-sm font-medium text-foreground'>
+										{t.profileBookingLinkTitle}
+									</p>
+									<p className='mt-1 text-sm text-muted'>{t.profileBookingLinkSupport}</p>
+									<div className='mt-3 flex flex-col gap-2 sm:flex-row sm:items-center'>
+										<code className='min-w-0 flex-1 truncate rounded-lg border border-surface-border bg-background px-3 py-2 text-sm text-foreground'>
+											{`/client/masseur/${slug}`}
+										</code>
+										<button
+											type='button'
+											onClick={() => {
+												const path = `/client/masseur/${slug}`;
+												const url =
+													typeof window !== 'undefined'
+														? `${window.location.origin}${path}`
+														: path;
+												void navigator.clipboard.writeText(url).then(
+													() => toast.success(t.profileBookingLinkCopied),
+													() => toast.error(t.profileSaveError),
+												);
+											}}
+											className='h-11 shrink-0 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent'
+										>
+											{t.profileBookingLinkCopy}
+										</button>
+									</div>
+								</div>
+							) : (
+								<p className='text-sm text-muted'>{t.profileBookingLinkMissing}</p>
+							)}
+
 							<p className='text-sm text-muted'>{profile.email}</p>
 						</div>
 					</div>
@@ -532,7 +586,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 										value={address}
 										onChange={event => setAddress(event.target.value)}
 										placeholder={t.profileAddressPlaceholder}
-										maxLength={300}
+										maxLength={ADDRESS_MAX}
 										className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
 									/>
 								</label>

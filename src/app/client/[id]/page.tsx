@@ -1,67 +1,21 @@
-import { notFound, redirect } from "next/navigation";
-import { auth } from "@/auth/client";
-import { userHasPortal } from "@/lib/portals.server";
-import { parseMassageTypes } from "@/lib/massage-types";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { MasseurBookingView } from "@/components/masseur-booking-view";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function MasseurBookingPage({ params }: PageProps) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/client");
-  }
-
-  const allowed = await userHasPortal(session.user.id, "client");
-  if (!allowed) {
-    redirect("/client");
-  }
-
+/** Legacy URL `/client/[id]` → `/client/masseur/[slug]`. */
+export default async function LegacyMasseurBookingRedirect({ params }: PageProps) {
   const { id } = await params;
-
   const masseur = await prisma.user.findFirst({
-    where: {
-      id,
-      portal: "masseur",
-    },
-    select: {
-      id: true,
-      nameEn: true,
-      nameUk: true,
-      image: true,
-      descriptionEn: true,
-      descriptionUk: true,
-      massageTypes: true,
-      city: true,
-      address: true,
-      galleryImages: {
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        select: {
-          id: true,
-          url: true,
-          width: true,
-          height: true,
-        },
-      },
-    },
+    where: { portal: "masseur", OR: [{ id }, { slug: id }] },
+    select: { slug: true, id: true },
   });
 
-  if (!masseur) {
-    notFound();
+  if (masseur?.slug) {
+    redirect(`/client/masseur/${masseur.slug}`);
   }
 
-  const { galleryImages, ...profile } = masseur;
-
-  return (
-    <MasseurBookingView
-      masseur={{
-        ...profile,
-        massageTypes: parseMassageTypes(profile.massageTypes),
-        galleryImages,
-      }}
-    />
-  );
+  redirect(`/client/masseur/${id}`);
 }

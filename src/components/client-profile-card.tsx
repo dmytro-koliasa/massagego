@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { useLanguage } from '@/components/language-provider';
+import { clientProfileSchema, NAME_MAX } from '@/lib/validation';
 
 type ClientProfile = {
 	id: string;
@@ -77,12 +78,19 @@ export function ClientProfileCard() {
 
 	async function saveName() {
 		if (!profile) return;
+
+		const parsed = clientProfileSchema.safeParse({ nameEn, nameUk });
+		if (!parsed.success) {
+			toast.error(t.profileSaveError);
+			return;
+		}
+
 		setPending(true);
 		try {
 			const response = await fetch('/api/client/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ nameEn, nameUk }),
+				body: JSON.stringify(parsed.data),
 			});
 
 			if (!response.ok) {
@@ -284,6 +292,7 @@ export function ClientProfileCard() {
 									? setNameEn(event.target.value)
 									: setNameUk(event.target.value)
 							}
+							maxLength={NAME_MAX}
 							placeholder={
 								nameLocale === 'en'
 									? t.profileNamePlaceholderEn

@@ -1,0 +1,33 @@
+/** EU member states + Ukraine for phone country select. */
+export const PHONE_COUNTRIES_EU_UA = [
+  "AT",
+  "BE",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "HU",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PL",
+  "PT",
+  "RO",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
+  "UA",
+] as const;
+
+export type PhoneCountryEuUa = (typeof PHONE_COUNTRIES_EU_UA)[number];

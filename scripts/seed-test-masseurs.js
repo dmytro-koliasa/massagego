@@ -100,6 +100,10 @@ async function main() {
         name: item.nameUk,
         nameEn: item.nameEn,
         nameUk: item.nameUk,
+        slug: item.nameEn
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, ""),
         city: item.city,
         address: item.address,
         passwordHash,
