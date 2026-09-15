@@ -1,16 +1,7 @@
-import { Suspense } from "react";
-import MasseurEntryPage from "./masseur-entry";
+import { redirect } from "next/navigation";
+import { portalHomePath } from "@/lib/portals";
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <main className="flex flex-1 items-center justify-center bg-background px-[15px] py-10">
-          <p className="text-sm text-muted">Loading…</p>
-        </main>
-      }
-    >
-      <MasseurEntryPage />
-    </Suspense>
-  );
+/** Legacy `/masseur` → `/masseur/login`. */
+export default function MasseurIndexPage() {
+  redirect(portalHomePath("masseur"));
 }

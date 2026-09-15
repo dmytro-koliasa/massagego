@@ -67,12 +67,28 @@ export default async function MasseurBookingPage({ params }: PageProps) {
 
   const { galleryImages, ...profile } = masseur;
 
+  const clientUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      nameEn: true,
+      nameUk: true,
+      phone: true,
+    },
+  });
+
   return (
     <MasseurBookingView
       masseur={{
         ...profile,
         massageTypes: parseMassageTypes(profile.massageTypes),
         galleryImages,
+      }}
+      clientProfile={{
+        name: clientUser?.name ?? null,
+        nameEn: clientUser?.nameEn ?? null,
+        nameUk: clientUser?.nameUk ?? null,
+        phone: clientUser?.phone ?? null,
       }}
     />
   );

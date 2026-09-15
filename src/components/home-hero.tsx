@@ -52,7 +52,7 @@ export function HomeHero() {
 						aria-label={t.roleGroupLabel}
 					>
 						<PathLink
-							href='/masseur'
+							href='/masseur/login'
 							title={t.masseurTitle}
 							description={t.masseurDescription}
 						/>

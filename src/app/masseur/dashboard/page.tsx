@@ -2,19 +2,21 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth/masseur";
 import { userHasPortal } from "@/lib/portals.server";
 import { parseMassageTypes } from "@/lib/massage-types";
+import { portalHomePath } from "@/lib/portals";
 import { prisma } from "@/lib/prisma";
 import { DashboardView } from "@/components/masseur-dashboard";
 
 export default async function MasseurDashboardPage() {
   const session = await auth();
+  const loginPath = portalHomePath("masseur");
 
   if (!session?.user?.id) {
-    redirect("/masseur");
+    redirect(loginPath);
   }
 
   const allowed = await userHasPortal(session.user.id, "masseur");
   if (!allowed) {
-    redirect("/masseur");
+    redirect(loginPath);
   }
 
   const profile = await prisma.user.findUnique({
@@ -36,7 +38,7 @@ export default async function MasseurDashboardPage() {
   });
 
   if (!profile) {
-    await signOut({ redirectTo: "/masseur" });
+    await signOut({ redirectTo: loginPath });
   }
 
   return (

@@ -57,7 +57,9 @@ export function MasseurAuthPanel({
   const isClient = resolvedPortal === "client";
   const resolvedCallback =
     callbackUrl ??
-    (resolvedPortal === "masseur" ? "/masseur/dashboard" : "/client");
+    (resolvedPortal === "masseur"
+      ? "/masseur/dashboard"
+      : "/client");
 
   const { t } = useLanguage();
   const router = useRouter();

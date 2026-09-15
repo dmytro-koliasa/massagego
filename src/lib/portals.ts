@@ -19,8 +19,14 @@ export function portalAuthBasePath(portal: Portal) {
   return `/api/auth/${portal}`;
 }
 
+/** Login / auth entry for a portal. */
 export function portalHomePath(portal: Portal) {
-  return portal === "masseur" ? "/masseur" : "/client/login";
+  return portal === "masseur" ? "/masseur/login" : "/client/login";
+}
+
+export function isPortalLoginPath(path: string, portal: Portal) {
+  const login = portalHomePath(portal);
+  return path === login || path.startsWith(`${login}/`);
 }
 
 export function portalDefaultCallback(portal: Portal) {

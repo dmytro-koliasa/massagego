@@ -70,8 +70,9 @@ export function MasseurGallery({
     () =>
       images.map((image) => ({
         src: image.url,
-        width: image.width,
-        height: image.height,
+        // Square tiles for a compact grid; lightbox still shows the full image.
+        width: 1,
+        height: 1,
         key: image.id,
       })),
     [images],
@@ -198,7 +199,7 @@ export function MasseurGallery({
               const id = typeof photo.key === "string" ? photo.key : null;
               return (
                 <div
-                  className="relative overflow-hidden rounded-lg border border-surface-border bg-accent-soft"
+                  className="relative aspect-square overflow-hidden rounded-lg border border-surface-border bg-accent-soft"
                   style={{ width, height }}
                 >
                   <button

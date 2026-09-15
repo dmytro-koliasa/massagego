@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -8,12 +8,20 @@ import { BackNavLink } from "@/components/back-nav-link";
 import { useLanguage } from "@/components/language-provider";
 import { MasseurAuthPanel } from "@/components/masseur-auth-panel";
 import { Preloader } from "@/components/preloader";
+import { portalDefaultCallback } from "@/lib/portals";
 
-export default function MasseurEntryPage() {
+function MasseurLoginContent() {
   const { t } = useLanguage();
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next");
+  const callbackUrl =
+    nextPath &&
+    nextPath.startsWith("/masseur") &&
+    !nextPath.startsWith("/masseur/login")
+      ? nextPath
+      : portalDefaultCallback("masseur");
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -43,7 +51,7 @@ export default function MasseurEntryPage() {
         if (cancelled) return;
 
         if (response.ok) {
-          router.replace("/masseur/dashboard");
+          router.replace(callbackUrl);
           return;
         }
 
@@ -60,7 +68,7 @@ export default function MasseurEntryPage() {
     return () => {
       cancelled = true;
     };
-  }, [status, session?.user?.id, session?.user?.portal, router]);
+  }, [status, session?.user?.id, session?.user?.portal, router, callbackUrl]);
 
   const waitingForRedirect =
     status === "authenticated" &&
@@ -85,13 +93,24 @@ export default function MasseurEntryPage() {
           <p className="text-muted">{t.masseurPageSupport}</p>
         </div>
 
-        <MasseurAuthPanel
-          portal="masseur"
-          callbackUrl="/masseur/dashboard"
-        />
+        <MasseurAuthPanel portal="masseur" callbackUrl={callbackUrl} />
 
         <BackNavLink href="/">{t.backHome}</BackNavLink>
       </div>
     </main>
+  );
+}
+
+export default function MasseurLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex flex-1 items-center justify-center bg-background px-[15px] py-10">
+          <p className="text-sm text-muted">Loading…</p>
+        </main>
+      }
+    >
+      <MasseurLoginContent />
+    </Suspense>
   );
 }

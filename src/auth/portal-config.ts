@@ -1,6 +1,10 @@
 import type { NextAuthConfig } from "next-auth";
 import type { Portal } from "@/lib/portals";
-import { portalAuthBasePath, portalHomePath } from "@/lib/portals";
+import {
+  isPortalLoginPath,
+  portalAuthBasePath,
+  portalHomePath,
+} from "@/lib/portals";
 
 const useSecureCookies = process.env.NODE_ENV === "production";
 
@@ -69,14 +73,18 @@ export function createPortalAuthConfig(portal: Portal): NextAuthConfig {
         const isLoggedIn = Boolean(auth?.user);
         const path = request.nextUrl.pathname;
 
+        if (isPortalLoginPath(path, portal)) {
+          return true;
+        }
+
         if (portal === "masseur" && path.startsWith("/masseur/dashboard")) {
-          return isLoggedIn;
+          if (isLoggedIn) return true;
+          const loginUrl = new URL(portalHomePath("masseur"), request.nextUrl);
+          loginUrl.searchParams.set("next", path);
+          return Response.redirect(loginUrl);
         }
 
         if (portal === "client" && (path === "/client" || path.startsWith("/client/"))) {
-          if (path === "/client/login" || path.startsWith("/client/login/")) {
-            return true;
-          }
           if (isLoggedIn) return true;
           const loginUrl = new URL(portalHomePath("client"), request.nextUrl);
           loginUrl.searchParams.set("next", path);

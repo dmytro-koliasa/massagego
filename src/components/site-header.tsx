@@ -117,7 +117,7 @@ export function SiteHeader() {
               className="mt-1.5 flex items-center gap-1 sm:gap-2"
             >
               <HeaderNavLink
-                href="/masseur"
+                href="/masseur/login"
                 label={t.masseurTitle}
                 active={pathname.startsWith("/masseur")}
                 onDark={isHome}

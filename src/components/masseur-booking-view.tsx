@@ -16,6 +16,7 @@ import {
   clampInternationalPhone,
   nationalPhoneInsert,
 } from "@/lib/phone";
+import { parsePhoneNumber } from "libphonenumber-js/max";
 import {
   bookingCreateSchema,
   NAME_MAX,
@@ -47,11 +48,59 @@ type MasseurProfile = {
   }[];
 };
 
-export function MasseurBookingView({ masseur }: { masseur: MasseurProfile }) {
+type ClientBookingProfile = {
+  name: string | null;
+  nameEn: string | null;
+  nameUk: string | null;
+  phone: string | null;
+};
+
+function resolveClientDisplayName(
+  client: ClientBookingProfile | undefined,
+  locale: "en" | "uk",
+) {
+  if (!client) return "";
+  const primary = (locale === "uk" ? client.nameUk : client.nameEn)?.trim();
+  const secondary = (locale === "uk" ? client.nameEn : client.nameUk)?.trim();
+  return primary || secondary || client.name?.trim() || "";
+}
+
+function resolveInitialPhone(client: ClientBookingProfile | undefined): {
+  phone: string | undefined;
+  country: Country;
+} {
+  const raw = client?.phone?.trim();
+  if (!raw) return { phone: undefined, country: "UA" };
+  try {
+    const parsed = parsePhoneNumber(raw);
+    const country = (parsed.country as Country | undefined) ?? "UA";
+    return {
+      phone: parsed.format("E.164"),
+      country,
+    };
+  } catch {
+    return { phone: raw.startsWith("+") ? raw : undefined, country: "UA" };
+  }
+}
+
+export function MasseurBookingView({
+  masseur,
+  clientProfile,
+}: {
+  masseur: MasseurProfile;
+  clientProfile?: ClientBookingProfile;
+}) {
   const { t, locale } = useLanguage();
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState<string | undefined>();
-  const [phoneCountry, setPhoneCountry] = useState<Country>("UA");
+  const initialPhone = resolveInitialPhone(clientProfile);
+  const [clientName, setClientName] = useState(() =>
+    resolveClientDisplayName(clientProfile, locale),
+  );
+  const [clientPhone, setClientPhone] = useState<string | undefined>(
+    () => initialPhone.phone,
+  );
+  const [phoneCountry, setPhoneCountry] = useState<Country>(
+    () => initialPhone.country,
+  );
   const [massageType, setMassageType] = useState("");
   const [selectedSlotStarts, setSelectedSlotStarts] = useState<string[]>([]);
   const [note, setNote] = useState("");
