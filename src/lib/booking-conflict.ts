@@ -1,0 +1,39 @@
+import type { Prisma } from "@prisma/client";
+
+/** Name of the exclusion constraint added in 20261115120000_booking_no_overlap. */
+export const BOOKING_OVERLAP_CONSTRAINT = "Booking_no_overlapping_active_slots";
+
+/**
+ * Serialise booking writes for one masseur for the rest of the transaction.
+ *
+ * The exclusion constraint alone is correct but, under contention, concurrent
+ * inserts for the same slot can deadlock (40P01) or time out waiting on each
+ * other's row locks. Taking this lock first makes contenders queue: the loser
+ * then sees the winner's booking in the existence check and gets `slot_taken`.
+ * The constraint remains the backstop for any code path that skips the lock.
+ */
+export async function lockMasseurBookings(
+  tx: Pick<Prisma.TransactionClient, "$executeRaw">,
+  masseurId: string,
+) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${masseurId}, 0))`;
+}
+
+/**
+ * True when the database rejected a booking because it overlaps another active
+ * booking for the same masseur (Postgres exclusion violation, SQLSTATE 23P01).
+ *
+ * Prisma cannot map exclusion violations to a known error code: they surface as
+ * `PrismaClientUnknownRequestError`, so the constraint name in the message is
+ * the only reliable discriminator. P2002 is deliberately not matched: Booking
+ * has no unique index, and the availability-slot upsert can also raise it.
+ */
+export function isBookingConflictError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const message = (error as { message?: unknown }).message;
+  return (
+    typeof message === "string" &&
+    (message.includes(BOOKING_OVERLAP_CONSTRAINT) || message.includes("23P01"))
+  );
+}

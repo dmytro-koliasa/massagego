@@ -3,6 +3,7 @@ import { auth } from "@/auth/client";
 import { portalHomePath } from "@/lib/portals";
 import { userHasPortal } from "@/lib/portals.server";
 import { parseMassageTypes } from "@/lib/massage-types";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MasseurBookingView } from "@/components/masseur-booking-view";
 
@@ -22,7 +23,7 @@ const masseurSelect = {
   city: true,
   address: true,
   galleryImages: {
-    orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       url: true,
@@ -30,7 +31,7 @@ const masseurSelect = {
       height: true,
     },
   },
-} as const;
+} satisfies Prisma.UserSelect;
 
 export default async function MasseurBookingPage({ params }: PageProps) {
   const session = await auth();
