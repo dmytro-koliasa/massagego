@@ -3,6 +3,10 @@ import {
   isMassageTypeValue,
   parseMassageTypes,
 } from "@/lib/massage-types";
+import {
+  isBookingConflictError,
+  lockMasseurBookings,
+} from "@/lib/booking-conflict";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
@@ -172,6 +176,7 @@ export async function POST(request: Request) {
     }
 
     const bookings = await prisma.$transaction(async (tx) => {
+      await lockMasseurBookings(tx, masseurId);
       const created = [];
 
       for (const slotStart of parsedSlots.starts) {
@@ -230,6 +235,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ bookings }, { status: 201 });
   } catch (error) {
+    // Concurrent requests can both pass the check above; the database
+    // exclusion constraint rejects the loser.
+    if (isBookingConflictError(error)) {
+      return NextResponse.json({ error: "slot_taken" }, { status: 409 });
+    }
     if (error instanceof Error) {
       if (error.message === "slot_unavailable") {
         return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });

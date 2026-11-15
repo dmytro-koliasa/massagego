@@ -5,6 +5,10 @@ import {
   parseMassageTypes,
 } from "@/lib/massage-types";
 import { userHasPortal } from "@/lib/portals.server";
+import {
+  isBookingConflictError,
+  lockMasseurBookings,
+} from "@/lib/booking-conflict";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingCreateSchema,
@@ -86,6 +90,7 @@ export async function POST(request: Request) {
     const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
 
     const booking = await prisma.$transaction(async (tx) => {
+      await lockMasseurBookings(tx, gate.userId);
       const existingBooking = await tx.booking.findFirst({
         where: {
           masseurId: gate.userId,
@@ -143,10 +148,13 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("[masseur/bookings]", error);
-    if (error instanceof Error && error.message === "slot_taken") {
+    if (
+      isBookingConflictError(error) ||
+      (error instanceof Error && error.message === "slot_taken")
+    ) {
       return NextResponse.json({ error: "slot_taken" }, { status: 409 });
     }
+    console.error("[masseur/bookings]", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

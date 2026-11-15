@@ -2,10 +2,11 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import type { Adapter } from "next-auth/adapters";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
+import type { User as PrismaUser } from "@prisma/client";
 import { compare } from "bcryptjs";
 import type { Portal } from "@/lib/portals";
-import { portalHomePath } from "@/lib/portals";
+import { isPortal, portalHomePath } from "@/lib/portals";
 import { findPortalUserByEmail, findPortalUserByPhone, readAuthIntentCookie } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
@@ -15,6 +16,17 @@ import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
   Boolean(process.env.AUTH_GOOGLE_SECRET?.trim());
+
+/**
+ * Prisma stores `portal` as a plain string; Auth.js expects the `Portal` union.
+ * Validate at runtime instead of asserting, so a corrupt row fails loudly.
+ */
+function toAdapterUser(user: PrismaUser): AdapterUser {
+  if (!isPortal(user.portal)) {
+    throw new Error(`Invalid portal "${user.portal}" on user ${user.id}`);
+  }
+  return { ...user, portal: user.portal };
+}
 
 function createPortalPrismaAdapter(portal: Portal): Adapter {
   const base = PrismaAdapter(prisma) as Adapter;
@@ -29,7 +41,7 @@ function createPortalPrismaAdapter(portal: Portal): Adapter {
             )
           : null;
 
-      return prisma.user.create({
+      const created = await prisma.user.create({
         data: {
           email: data.email!,
           emailVerified: data.emailVerified ?? null,
@@ -39,11 +51,13 @@ function createPortalPrismaAdapter(portal: Portal): Adapter {
           slug,
         },
       });
+      return toAdapterUser(created);
     },
     getUserByEmail: async (email) => {
-      return prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { email_portal: { email, portal } },
       });
+      return user ? toAdapterUser(user) : null;
     },
     getUserByAccount: async ({ provider, providerAccountId }) => {
       const account = await prisma.account.findFirst({
@@ -54,7 +68,7 @@ function createPortalPrismaAdapter(portal: Portal): Adapter {
         },
         include: { user: true },
       });
-      return account?.user ?? null;
+      return account ? toAdapterUser(account.user) : null;
     },
   };
 }
