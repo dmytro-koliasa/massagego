@@ -19,6 +19,8 @@
 | Preferred language (English or Ukrainian) | both | [BR-009](decisions.md#br-009) |
 | Notification settings: per event and per channel on/off, with at least one channel on for critical events | both | [BR-009](decisions.md#br-009) |
 | Telegram link (chat identifier and link state) | both | [BR-009](decisions.md#br-009) |
+| "Phone confirmed" mark (set through the Telegram bot) | both | [BR-023](decisions.md#br-023) |
+| Account state for blocking (blocked or not) | both | [BR-021](decisions.md#br-021) |
 | Marker for an anonymised (deleted) account, with personal data erased | both | [BR-011](decisions.md#br-011) |
 
 ### `Booking`
