@@ -9,7 +9,7 @@
 
 | Change | Role | Decision |
 |---|---|---|
-| Timezone (IANA name, for example `Europe/Kyiv`) | masseur | [BR-006](decisions.md#br-006) |
+| **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): `timezone` (IANA name, default `Europe/Kyiv`); editing it in the profile comes with PR 8 | masseur | [BR-006](decisions.md#br-006) |
 | Client booking lead time in hours, one of 1 / 2 / 3 / 4, default 1 | masseur | [BR-002](decisions.md#br-002) |
 | Client cancellation cutoff in hours, one of 1, 2, 3, 4, 6, 8, 12, 24, 36, 48, 72, default 24; not below the lead time | masseur | [BR-004](decisions.md#br-004) |
 | Phone becomes required and public (validated with the country rule) | masseur | [BR-004](decisions.md#br-004), [BR-013](decisions.md#br-013) |
@@ -48,6 +48,8 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 | Obligation flag on bookings and separate payment records | Keep bookings with financial or legal obligations out of automatic deletion | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018), later with [BR-015](decisions.md#br-015) |
 
 ## 3. Configuration and constants in code
+
+The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): session length, working window, default masseur time zone, 120-day window, weekly copy default and maximum (still 12 and 52), the cap of 30 and both retention periods. Rules that use the window, the cap and the retention periods come with their own pull requests.
 
 | Item | Value | Decision |
 |---|---|---|

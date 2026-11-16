@@ -24,6 +24,10 @@ model User {
   massageTypes   String    @default("[]")
   city           String?
   address        String?
+  /// IANA time zone of a masseur (slots, working hours and "today" are
+  /// evaluated in it). Unused for clients. Keep the default in sync with
+  /// DEFAULT_MASSEUR_TIME_ZONE in src/lib/booking-constants.ts.
+  timezone       String    @default("Europe/Kyiv")
   passwordHash   String?
   /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
   portal         String

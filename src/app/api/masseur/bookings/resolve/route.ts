@@ -1,30 +1,24 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
-import { userHasPortal } from "@/lib/portals.server";
+import { SLOT_MS } from "@/lib/booking-constants";
+import { alignToHour } from "@/lib/masseur-time";
+import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingResolveSchema,
   parseWithSchema,
 } from "@/lib/validation";
 
-const SLOT_MS = 60 * 60 * 1000;
-
-function alignToHour(date: Date) {
-  const aligned = new Date(date);
-  aligned.setMinutes(0, 0, 0);
-  return aligned;
-}
-
 async function requireMasseur() {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
   }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
+  const timeZone = await getMasseurTimeZone(session.user.id);
+  if (!timeZone) {
     return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
   }
-  return { userId: session.user.id };
+  return { userId: session.user.id, timeZone };
 }
 
 export async function POST(request: Request) {
@@ -38,10 +32,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const slotStart = alignToHour(new Date(parsed.data.slotStart));
-    if (Number.isNaN(slotStart.getTime())) {
+    const requested = new Date(parsed.data.slotStart);
+    if (Number.isNaN(requested.getTime())) {
       return NextResponse.json({ error: "invalid_slot" }, { status: 400 });
     }
+    const slotStart = alignToHour(requested, gate.timeZone);
 
     if (slotStart.getTime() <= Date.now()) {
       return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });

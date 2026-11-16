@@ -5,7 +5,7 @@
 
 ## 1. How the work is organised
 
-- **Slicing:** by theme, 15 pull requests, ordered by dependencies (owner's choice, 2026-11-16).
+- **Slicing:** by theme, 15 pull requests, ordered by dependencies (owner's choice, 2026-11-16); PR 2a was added on 2026-11-16, so there are now 16.
 - **One branch and one pull request per item.** Branch names follow the content (for example `feat/booking-status-and-cancel-data`).
 - **Before each pull request:** (1) the implementation details are groomed with the owner (the open sub-questions listed for it below); (2) only then is code written.
 - **In each pull request:** the code, the tests, the migration (if any), the English and Ukrainian texts, and the documentation update (the rule moves into "Approved rules" in [business-rules.md](business-rules.md), the item becomes **Implemented** in [decisions.md](decisions.md), and the approved-decisions log gets the pull request).
@@ -37,9 +37,10 @@
 | № | Pull request | Decisions | Depends on |
 |---|---|---|---|
 | 1 | Booking statuses and cancellation data ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | BR-005, C-8 | none |
-| 2 | Masseur timezone and shared constants | BR-006, BR-001 | none |
-| 3 | Availability rules | BR-007, C-2, C-3, C-4, C-6 | 2 |
-| 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2 |
+| 2 | Masseur timezone and shared constants ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) | BR-006, BR-001, C-6 | none |
+| 2a | Calendars in the masseur's timezone (added 2026-11-16) | BR-006, C-2 | 2 |
+| 3 | Availability rules | BR-007, C-3, C-4 | 2, 2a |
+| 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2, 2a |
 | 5 | Client booking and cancellation rules | BR-008, BR-004, C-5, C-7, X-1 | 1, 4 |
 | 6 | Thai massage hints | BR-014 | 5 |
 | 7 | Shared excluded-country list | BR-013 | none |
@@ -77,17 +78,29 @@ PRs 1, 2, 7 and 10 have no dependencies and can start in any order or in paralle
 - Tests run with the server timezone set to UTC and the masseur timezone set to `Europe/Kyiv`, including both daylight-saving transitions.
 - The constants exist in one place and the old duplicates are gone.
 
-**To groom first:** the default timezone for a masseur and how it is chosen (proposal: derive it from the city and let the masseur confirm, finding X-2); the label format; where the field is edited.
+**Groomed (2026-11-16):** default `Europe/Kyiv` with no UI to choose it (the profile field and X-2 move to PR 8); `luxon` for the time-zone maths; label "Kyiv, UTC+2"; the calendars move to a new PR 2a. Weekly copy across daylight-saving changes is fixed here (closes C-6); the server side of C-2 is fixed here as well.
+
+### PR 2a - Calendars in the masseur's timezone
+
+Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-006](decisions.md#br-006) (clients see times in the masseur's timezone with a label).
+
+**Scope:** the masseur availability calendar, the client booking calendar and the client sessions calendar render days, hours, week ranges and "today" in the masseur's timezone (FullCalendar with `@fullcalendar/luxon3`) instead of the browser's; the timezone label from PR 2 is shown; the masseur's grid of 05:00-23:00 matches the server rule.
+
+**Acceptance criteria:**
+- With the browser set to another timezone, every calendar shows the same local hours as the masseur's timezone, and the label states it.
+- The masseur calendar's working-hour grid and the server's check agree across daylight-saving changes.
+- Closes C-2.
+
+**To groom first:** how the client sessions calendar shows bookings with masseurs in different timezones; where the label is placed; whether the masseur sees a hint when the browser's timezone differs from the profile's.
 
 ### PR 3 - Availability rules
 
-**Scope:** the working window is enforced on every write path (manual changes, the weekly copy including a supplied template, and the masseur's walk-in booking); the server rejects availability changes for slots that have started; weekly copy keeps the same local clock time across daylight-saving changes.
+**Scope:** the working window is enforced on every write path (manual changes, the weekly copy including a supplied template, and the masseur's walk-in booking); the server rejects availability changes for slots that have started. (Weekly copy across daylight-saving changes was done in PR 2.)
 
 **Acceptance criteria:**
 - A slot outside 05:00-23:00 in the masseur's timezone cannot be created by any path and the error is the same and clear.
 - Adding or removing a started slot is rejected by the server.
-- A week copied across a daylight-saving change keeps the same local hours.
-- Closes C-2, C-3, C-4, C-6.
+- Closes C-3, C-4.
 
 **To groom first:** the error codes; the treatment of existing slots outside the window (none expected, the data is test data).
 
@@ -141,7 +154,7 @@ PRs 1, 2, 7 and 10 have no dependencies and can start in any order or in paralle
 
 ### PR 8 - Registration and profile fields
 
-**Scope:** at client registration, a required city (canonical form) and a required real email, with verification by a link or a code; the preferred language stored in the account (set at registration, editable); the masseur phone becomes required and public with a notice on the form; the masseur timezone field is editable in the profile (from PR 2); existing clients without a city or email are asked to complete them without blocking sign-in.
+**Scope:** at client registration, a required city (canonical form) and a required real email, with verification by a link or a code; the preferred language stored in the account (set at registration, editable); the masseur phone becomes required and public with a notice on the form; the masseur timezone field is editable in the profile (from PR 2; whether to propose it from the city, finding X-2, is groomed here); existing clients without a city or email are asked to complete them without blocking sign-in.
 
 **Acceptance criteria:**
 - A client cannot finish registration without a city and an email; email notifications are not sent to an unverified address.

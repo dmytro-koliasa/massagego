@@ -9,19 +9,13 @@ import {
   isBookingConflictError,
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
+import { SLOT_MS } from "@/lib/booking-constants";
+import { alignToHour, resolveTimeZone } from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingCreateSchema,
   parseWithSchema,
 } from "@/lib/validation";
-
-const SLOT_MS = 60 * 60 * 1000;
-
-function alignToHour(date: Date) {
-  const aligned = new Date(date);
-  aligned.setMinutes(0, 0, 0);
-  return aligned;
-}
 
 function isSlotExpired(start: Date) {
   // Block once the slot hour has started (8:01 for an 8:00–9:00 slot).
@@ -58,18 +52,18 @@ export async function POST(request: Request) {
     if (Number.isNaN(slotStartRaw.getTime())) {
       return NextResponse.json({ error: "invalid_slot" }, { status: 400 });
     }
-    const slotStart = alignToHour(slotStartRaw);
-
-    if (isSlotExpired(slotStart)) {
-      return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });
-    }
-
     const masseur = await prisma.user.findFirst({
       where: { id: gate.userId, portal: "masseur" },
-      select: { id: true, massageTypes: true },
+      select: { id: true, massageTypes: true, timezone: true },
     });
     if (!masseur) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    const slotStart = alignToHour(slotStartRaw, resolveTimeZone(masseur.timezone));
+
+    if (isSlotExpired(slotStart)) {
+      return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });
     }
 
     const offeredTypes = parseMassageTypes(masseur.massageTypes);

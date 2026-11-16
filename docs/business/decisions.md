@@ -51,8 +51,8 @@ Features that already touch personal data and must be reviewed against XR-1 when
 
 | Date | ID | Chosen option | PR |
 |---|---|---|---|
-| 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
-| 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
+| 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (server side; calendars in PR 2a, choosing the zone in PR 8) |
+| 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (one shared constant) |
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
 | 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
@@ -73,6 +73,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 | 2026-11-16 | C-8 | A: remove `preferredDate`, `preferredTime`, `clientEmail`; correct the `clientUserId` comment | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
 | 2026-11-16 | BR-005, BR-004, C-8 (implementation details) | Database enums for status, `cancelledBy` and the cancellation reason; reason keys `cant_make_it`, `circumstances_changed`, `changed_mind`, `wrong_slot`, `other`, `client_account_deleted`; "Other" text `VARCHAR(200)`; no consistency `CHECK`; the reason is not accepted by the API until PR 5 of the plan; indexes on (`status`, `cancelledAt`) and (`status`, `slotStart`); existing non-cancelled rows become `confirmed`, existing cancelled rows get `cancelledAt` = `updatedAt` and an empty `cancelledBy`; the one-off `scripts/migrate-sqlite-to-postgres.js` is removed | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| 2026-11-16 | BR-006, BR-001 (implementation details) | `User.timezone` (IANA name, default `Europe/Kyiv`, validated with a fallback to the default), no UI to choose it until PR 8 (where X-2 is groomed); time-zone maths with the `luxon` library; the three calendars move to the masseur's zone in a new PR 2a (inserted into the plan); label format "Kyiv, UTC+2" from the IANA city and the offset of the shown instant, the same in both languages | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
 
 ---
 
@@ -82,12 +83,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 | ID | Topic | Priority | Recommended (proposal) | Status |
 |---|---|---|---|---|
-| [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Approved** (2026-11-16) |
+| [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) |
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Approved** (2026-11-16) |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) |
-| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
+| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16); server side implemented in [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Approved** (2026-11-16) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Approved** (2026-11-16) |
@@ -119,6 +120,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Impact:** A - docs only. B/C - UI (calendar slot size, multi-hour selection), API (duration param, availability generation), **DB (new `durationMinutes`/`slotEnd` column and a replacement exclusion constraint on a stored end)**, and backfill of existing rows to 60.
 
 **Decision (Approved 2026-11-16, not implemented):** **Option A.** Every session is exactly 60 minutes. Rationale from the owner: an average massage lasts about 45 minutes, plus about 15 minutes reserved for rest/turnaround, so each session is priced and scheduled as one 60-minute slot. Longer sessions (e.g. Thai massage) are booked as several consecutive slots; see [BR-014](#br-014). No change to the data model or the exclusion constraint.
+
+**Implemented (2026-11-16, [#5](https://github.com/dmytro-koliasa/massagego/pull/5)):** the session length is one shared constant (`SESSION_MINUTES`, `SLOT_MS` in `src/lib/booking-constants.ts`) used by the routes and the calendars; the duplicated copies are removed. The exclusion constraint still hard-codes `interval '1 hour'` in SQL and must change together with the constant.
 
 ### BR-002
 
@@ -242,7 +245,15 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Resolves when implemented:** C-2 (business hours evaluated in server time), C-6 (week copy shifts by +7 days in server time).
 
-**Open sub-questions for track 2 (not yet groomed):** default timezone for existing masseurs; how a masseur sets or changes the timezone (auto-detect vs explicit choice, and whether it may change once bookings exist); what happens to existing and walk-in bookings if the timezone changes; wording and format of the timezone label.
+**Implementation, server side (2026-11-16, [#5](https://github.com/dmytro-koliasa/massagego/pull/5)):**
+
+1. `User.timezone` holds the masseur's IANA zone, default **`Europe/Kyiv`** for every existing and new masseur. An invalid stored value falls back to the default.
+2. Hour alignment, the 05:00-23:00 check and the weekly copy in the booking, cancellation and availability routes are evaluated in the masseur's zone with `luxon` (`src/lib/masseur-time.ts`). The weekly copy keeps the local clock time across daylight-saving changes. No route uses the server's local time any more.
+3. Helpers exist for "today" in the masseur's zone and for the label **"Kyiv, UTC+2"**: the city part of the IANA name and the offset of the shown instant (UTC+3 in summer), the same in English and Ukrainian.
+
+**Still to do:** the calendars still render in the viewer's browser time zone; they move to the masseur's zone with the label in **PR 2a** of the [implementation plan](implementation-plan.md) (point 2 of the decision). A masseur cannot choose the zone yet; the profile field comes with **PR 8**, where proposing the zone from the city (X-2) is groomed.
+
+**Open sub-questions (for PR 2a and PR 8):** how a masseur sets or changes the timezone and whether it may change once bookings exist; what happens to existing and walk-in bookings if the timezone changes; how the client sessions calendar shows bookings with masseurs in different zones.
 
 ### BR-007
 
@@ -550,11 +561,11 @@ Until each item is groomed and approved, its status stays **Open**. These are de
 | ID | Finding | Evidence | Status | Closed by (when implemented) |
 |---|---|---|---|---|
 | C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | Open | [BR-002](#br-002) |
-| C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | Open | [BR-006](#br-006) |
+| C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | Open: server side fixed in [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (masseur's zone); the UI part closes with PR 2a | [BR-006](#br-006) |
 | C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | Open | [BR-007](#br-007) |
 | C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | Open | [BR-007](#br-007) |
 | C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open | [BR-004](#br-004) |
-| C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | Open | [BR-006](#br-006) |
+| C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): `addLocalWeeks` in the masseur's zone | [BR-006](#br-006) |
 | C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | **Approved** (2026-11-16) | this item, see "Decisions on C-7 and C-8" below |
 | C-9 | **Masseur email is returned to every client.** `GET /api/masseurs` selects `email` and includes it in the JSON, but the UI never displays it. Whether masseur contact details should be public is an undecided product/privacy question; no `BR` item exists yet (only the code behavior is recorded here). | `src/app/api/masseurs/route.ts` | Open | [BR-010](#br-010) |
 | C-8 | **Schema comment drift.** `Booking.clientUserId` is commented "Required for new bookings" but masseur walk-ins create it as `null`. Fields `preferredDate`, `preferredTime`, `clientEmail` are written as `null` and otherwise unused. | `prisma/schema.prisma`, both create routes | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | this item, see "Decisions on C-7 and C-8" below |
@@ -597,7 +608,7 @@ A review of all **Approved** decisions against each other, made on 2026-11-16. T
 | ID | Finding | Where it comes from | Suggested handling | Status |
 |---|---|---|---|---|
 | X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | **Approved** (2026-11-16): option A, see below |
-| X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question) |
+| X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question), moved to PR 8 of the plan |
 | X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | UX note for implementation: keep the form short and clear; no decision needed now | Note |
 | X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
 | X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Decided in BR-019 |

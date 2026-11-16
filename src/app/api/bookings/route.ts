@@ -7,25 +7,20 @@ import {
   isBookingConflictError,
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
+import { SLOT_MS } from "@/lib/booking-constants";
 import { requireClientSession } from "@/lib/client-session.server";
+import { alignToHour, resolveTimeZone } from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
-const SLOT_MS = 60 * 60 * 1000;
-
-function alignToHour(date: Date) {
-  const aligned = new Date(date);
-  aligned.setMinutes(0, 0, 0);
-  return aligned;
-}
-
-function parseAlignedSlots(rawStarts: string[]) {
+function parseAlignedSlots(rawStarts: string[], timeZone: string) {
   const unique = new Map<string, Date>();
   for (const raw of rawStarts) {
-    const start = alignToHour(new Date(raw));
-    if (Number.isNaN(start.getTime())) {
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
       return { error: "invalid_slot" as const };
     }
+    const start = alignToHour(parsed, timeZone);
     unique.set(start.toISOString(), start);
   }
 
@@ -135,7 +130,22 @@ export async function POST(request: Request) {
       slotStarts: rawStarts,
     } = parsed.data;
 
-    const parsedSlots = parseAlignedSlots(rawStarts);
+    const masseur = await prisma.user.findFirst({
+      where: {
+        id: masseurId,
+        portal: "masseur",
+      },
+      select: { id: true, massageTypes: true, timezone: true },
+    });
+
+    if (!masseur) {
+      return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
+    }
+
+    const parsedSlots = parseAlignedSlots(
+      rawStarts,
+      resolveTimeZone(masseur.timezone),
+    );
     if ("error" in parsedSlots) {
       return NextResponse.json({ error: parsedSlots.error }, { status: 400 });
     }
@@ -145,18 +155,6 @@ export async function POST(request: Request) {
       if (slotStart.getTime() < now - SLOT_MS) {
         return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });
       }
-    }
-
-    const masseur = await prisma.user.findFirst({
-      where: {
-        id: masseurId,
-        portal: "masseur",
-      },
-      select: { id: true, massageTypes: true },
-    });
-
-    if (!masseur) {
-      return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
     }
 
     const offeredTypes = parseMassageTypes(masseur.massageTypes);

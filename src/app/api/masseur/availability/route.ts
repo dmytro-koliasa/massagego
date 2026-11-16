@@ -1,39 +1,28 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
-import { userHasPortal } from "@/lib/portals.server";
+import {
+  SLOT_MS,
+  WEEKLY_COPY_DEFAULT_WEEKS,
+  WEEKLY_COPY_MAX_WEEKS,
+} from "@/lib/booking-constants";
+import {
+  addLocalWeeks,
+  alignToHour,
+  isWithinWorkingHours,
+} from "@/lib/masseur-time";
+import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
-
-const SLOT_MS = 60 * 60 * 1000;
-const DAY_START_HOUR = 5;
-const DAY_END_HOUR = 23;
-
-function alignToHour(date: Date) {
-  const aligned = new Date(date);
-  aligned.setMinutes(0, 0, 0);
-  return aligned;
-}
-
-function isWithinBusinessHours(start: Date) {
-  const hour = start.getHours();
-  return hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
-}
-
-function addWeeks(date: Date, weeks: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + weeks * 7);
-  return next;
-}
 
 async function requireMasseur() {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
   }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
+  const timeZone = await getMasseurTimeZone(session.user.id);
+  if (!timeZone) {
     return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
   }
-  return { userId: session.user.id };
+  return { userId: session.user.id, timeZone };
 }
 
 export async function GET(request: Request) {
@@ -130,14 +119,19 @@ export async function GET(request: Request) {
   });
 }
 
-async function applySlotChange(userId: string, startRaw: string, active: boolean) {
+async function applySlotChange(
+  userId: string,
+  timeZone: string,
+  startRaw: string,
+  active: boolean,
+) {
   const startDate = new Date(startRaw);
   if (Number.isNaN(startDate.getTime())) {
     return { error: "invalid_start" as const };
   }
 
-  const start = alignToHour(startDate);
-  if (!isWithinBusinessHours(start)) {
+  const start = alignToHour(startDate, timeZone);
+  if (!isWithinWorkingHours(start, timeZone)) {
     return { error: "out_of_hours" as const };
   }
 
@@ -224,7 +218,12 @@ export async function POST(request: Request) {
         if (typeof change?.start !== "string" || typeof change?.active !== "boolean") {
           continue;
         }
-        const result = await applySlotChange(gate.userId, change.start, change.active);
+        const result = await applySlotChange(
+          gate.userId,
+          gate.timeZone,
+          change.start,
+          change.active,
+        );
         if ("error" in result) {
           return NextResponse.json({ error: result.error }, { status: 400 });
         }
@@ -238,11 +237,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_start" }, { status: 400 });
     }
 
+    const requested = new Date(startRaw);
+    if (Number.isNaN(requested.getTime())) {
+      return NextResponse.json({ error: "invalid_start" }, { status: 400 });
+    }
+
     const existingCheck = await prisma.availabilitySlot.findUnique({
       where: {
         masseurId_start: {
           masseurId: gate.userId,
-          start: alignToHour(new Date(startRaw)),
+          start: alignToHour(requested, gate.timeZone),
         },
       },
       select: { id: true },
@@ -250,6 +254,7 @@ export async function POST(request: Request) {
 
     const result = await applySlotChange(
       gate.userId,
+      gate.timeZone,
       startRaw,
       !existingCheck,
     );
@@ -272,8 +277,8 @@ export async function PUT(request: Request) {
     const toRaw = typeof body.to === "string" ? body.to : "";
     const weeksAhead =
       typeof body.weeksAhead === "number" && body.weeksAhead > 0
-        ? Math.min(Math.floor(body.weeksAhead), 52)
-        : 12;
+        ? Math.min(Math.floor(body.weeksAhead), WEEKLY_COPY_MAX_WEEKS)
+        : WEEKLY_COPY_DEFAULT_WEEKS;
 
     const from = new Date(fromRaw);
     const to = new Date(toRaw);
@@ -304,8 +309,9 @@ export async function PUT(request: Request) {
               ? item.start
               : "";
         if (!startRaw) continue;
-        const start = alignToHour(new Date(startRaw));
-        if (Number.isNaN(start.getTime())) continue;
+        const requested = new Date(startRaw);
+        if (Number.isNaN(requested.getTime())) continue;
+        const start = alignToHour(requested, gate.timeZone);
         template.push({
           start,
           end: new Date(start.getTime() + SLOT_MS),
@@ -322,7 +328,7 @@ export async function PUT(request: Request) {
       });
     }
 
-    const futureEnd = addWeeks(to, weeksAhead);
+    const futureEnd = addLocalWeeks(to, weeksAhead, gate.timeZone);
 
     const futureBookings = await prisma.booking.findMany({
       where: {
@@ -353,13 +359,12 @@ export async function PUT(request: Request) {
       const data = [];
       for (let week = 1; week <= weeksAhead; week += 1) {
         for (const slot of template) {
-          const start = addWeeks(slot.start, week);
-          if (Number.isNaN(start.getTime())) continue;
+          const start = addLocalWeeks(slot.start, week, gate.timeZone);
           if (protectedIso.has(start.toISOString())) continue;
           data.push({
             masseurId: gate.userId,
             start,
-            end: addWeeks(slot.end, week),
+            end: new Date(start.getTime() + SLOT_MS),
           });
         }
       }
