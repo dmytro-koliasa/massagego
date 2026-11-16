@@ -1,7 +1,8 @@
 # User Roles and Permissions
 
+> **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
 > **Status:** descriptive snapshot of `master` at commit `f29ca32` (2026-11-15). It records the access rules the code **enforces today**, not approved requirements.
-> Classification tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)). Decision ids (`BR-xxx`) refer to [business-rules.md](business-rules.md#open-decisions).
+> Classification tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)). Decision ids (`BR-xxx`) refer to [decisions.md](decisions.md).
 
 ## 1. Roles
 
@@ -13,7 +14,7 @@ There are two roles. Each is a separate **portal identity**, stored in `User.por
 | **Masseur** | Email + password, or Google | Portal `masseur`. Google is offered only on the masseur portal and only when configured |
 | **Anonymous** | none | Can reach the landing and login pages only |
 
-There is no administrator role, no support role, and no moderation capability. See [BR-010](business-rules.md#br-010) for discoverability.
+There is no administrator role, no support role, and no moderation capability. See [BR-010](decisions.md#br-010) for discoverability.
 
 ### 1.1 Identity isolation - Implemented
 
@@ -42,7 +43,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | See another client's booking details | - | - (shown only as "booked") | **Y** for bookings on own calendar (name, phone, type) | `api/masseurs/[id]/availability`, `api/masseur/availability` |
 | Cancel a booking | - | **own** (any time, incl. past) | **own calendar** (before start only) | `api/bookings/cancel`, `api/masseur/bookings/resolve` |
 | Edit a booking (time, note, type) | - | - | - | no endpoint exists |
-| Confirm / complete / mark no-show | - | - | - | no such status or endpoint ([BR-005](business-rules.md#br-005)) |
+| Confirm / complete / mark no-show | - | - | - | no such status or endpoint ([BR-005](decisions.md#br-005)) |
 
 ### 2.2 Availability and calendar
 
@@ -63,7 +64,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | Edit masseur avatar | - | - | **own** | `api/masseur/profile` |
 | Search cities (OpenStreetMap proxy) | - | - | **Y** | `api/geocode/city` |
 | List other clients or other masseurs' private data | - | - | - | no endpoint exists |
-| Delete an account | - | - | - | not implemented ([BR-011](business-rules.md#br-011)) |
+| Delete an account | - | - | - | not implemented ([BR-011](decisions.md#br-011)) |
 
 ### 2.4 Authentication
 
@@ -109,7 +110,7 @@ Client phone numbers are visible to a masseur only through bookings on their own
 - Client endpoints reject masseur sessions and masseur endpoints reject client sessions, both through separate cookies and a database role check.
 - The city-search proxy and gallery endpoints are masseur-only.
 - Password policy: 8-64 characters containing a letter, a digit and a symbol.
-- Phone numbers must be valid numbers from the EU or Ukraine ([BR-013](business-rules.md#br-013)).
+- Phone numbers must be valid numbers from the EU or Ukraine ([BR-013](decisions.md#br-013)).
 - Uploads: JPEG/PNG only for the gallery, 5 MB maximum, 3 images per masseur.
 
 ## 6. Gaps and open points
@@ -119,8 +120,8 @@ Client phone numbers are visible to a masseur only through bookings on their own
 | No rate limiting on registration, login or booking creation | **Proposed** (not approved) |
 | No email/phone verification, no password reset | **Needs Decision** (not covered by a `BR-xxx` item yet) |
 | No admin or support role | **Needs Decision** (not covered by a `BR-xxx` item yet) |
-| Masseur email returned to every client by `GET /api/masseurs` although not displayed | **Needs Decision** - see C-9 in [business-rules.md](business-rules.md#genuine-inconsistencies-code-vs-code) |
-| Which masseurs are visible to clients | **Needs Decision** - [BR-010](business-rules.md#br-010) |
-| Who may cancel, and when | **Needs Decision** - [BR-004](business-rules.md#br-004) |
-| Notifying the counterpart of changes | **Needs Decision** - [BR-009](business-rules.md#br-009) |
-| Account deletion and retention | **Needs Decision** - [BR-011](business-rules.md#br-011) |
+| Masseur email returned to every client by `GET /api/masseurs` although not displayed | **Needs Decision** - see C-9 in [decisions.md](decisions.md#code-inconsistencies) |
+| Which masseurs are visible to clients | **Needs Decision** - [BR-010](decisions.md#br-010) |
+| Who may cancel, and when | **Needs Decision** - [BR-004](decisions.md#br-004) |
+| Notifying the counterpart of changes | **Needs Decision** - [BR-009](decisions.md#br-009) |
+| Account deletion and retention | **Needs Decision** - [BR-011](decisions.md#br-011) |

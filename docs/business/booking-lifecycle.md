@@ -1,5 +1,6 @@
 # Booking Lifecycle
 
+> **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
 > **Status:** descriptive snapshot of `master` at commit `f29ca32` (2026-11-15). It documents the lifecycle the code **implements today**; it is not an approved product flow.
 > Tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)).
 
@@ -12,7 +13,7 @@
 | `pending` | The booking exists and **occupies the hour**. It is never advanced; there is no confirmation step | Creation (both routes) |
 | `cancelled` | The booking no longer occupies the hour | Client cancel, masseur resolve |
 
-Every other string is unknown to the code. Because all "is this hour taken?" checks and the DB constraint use `status <> 'cancelled'`, **any additional status would be treated as occupying the hour**. See [BR-005](business-rules.md#br-005).
+Every other string is unknown to the code. Because all "is this hour taken?" checks and the DB constraint use `status <> 'cancelled'`, **any additional status would be treated as occupying the hour**. See [BR-005](decisions.md#br-005).
 
 The name `pending` suggests awaiting approval, but no approval exists: the booked hour is shown as booked immediately, to both parties.
 
@@ -92,7 +93,7 @@ Multi-hour client requests create **one booking row per hour**, atomically; ther
 - Client booking calendar: past hours are not returned (availability is clipped to "now").
 - Client sessions list (`GET /api/bookings`): returns any non-cancelled booking, so past bookings remain visible and can be cancelled.
 - Masseur API: cannot resolve/cancel started hours.
-- **Needs Decision:** whether past bookings should be immutable, and whether sessions should be marked completed - [BR-004](business-rules.md#br-004), [BR-005](business-rules.md#br-005).
+- **Needs Decision:** whether past bookings should be immutable, and whether sessions should be marked completed - [BR-004](decisions.md#br-004), [BR-005](decisions.md#br-005).
 
 ## 8. Slot availability after cancellation - Implemented
 
@@ -115,9 +116,9 @@ All checks and the PostgreSQL constraint ignore `cancelled` rows, so the same ma
 
 | Topic | Reference |
 |---|---|
-| Is a booking confirmed immediately, or does the masseur approve it? Are `completed`/`no_show` needed? | [BR-005](business-rules.md#br-005) |
-| Cancellation cutoff, past-booking cancellation, reasons | [BR-004](business-rules.md#br-004) |
-| Minimum lead time and the 60-minute grace on started slots | [BR-002](business-rules.md#br-002) |
-| Client overlapping bookings and request size | [BR-008](business-rules.md#br-008) |
-| Notifications on creation and cancellation | [BR-009](business-rules.md#br-009) |
-| Session duration | [BR-001](business-rules.md#br-001) |
+| Is a booking confirmed immediately, or does the masseur approve it? Are `completed`/`no_show` needed? | [BR-005](decisions.md#br-005) |
+| Cancellation cutoff, past-booking cancellation, reasons | [BR-004](decisions.md#br-004) |
+| Minimum lead time and the 60-minute grace on started slots | [BR-002](decisions.md#br-002) |
+| Client overlapping bookings and request size | [BR-008](decisions.md#br-008) |
+| Notifications on creation and cancellation | [BR-009](decisions.md#br-009) |
+| Session duration | [BR-001](decisions.md#br-001) |
