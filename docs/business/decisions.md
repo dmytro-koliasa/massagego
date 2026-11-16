@@ -472,7 +472,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** How does a user recover access to an account (forgotten password) and how does a client sign in once an email exists ([BR-009](#br-009))?
 **Current implementation:** No password reset exists for either role. A client signs in with phone and password; a masseur with email and password or Google.
 **Why:** A user who forgets a password is locked out. With a verified email ([BR-009](#br-009)) a reset becomes possible.
-**Status:** Open. Not yet groomed. Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+**Status:** Open (grooming in progress). Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+
+**Decision so far (2026-11-16, not implemented):** **password reset by email link (option A)**, for both roles. The user enters their phone (client) or email (masseur) and receives a one-time link, valid for a limited time, to set a new password; it is sent to the **verified** email ([BR-009](#br-009)). SMS codes and manual reset by support were considered and not chosen (SMS may come later with [BR-023](#br-023)).
+
+**To decide for implementation (not yet groomed):** link lifetime and one-time use; the same response whether or not the account exists (so nobody can learn who is registered); a masseur who signs in only with Google has no password, so a reset does not apply; what happens to open sessions after a reset; **still open in this item:** whether the client signs in with phone only or also with the email once it exists.
 
 ### BR-020
 
