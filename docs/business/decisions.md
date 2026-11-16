@@ -6,17 +6,27 @@
 
 ## Workflow
 
-Every item (a `BR-xxx` decision or a `C-x` inconsistency) is handled as its own task:
+Work is split into two tracks. Every item (a `BR-xxx` decision or a `C-x` inconsistency) goes through them in order.
 
-1. **Groom** - the options are discussed with the product owner; one is marked *Recommended*. No implementation starts before this.
-2. **Approve** - the owner picks an option. The item's status becomes **Approved** with the date and the chosen option, recorded in the log below.
-3. **Implement** - code, migration (if any) and tests are done on a dedicated branch, one item per pull request.
-4. **Record** - in the **same pull request**, the rule moves into "Approved rules" in [business-rules.md](business-rules.md), with file references, and the status becomes **Implemented**.
+### Track 1 - documentation (current)
+
+No application code, migration or schema change happens in this track.
+
+1. **Groom** - the options are discussed with the product owner; one is marked *Recommended*.
+2. **Approve** - the owner picks an option. The item becomes **Approved**, with the date and the chosen option recorded in the log below.
+
+### Track 2 - implementation (later, separate)
+
+Started only when the owner decides to implement approved items. Each item gets its own branch and pull request.
+
+3. **Groom the implementation** - technical details are confirmed with the owner before any change is made.
+4. **Implement** - code, migration (if any) and tests.
+5. **Record** - the rule moves into "Approved rules" in [business-rules.md](business-rules.md), with file references, and the item becomes **Implemented**.
 
 | Status | Meaning |
 |---|---|
 | **Open** | Not yet groomed or decided |
-| **Approved** | Option chosen by the owner; not yet implemented |
+| **Approved** | Option chosen by the owner; not implemented. Not yet binding in "Approved rules" |
 | **Implemented** | Merged to `master` and moved to Approved rules |
 | **Rejected** | Owner decided to keep current behavior or drop the item |
 

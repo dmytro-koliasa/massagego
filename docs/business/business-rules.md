@@ -19,7 +19,7 @@ Related documents: [decisions.md](decisions.md), [user-roles.md](user-roles.md),
 
 ## Approved rules
 
-Rules the product owner has approved **and** that are implemented. A rule is added here in the same pull request that implements it, following the workflow in [decisions.md](decisions.md#workflow).
+Rules the product owner has approved **and** that are implemented. A rule is added here only once its implementation is merged (track 2 of the workflow in [decisions.md](decisions.md#workflow)). Decisions that are **Approved** but not yet implemented stay in decisions.md.
 
 | ID | Rule | Source decision | Implemented in |
 |---|---|---|---|
