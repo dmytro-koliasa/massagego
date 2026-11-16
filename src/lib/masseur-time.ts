@@ -38,6 +38,11 @@ export function isWithinWorkingHours(start: Date, zone: string): boolean {
   return hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
 }
 
+/** True once the slot's start instant has been reached. */
+export function isSlotStarted(start: Date, now: Date = new Date()): boolean {
+  return start.getTime() <= now.getTime();
+}
+
 /**
  * Adds whole weeks keeping the local clock time, so a 10:00 slot stays 10:00
  * across a daylight-saving change.

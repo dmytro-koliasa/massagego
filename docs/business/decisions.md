@@ -56,7 +56,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
 | 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
-| 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
+| 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | - (not implemented) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | - (not implemented) |
@@ -90,7 +90,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)); choosing the zone remains for PR 8 |
-| [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Approved** (2026-11-16) |
+| [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Approved** (2026-11-16) |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
@@ -279,9 +279,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 3. **Days off (option A):** there is no explicit days-off, vacation or time-off concept. A day is off simply because no availability slots exist for it. No "close dates" action and no stored time-off periods are introduced now.
 4. **Past edits (option A):** the server rejects any availability change (add or remove) for a slot whose hour has already started, in line with the existing UI and the other booking routes.
 
-**Resolves when implemented:** C-3 (window not enforced for walk-ins and the weekly template) and C-4 (past edits only blocked in the UI).
+**Implementation (2026-11-16, [#7](https://github.com/dmytro-koliasa/massagego/pull/7)):**
 
-**Open sub-questions for track 2 (not yet groomed):** how existing availability or bookings outside the window (if any) are handled when the window starts being enforced (none are expected: check production data first); the error code returned for the new rejections; whether a future "close dates / time off" feature is added later (considered and not chosen: a "close dates" bulk action and stored time-off periods).
+1. Error codes: outside the window → `out_of_hours` (400) on every write path; a started availability edit → `slot_in_past` (409). Masseur walk-in / resolve for a started slot stay on `slot_unavailable` (409).
+2. Existing out-of-window availability rows are left as they are (test data; none expected). Only new writes are rejected.
+3. "Close dates / time off" stays out of scope.
+
+**Resolved:** C-3 and C-4.
 
 ### BR-008
 
@@ -570,8 +574,8 @@ Until each item is groomed and approved, its status stays **Open**. These are de
 |---|---|---|---|---|
 | C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | Open | [BR-002](#br-002) |
 | C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)) | [BR-006](#br-006) |
-| C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | Open | [BR-007](#br-007) |
-| C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | Open | [BR-007](#br-007) |
+| C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | [BR-007](#br-007) |
+| C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | [BR-007](#br-007) |
 | C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open | [BR-004](#br-004) |
 | C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): `addLocalWeeks` in the masseur's zone | [BR-006](#br-006) |
 | C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | **Approved** (2026-11-16) | this item, see "Decisions on C-7 and C-8" below |

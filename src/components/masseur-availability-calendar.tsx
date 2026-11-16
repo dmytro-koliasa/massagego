@@ -579,6 +579,8 @@ export const MasseurAvailabilityCalendar = forwardRef<
 					};
 					if (data.error === 'slot_taken') {
 						toast.error(t.bookingSlotTaken);
+					} else if (data.error === 'out_of_hours') {
+						toast.error(t.availabilityOutOfHours);
 					} else if (data.error === 'slot_unavailable') {
 						toast.error(t.availabilityBookSlotPast);
 					} else if (data.error === 'invalid_phone') {
@@ -652,7 +654,16 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			});
 
 			if (!response.ok) {
-				toast.error(t.availabilitySaveError);
+				const data = (await response.json().catch(() => ({}))) as {
+					error?: string;
+				};
+				if (data.error === 'out_of_hours') {
+					toast.error(t.availabilityOutOfHours);
+				} else if (data.error === 'slot_in_past') {
+					toast.error(t.availabilityBookSlotPast);
+				} else {
+					toast.error(t.availabilitySaveError);
+				}
 				return false;
 			}
 
@@ -690,7 +701,14 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				});
 
 				if (!response.ok) {
-					toast.error(t.availabilityRepeatError);
+					const data = (await response.json().catch(() => ({}))) as {
+						error?: string;
+					};
+					toast.error(
+						data.error === 'out_of_hours'
+							? t.availabilityRepeatOutOfHours
+							: t.availabilityRepeatError,
+					);
 					return;
 				}
 

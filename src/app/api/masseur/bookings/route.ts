@@ -10,7 +10,11 @@ import {
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
 import { SLOT_MS } from "@/lib/booking-constants";
-import { alignToHour, resolveTimeZone } from "@/lib/masseur-time";
+import {
+  alignToHour,
+  isWithinWorkingHours,
+  resolveTimeZone,
+} from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingCreateSchema,
@@ -60,7 +64,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const slotStart = alignToHour(slotStartRaw, resolveTimeZone(masseur.timezone));
+    const timeZone = resolveTimeZone(masseur.timezone);
+    const slotStart = alignToHour(slotStartRaw, timeZone);
+
+    if (!isWithinWorkingHours(slotStart, timeZone)) {
+      return NextResponse.json({ error: "out_of_hours" }, { status: 400 });
+    }
 
     if (isSlotExpired(slotStart)) {
       return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });

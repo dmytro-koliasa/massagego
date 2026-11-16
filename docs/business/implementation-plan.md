@@ -39,7 +39,7 @@
 | 1 | Booking statuses and cancellation data ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | BR-005, C-8 | none |
 | 2 | Masseur timezone and shared constants ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) | BR-006, BR-001, C-6 | none |
 | 2a | Calendars in the masseur's timezone ([#6](https://github.com/dmytro-koliasa/massagego/pull/6)) | BR-006, C-2 | 2 |
-| 3 | Availability rules | BR-007, C-3, C-4 | 2, 2a |
+| 3 | Availability rules ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | BR-007, C-3, C-4 | 2, 2a |
 | 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2, 2a |
 | 5 | Client booking and cancellation rules | BR-008, BR-004, C-5, C-7, X-1 | 1, 4 |
 | 6 | Thai massage hints | BR-014 | 5 |
@@ -102,7 +102,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Adding or removing a started slot is rejected by the server.
 - Closes C-3, C-4.
 
-**To groom first:** the error codes; the treatment of existing slots outside the window (none expected, the data is test data).
+**Groomed (2026-11-16):** `out_of_hours` / `slot_in_past`; existing out-of-window rows left untouched.
 
 ### PR 4 - Booking lead time, 120-day window, cancellation cutoff
 

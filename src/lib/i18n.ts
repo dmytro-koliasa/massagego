@@ -244,6 +244,8 @@ export const dictionaries = {
 		availabilityMarkAllWeek: 'Mark all remaining slots of the week as available',
 		availabilityLoadError: 'Could not load availability.',
 		availabilitySaveError: 'Could not update availability.',
+		availabilityOutOfHours:
+			'Hours outside 05:00–23:00 cannot be marked available.',
 		availabilityRepeat: 'Repeat week',
 		availabilityRepeatHint:
 			'Clicking this button will copy the current week’s schedule to the following weeks.',
@@ -253,6 +255,8 @@ export const dictionaries = {
 		availabilityRepeatSuccess: 'Following weeks updated from this week.',
 		availabilityRepeatEmpty: 'Mark at least one available hour this week before repeating.',
 		availabilityRepeatError: 'Could not repeat this week.',
+		availabilityRepeatOutOfHours:
+			'The week could not be copied because it includes hours outside 05:00–23:00.',
 		validationValueMissing: 'Please fill out this field.',
 		validationTypeMismatch: 'Please enter a valid email address.',
 		validationTooShort: 'Please use at least {min} characters.',
@@ -505,6 +509,8 @@ export const dictionaries = {
 		availabilityMarkAllWeek: 'Позначити всі слоти тижня як доступні (від поточного часу)',
 		availabilityLoadError: 'Не вдалося завантажити доступність.',
 		availabilitySaveError: 'Не вдалося оновити доступність.',
+		availabilityOutOfHours:
+			'Години поза межами 05:00–23:00 не можна зробити доступними.',
 		availabilityRepeat: 'Повторити тиждень',
 		availabilityRepeatHint:
 			'Натиснувши цю кнопку, ви продублюєте графік поточного тижня на наступні тижні.',
@@ -515,6 +521,8 @@ export const dictionaries = {
 		availabilityRepeatSuccess: 'Наступні тижні оновлено за зразком цього тижня.',
 		availabilityRepeatEmpty: 'Спочатку позначте хоча б одну доступну годину цього тижня.',
 		availabilityRepeatError: 'Не вдалося повторити тиждень.',
+		availabilityRepeatOutOfHours:
+			'Тиждень не скопійовано: у ньому є години поза межами 05:00–23:00.',
 		validationValueMissing: 'Будь ласка, заповніть це поле.',
 		validationTypeMismatch: 'Будь ласка, введіть коректну email-адресу.',
 		validationTooShort: 'Будь ласка, введіть щонайменше {min} символів.',
