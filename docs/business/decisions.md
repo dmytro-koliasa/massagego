@@ -281,7 +281,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 4. **User control (2026-11-16, option B):** each user can **switch each event type on or off, per channel** (email and Telegram) in their settings. There is no single global switch and no mandatory-only mode. Risk noted: a user can switch off an important event (for example a cancellation notice); see the follow-up question below.
 5. **Critical events cannot be switched off completely (2026-11-16, option A):** a cancellation made by the other side (events 2, 3 and 4) and the booking confirmation (5) must keep **at least one channel on**; a user may turn off Telegram or email but not both. The "new booking" notice to the masseur (1) may be switched off completely, because the masseur sees bookings in the calendar.
 6. **Email verification (2026-11-16, option A):** the user confirms their email address with a link or a code at registration, and notifications are sent **only to a confirmed address**. This applies to the client (new real email at registration) and, since the same address will receive notices, to the masseur as well. Until confirmed, email notifications are not sent.
-7. **Still to groom:** message content and languages, what happens to a user who has not connected Telegram, and the interaction with the 7-day deletion of cancelled bookings ([BR-011](#br-011)): a cancellation notice must be sent before the booking is deleted.
+7. **Language (2026-11-16, option A):** the preferred language (English or Ukrainian) is **stored in the user account**; notifications are sent in it. At registration it is set from the language selected at that moment, and the user can change it in the profile.
+8. **Still to groom:** message content, what happens to a user who has not connected Telegram, and the interaction with the 7-day deletion of cancelled bookings ([BR-011](#br-011)): a cancellation notice must be sent before the booking is deleted.
 
 ### BR-010
 
