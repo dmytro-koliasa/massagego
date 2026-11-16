@@ -59,6 +59,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | - (not implemented) |
+| 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | - (not implemented) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | - (not implemented) |
@@ -87,7 +88,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
-| [BR-019](#br-019) | Password reset and account recovery | Medium | - (not yet groomed) | Open |
+| [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16) |
 | [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | - (not yet groomed) | Open |
 | [BR-021](#br-021) | Administrator or support role | Low | - (not yet groomed) | Open |
 | [BR-022](#br-022) | Image upload rules | Low | - (not yet groomed) | Open |
@@ -472,11 +473,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** How does a user recover access to an account (forgotten password) and how does a client sign in once an email exists ([BR-009](#br-009))?
 **Current implementation:** No password reset exists for either role. A client signs in with phone and password; a masseur with email and password or Google.
 **Why:** A user who forgets a password is locked out. With a verified email ([BR-009](#br-009)) a reset becomes possible.
-**Status:** Open (grooming in progress). Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
 
 **Decision so far (2026-11-16, not implemented):** **password reset by email link (option A)**, for both roles. The user enters their phone (client) or email (masseur) and receives a one-time link, valid for a limited time, to set a new password; it is sent to the **verified** email ([BR-009](#br-009)). SMS codes and manual reset by support were considered and not chosen (SMS may come later with [BR-023](#br-023)).
 
-**To decide for implementation (not yet groomed):** link lifetime and one-time use; the same response whether or not the account exists (so nobody can learn who is registered); a masseur who signs in only with Google has no password, so a reset does not apply; what happens to open sessions after a reset; **still open in this item:** whether the client signs in with phone only or also with the email once it exists.
+**Client sign-in (2026-11-16, option A):** the client keeps signing in with the **phone number and password only**. The verified email is used for notifications and for password reset, not for sign-in. The masseur signs in as today (email and password, or Google).
+
+**To decide for implementation (not yet groomed):** link lifetime and one-time use; the same response whether or not the account exists (so nobody can learn who is registered); a masseur who signs in only with Google has no password, so a reset does not apply; what happens to open sessions after a reset.
 
 ### BR-020
 
@@ -568,7 +571,7 @@ A review of all **Approved** decisions against each other, made on 2026-11-16. T
 | X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question) |
 | X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | UX note for implementation: keep the form short and clear; no decision needed now | Note |
 | X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
-| X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Open (BR-019) |
+| X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Decided in BR-019 |
 
 No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts. X-1 was decided on 2026-11-16 (option A, in [BR-014](#br-014)); X-2 to X-4 are notes for implementation; X-5 is decided in [BR-019](#br-019) when groomed.
 
