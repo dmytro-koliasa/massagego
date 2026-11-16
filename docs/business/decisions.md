@@ -35,6 +35,16 @@ Started only when the owner decides to implement approved items. Each item gets 
 
 Suggested order: BR-006 and BR-001 first (they underpin availability maths and the database constraint), then BR-002 / BR-004 / BR-005, then BR-007 / BR-008 / BR-010, then the rest.
 
+## Cross-cutting requirements
+
+Requirements from the owner that apply to **every** item, not to a single `BR-xxx`. They are recorded here so they are not forgotten when implementation starts (track 2).
+
+| ID | Requirement | Recorded |
+|---|---|---|
+| XR-1 | **Privacy and data protection.** When implementing, take into account the **GDPR** and the **other privacy and personal-data regulations that may apply** to the service and its users (the exact set is to be identified, ideally with legal advice). Personal data handling must be designed in, not added afterwards. | 2026-11-16 |
+
+Features that already touch personal data and must be reviewed against XR-1 when implemented: the masseur's **public phone number** ([BR-004](#br-004)); **account deletion and retention** ([BR-011](#br-011)); the cancellation reason free text ([BR-004](#br-004)); client and masseur **city** and phone numbers ([BR-013](#br-013), [BR-017](#br-017)); name and phone copied into bookings ([BR-008](#br-008)); **notifications** and the consent for them ([BR-009](#br-009)); any future payment data ([BR-015](#br-015)). Likely needs, to be confirmed with legal advice: privacy policy and terms shown at registration with consent, a way to export and erase one's data, retention periods, and consent for cookies or tracking if used. This is a requirement to design for, not a legal opinion.
+
 ## Approved decisions log
 
 | Date | ID | Chosen option | PR |
