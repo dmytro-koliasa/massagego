@@ -44,6 +44,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus | - (not implemented) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | - (not implemented) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
@@ -69,7 +70,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
-| [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it | Open |
+| [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Approved** (2026-11-16) |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 | [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
@@ -300,6 +301,15 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** Keep and document. **B.** Allow all valid numbers.
 **Recommendation: A** if the launch market is EU + UA; revisit with expansion.
 **Impact:** none for A; B changes the phone picker and validation only.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option B with exclusions.**
+
+1. **Accepted phone numbers:** any valid international phone number, **except** numbers from (a) **all African countries**, (b) **Russia**, (c) **Belarus**. All other countries are allowed. The stored format stays E.164.
+2. **Where it applies:** everywhere a phone is entered: client registration and login, the masseur's profile phone ([BR-004](#br-004)) and the masseur's walk-in bookings.
+3. **Phone picker:** Ukraine stays the default country; the other allowed countries are available (searchable), and the excluded countries are not offered.
+4. **Scope of the rule:** it restricts **phone numbers**, not the location of users or masseurs; the city search is unchanged.
+
+**Open sub-questions for track 2 (not yet groomed):** the exact list of excluded countries and territories (which definition of "Africa" to use, how to treat dependent territories and countries spanning two continents, e.g. Egypt); the shared dialling code +7 of Russia and Kazakhstan, so that Kazakhstan numbers stay allowed and Russian ones are rejected; the error message shown for an excluded number; whether existing accounts or bookings with such numbers exist (none expected, as only EU and Ukraine numbers were accepted before).
 
 ### BR-014
 
