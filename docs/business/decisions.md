@@ -44,6 +44,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
@@ -71,6 +72,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 | [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
+| [BR-017](#br-017) | Client city and default city filter | Medium | A: city required at client registration; list defaults to it | **Approved** (2026-11-16) |
 
 ### BR-001
 
@@ -328,6 +330,24 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Why deferred:** there is no "course" (package) concept: no price per course, no validity period, no tracking of used and remaining sessions. It depends on prices and payments ([BR-012](#br-012), [BR-015](#br-015)). For now a client simply books many individual sessions; the cap of 30 active future bookings in [BR-008](#br-008) was chosen so that courses are not blocked.
 
 **Questions for when it is picked up:** who sells and prices a course (per masseur); how sessions are linked to a course and counted; validity period; cancellation and refund of unused sessions; whether a course is bound to one masseur; how it interacts with the cancellation cutoff ([BR-004](#br-004)) and the Thai-massage hints ([BR-014](#br-014)).
+
+### BR-017
+
+**Business question:** How is the list of masseurs narrowed for a client, so that a client in Kyiv does not have to browse masseurs from the whole country?
+**Current implementation:** The client has **no city**: registration asks only for name, phone and password, and the client profile edits only names. The masseur list defaults to "all cities" and the client must pick a city in a filter. Cities in the filter are the cities of masseurs, stored as plain text chosen from OpenStreetMap suggestions in the masseur's interface language, so the same city may be stored as "Київ" and "Kyiv" and appear twice.
+**Why:** The default list is long and not relevant to the client.
+**Options:** **A.** City required at client registration; the list defaults to the client's city. **B.** Ask for the city on first visit to the list. **C.** Detect the city automatically (IP or browser geolocation). **D.** Remember the last chosen city in the browser.
+**Recommendation: A.**
+**Impact:** UI (registration form, profile, list filter default), API (client register and profile, `GET /api/masseurs`), **DB** (a city for the client), existing clients without a city.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option A.**
+
+1. **Client city:** the client chooses a **city at registration (required)**, with the same city search used by masseurs. It can be changed in the client profile.
+2. **List default:** the masseur list opens filtered to the **client's city**. The client can switch to another city or to all cities. This works together with the visibility rules of [BR-010](#br-010).
+
+**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** store the city in a **canonical form** (an identifier from the map service plus the name in the interface language) so that "Київ" and "Kyiv" are one city, for both clients and masseurs; existing masseur city values need to be reconciled; existing clients without a city see "all cities" and are asked, without blocking sign-in, to choose one; when there are no masseurs in the client's city, show a message and a button to show all cities; whether automatic detection (option C) is later offered only as a suggestion.
+
+**Related:** [BR-010](#br-010) (who is listed and in what order).
 
 
 ---
