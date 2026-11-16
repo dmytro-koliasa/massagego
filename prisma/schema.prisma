@@ -78,22 +78,47 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+/// The exclusion constraint "Booking_no_overlapping_active_slots" (SQL only)
+/// treats every status except `cancelled` as occupying the hour. Review it
+/// whenever a value is added here.
+enum BookingStatus {
+  confirmed
+  cancelled
+}
+
+enum CancelledBy {
+  client
+  masseur
+}
+
+enum CancellationReason {
+  cant_make_it
+  circumstances_changed
+  changed_mind
+  wrong_slot
+  other
+  /// System reason, set when a client deletes their account.
+  client_account_deleted
+}
+
 model Booking {
-  id            String   @id @default(cuid())
-  masseurId     String
-  /// Authenticated client who owns this booking. Required for new bookings.
-  clientUserId  String?
-  clientName    String
-  clientPhone   String
-  clientEmail   String?
-  preferredDate String?
-  preferredTime String?
-  slotStart     DateTime?
-  massageType   String?
-  note          String?
-  status        String   @default("pending")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String              @id @default(cuid())
+  masseurId        String
+  /// Client account that owns this booking; null for masseur walk-in bookings.
+  clientUserId     String?
+  clientName       String
+  clientPhone      String
+  slotStart        DateTime?
+  massageType      String?
+  note             String?
+  status           BookingStatus       @default(confirmed)
+  cancelledBy      CancelledBy?
+  cancelledAt      DateTime?
+  cancelReason     CancellationReason?
+  /// Free text, only for `cancelReason = other`.
+  cancelReasonText String?             @db.VarChar(200)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   masseur User  @relation("MasseurBookings", fields: [masseurId], references: [id], onDelete: Cascade)
   client  User? @relation("ClientBookings", fields: [clientUserId], references: [id], onDelete: SetNull)
@@ -103,6 +128,8 @@ model Booking {
   @@index([clientUserId])
   @@index([clientUserId, status])
   @@index([clientUserId, slotStart])
+  @@index([status, cancelledAt])
+  @@index([status, slotStart])
 }
 
 model AvailabilitySlot {

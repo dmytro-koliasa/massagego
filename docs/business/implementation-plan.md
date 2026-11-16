@@ -36,7 +36,7 @@
 
 | № | Pull request | Decisions | Depends on |
 |---|---|---|---|
-| 1 | Booking statuses and cancellation data | BR-005, C-8 | none |
+| 1 | Booking statuses and cancellation data ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | BR-005, C-8 | none |
 | 2 | Masseur timezone and shared constants | BR-006, BR-001 | none |
 | 3 | Availability rules | BR-007, C-2, C-3, C-4, C-6 | 2 |
 | 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2 |
