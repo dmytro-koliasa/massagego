@@ -38,7 +38,7 @@
 |---|---|---|---|
 | 1 | Booking statuses and cancellation data ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | BR-005, C-8 | none |
 | 2 | Masseur timezone and shared constants ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) | BR-006, BR-001, C-6 | none |
-| 2a | Calendars in the masseur's timezone (added 2026-11-16) | BR-006, C-2 | 2 |
+| 2a | Calendars in the masseur's timezone ([#6](https://github.com/dmytro-koliasa/massagego/pull/6)) | BR-006, C-2 | 2 |
 | 3 | Availability rules | BR-007, C-3, C-4 | 2, 2a |
 | 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2, 2a |
 | 5 | Client booking and cancellation rules | BR-008, BR-004, C-5, C-7, X-1 | 1, 4 |
@@ -91,7 +91,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - The masseur calendar's working-hour grid and the server's check agree across daylight-saving changes.
 - Closes C-2.
 
-**To groom first:** how the client sessions calendar shows bookings with masseurs in different timezones; where the label is placed; whether the masseur sees a hint when the browser's timezone differs from the profile's.
+**Groomed (2026-11-16):** sessions calendar stays in the browser zone with a per-event masseur label; one line "Times in {label}" / "Час: {label}" above the masseur and client booking calendars; no device-vs-profile warning until PR 8; `timezone` comes from the existing availability and bookings responses.
 
 ### PR 3 - Availability rules
 

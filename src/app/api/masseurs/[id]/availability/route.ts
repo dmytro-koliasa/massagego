@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SLOT_MS } from "@/lib/booking-constants";
 import { requireClientSession } from "@/lib/client-session.server";
+import { resolveTimeZone } from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -33,12 +34,14 @@ export async function GET(request: Request, context: RouteContext) {
         id,
         portal: "masseur",
       },
-      select: { id: true },
+      select: { id: true, timezone: true },
     });
 
     if (!masseur) {
       return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
     }
+
+    const timezone = resolveTimeZone(masseur.timezone);
 
     const now = new Date();
     const rangeStart = from > now ? from : now;
@@ -120,6 +123,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({
+      timezone,
       slots: [...byStart.values()].sort((a, b) => a.start.localeCompare(b.start)),
     });
   } catch {

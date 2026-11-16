@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import luxonPlugin from '@fullcalendar/luxon3';
 import ukLocale from '@fullcalendar/core/locales/uk';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
@@ -11,8 +12,16 @@ import {
 	CALENDAR_SLOT_DURATION,
 	CALENDAR_SLOT_MAX_TIME,
 	CALENDAR_SLOT_MIN_TIME,
-	SLOT_MS,
+	DEFAULT_MASSEUR_TIME_ZONE,
 } from '@/lib/booking-constants';
+import {
+	alignToHourIso,
+	formatCalendarTimeZoneLine,
+	formatHourRange,
+	formatSlotDateTime,
+	formatWeekTitle,
+} from '@/lib/calendar-time';
+import { resolveTimeZone } from '@/lib/masseur-time';
 import { getMassageTypeLabel } from '@/lib/massage-types';
 
 type SlotStatus = 'available' | 'booked';
@@ -40,89 +49,8 @@ type ClientBookingCalendarProps = {
 	refreshKey?: number;
 };
 
-function getMonthName(date: Date, locale: 'en' | 'uk') {
-	const localeTag = locale === 'uk' ? 'uk-UA' : 'en-GB';
-
-	// uk-UA with a day forces the genitive month form: "вересня", "жовтня", ...
-	if (locale === 'uk') {
-		return (
-			new Intl.DateTimeFormat(localeTag, {
-				day: 'numeric',
-				month: 'long',
-			})
-				.formatToParts(date)
-				.find(part => part.type === 'month')?.value ?? ''
-		);
-	}
-
-	return new Intl.DateTimeFormat(localeTag, {
-		month: 'long',
-	}).format(date);
-}
-
-function formatWeekTitle(fromIso: string, toIso: string, locale: 'en' | 'uk') {
-	const start = new Date(fromIso);
-	const end = new Date(new Date(toIso).getTime() - 1);
-
-	const sameMonth =
-		start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
-
-	if (sameMonth) {
-		const month = getMonthName(start, locale);
-		return `${start.getDate()} – ${end.getDate()} ${month} ${start.getFullYear()}`;
-	}
-
-	const startMonth = getMonthName(start, locale);
-	const endMonth = getMonthName(end, locale);
-
-	if (start.getFullYear() === end.getFullYear()) {
-		return `${start.getDate()} ${startMonth} – ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-	}
-
-	return `${start.getDate()} ${startMonth} ${start.getFullYear()} – ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-}
-
-function formatSelectedSlot(startIso: string, locale: 'en' | 'uk') {
-	const start = new Date(startIso);
-	const end = new Date(start.getTime() + SLOT_MS);
-	const localeTag = locale === 'uk' ? 'uk-UA' : 'en-GB';
-
-	const datePart = new Intl.DateTimeFormat(localeTag, {
-		weekday: 'long',
-		day: 'numeric',
-		month: 'long',
-	}).format(start);
-
-	const timeFormatter = new Intl.DateTimeFormat(localeTag, {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
-
-	return `${datePart}, ${timeFormatter.format(start)}-${timeFormatter.format(end)}`;
-}
-
-function formatHourRange(start: Date, end: Date, locale: 'en' | 'uk') {
-	const localeTag = locale === 'uk' ? 'uk-UA' : 'en-GB';
-	const formatter = new Intl.DateTimeFormat(localeTag, {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
-	return {
-		start: formatter.format(start),
-		end: formatter.format(end),
-	};
-}
-
 function fillTimeHint(template: string, start: string, end: string) {
 	return template.replaceAll('{start}', start).replaceAll('{end}', end);
-}
-
-function alignToHourIso(date: Date) {
-	const aligned = new Date(date);
-	aligned.setMinutes(0, 0, 0);
-	return aligned.toISOString();
 }
 
 export function ClientBookingCalendar({
@@ -134,6 +62,9 @@ export function ClientBookingCalendar({
 	const { t, locale } = useLanguage();
 	const calendarRef = useRef<FullCalendar | null>(null);
 	const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+	const [timeZone, setTimeZone] = useState(DEFAULT_MASSEUR_TIME_ZONE);
+	const timeZoneRef = useRef(timeZone);
+	timeZoneRef.current = timeZone;
 	const [range, setRange] = useState<{ from: string; to: string } | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [cancelPending, setCancelPending] = useState(false);
@@ -177,8 +108,13 @@ export function ClientBookingCalendar({
 
 	const viewTitle = useMemo(() => {
 		if (!range) return '';
-		return formatWeekTitle(range.from, range.to, locale);
-	}, [range, locale]);
+		return formatWeekTitle(range.from, range.to, locale, timeZone);
+	}, [range, locale, timeZone]);
+
+	const timeZoneLine = useMemo(
+		() => formatCalendarTimeZoneLine(t.calendarTimeZoneLabel, timeZone),
+		[t.calendarTimeZoneLabel, timeZone],
+	);
 
 	const isCurrentWeek = useMemo(() => {
 		if (!range) return false;
@@ -201,6 +137,7 @@ export function ClientBookingCalendar({
 					new Date(slot.start),
 					new Date(slot.end),
 					locale,
+					timeZone,
 				);
 				const hint = (() => {
 					if (!booked) return undefined;
@@ -254,6 +191,7 @@ export function ClientBookingCalendar({
 			slots,
 			selectedSet,
 			locale,
+			timeZone,
 			t.availabilitySlotLabel,
 			t.availabilityBookedSlotLabel,
 			t.bookingSlotSelected,
@@ -279,6 +217,7 @@ export function ClientBookingCalendar({
 					return;
 				}
 				const data = (await response.json()) as {
+					timezone?: string;
 					slots?: Array<{
 						id: string;
 						start: string;
@@ -289,6 +228,9 @@ export function ClientBookingCalendar({
 						massageType?: string | null;
 					}>;
 				};
+				if (typeof data.timezone === 'string') {
+					setTimeZone(resolveTimeZone(data.timezone));
+				}
 				setSlots(
 					(data.slots ?? []).map(slot => ({
 						id: slot.id,
@@ -432,7 +374,7 @@ export function ClientBookingCalendar({
 						<ul className='space-y-1'>
 							{sortedSelected.map(start => (
 								<li key={start} className='font-medium'>
-									{formatSelectedSlot(start, locale)}
+									{formatSlotDateTime(start, locale, timeZone)}
 								</li>
 							))}
 						</ul>
@@ -469,14 +411,20 @@ export function ClientBookingCalendar({
 						</button>
 					</div>
 
-					<h4 className='pt-1 text-base font-bold text-foreground sm:text-lg'>{viewTitle}</h4>
+					<div className='pt-1 text-right'>
+						<h4 className='text-base font-bold text-foreground sm:text-lg'>
+							{viewTitle}
+						</h4>
+						<p className='mt-0.5 text-xs text-muted'>{timeZoneLine}</p>
+					</div>
 				</div>
 
 				<FullCalendar
-					key={locale}
+					key={`${locale}-${timeZone}`}
 					ref={calendarRef}
-					plugins={[timeGridPlugin, interactionPlugin]}
+					plugins={[luxonPlugin, timeGridPlugin, interactionPlugin]}
 					initialView='timeGridWeek'
+					timeZone={timeZone}
 					locale={locale === 'uk' ? ukLocale : 'en'}
 					headerToolbar={false}
 					allDaySlot={false}
@@ -519,7 +467,7 @@ export function ClientBookingCalendar({
 						const startIso =
 							typeof props.startIso === 'string'
 								? props.startIso
-								: alignToHourIso(arg.event.start ?? new Date());
+								: alignToHourIso(arg.event.start ?? new Date(), timeZoneRef.current);
 						handleSlotInteraction(startIso);
 					}}
 					eventTextColor='#ffffff'
@@ -559,7 +507,7 @@ export function ClientBookingCalendar({
 						</p>
 						<div className='mt-2 space-y-1 text-sm text-muted'>
 							<p>{t.bookingBookedByYou}</p>
-							<p>{formatSelectedSlot(cancelTarget.startIso, locale)}</p>
+							<p>{formatSlotDateTime(cancelTarget.startIso, locale, timeZone)}</p>
 							{cancelTarget.massageType ? (
 								<p>
 									{t.bookingMassageType}:{' '}
