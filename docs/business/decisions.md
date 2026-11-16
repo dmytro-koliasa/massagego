@@ -87,7 +87,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
-| [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
+| [BR-019](#br-019) | Password reset and account recovery | Medium | - (not yet groomed) | Open |
+| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | - (not yet groomed) | Open |
+| [BR-021](#br-021) | Administrator or support role | Low | - (not yet groomed) | Open |
+| [BR-022](#br-022) | Image upload rules | Low | - (not yet groomed) | Open |
+| [BR-023](#br-023) | Phone number verification | Low | - (not yet groomed) | Open |
+| [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Approved** (2026-11-16) |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
@@ -380,6 +385,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: A** until payments or fixed pricing are planned.
 **Impact:** A - none. B/C - UI, API, DB (new fields), and booking snapshot of price.
 
+**Status: Deferred (2026-11-16).** Prices and payments are postponed together with [BR-015](#br-015) (late-cancellation fee and online payment) and [BR-016](#br-016) (courses). Not groomed and not to be implemented yet.
+
 ### BR-013
 
 **Business question:** Which countries' phone numbers are accepted?
@@ -460,6 +467,41 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Related:** [BR-010](#br-010) (who is listed and in what order).
 
+### BR-019
+
+**Business question:** How does a user recover access to an account (forgotten password) and how does a client sign in once an email exists ([BR-009](#br-009))?
+**Current implementation:** No password reset exists for either role. A client signs in with phone and password; a masseur with email and password or Google.
+**Why:** A user who forgets a password is locked out. With a verified email ([BR-009](#br-009)) a reset becomes possible.
+**Status:** Open. Not yet groomed. Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+
+### BR-020
+
+**Business question:** How is the service protected from abuse (brute-force login, mass registration, booking spam)?
+**Current implementation:** No rate limiting on registration, login or booking creation; the strength of the password hash (bcrypt cost 12) is the only protection. There is no phone or SMS verification.
+**Why:** Open endpoints can be attacked; the booking limits in [BR-008](#br-008) do not stop automated abuse.
+**Status:** Open. Not yet groomed. Added 2026-11-16.
+
+### BR-021
+
+**Business question:** Is there an administrator or support role, and what can it do (view, block or delete accounts, handle complaints, edit the country blocklist)?
+**Current implementation:** No administrator, support or moderation role exists; all changes are made in the database or code.
+**Why:** Account deletion ([BR-011](#br-011)), complaints and abuse ([BR-020](#br-020)) need someone to act.
+**Status:** Open. Not yet groomed. Added 2026-11-16.
+
+### BR-022
+
+**Business question:** What rules apply to uploaded images (profile photo, gallery)?
+**Current implementation:** Gallery: JPEG or PNG, up to 5 MB, 3 images per masseur; the type comes from the file's declared type and the size from the request, without checking the actual file content; avatars follow similar rules.
+**Why:** Unverified uploads can carry unsafe content; image rules also affect storage cost and privacy ([XR-1](#cross-cutting-requirements)).
+**Status:** Open. Not yet groomed. Added 2026-11-16.
+
+### BR-023
+
+**Business question:** Is the phone number verified (for example by an SMS code) at registration?
+**Current implementation:** Only the format is checked; a client can register with any valid number, including someone else's, and the phone is the client's login. [BR-009](#br-009) verifies the email, not the phone.
+**Why:** The phone is both the login and the number a masseur sees; an unverified phone allows impersonation. SMS costs money ([BR-009](#br-009) discussed SMS).
+**Status:** Open. Not yet groomed. Added 2026-11-16.
+
 
 ---
 
@@ -469,17 +511,17 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 Until each item is groomed and approved, its status stays **Open**. These are defects in the as-is behavior; fixing them still goes through grooming (see workflow above).
 
-| ID | Finding | Evidence | Status |
-|---|---|---|---|
-| C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | Open |
-| C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | Open |
-| C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | Open |
-| C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | Open |
-| C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open |
-| C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | Open |
-| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | Open |
-| C-9 | **Masseur email is returned to every client.** `GET /api/masseurs` selects `email` and includes it in the JSON, but the UI never displays it. Whether masseur contact details should be public is an undecided product/privacy question; no `BR` item exists yet (only the code behavior is recorded here). | `src/app/api/masseurs/route.ts` | Open |
-| C-8 | **Schema comment drift.** `Booking.clientUserId` is commented "Required for new bookings" but masseur walk-ins create it as `null`. Fields `preferredDate`, `preferredTime`, `clientEmail` are written as `null` and otherwise unused. | `prisma/schema.prisma`, both create routes | Open |
+| ID | Finding | Evidence | Status | Closed by (when implemented) |
+|---|---|---|---|---|
+| C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | Open | [BR-002](#br-002) |
+| C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | Open | [BR-006](#br-006) |
+| C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | Open | [BR-007](#br-007) |
+| C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | Open | [BR-007](#br-007) |
+| C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open | [BR-004](#br-004) |
+| C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | Open | [BR-006](#br-006) |
+| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | Open | not yet decided (to groom) |
+| C-9 | **Masseur email is returned to every client.** `GET /api/masseurs` selects `email` and includes it in the JSON, but the UI never displays it. Whether masseur contact details should be public is an undecided product/privacy question; no `BR` item exists yet (only the code behavior is recorded here). | `src/app/api/masseurs/route.ts` | Open | [BR-010](#br-010) |
+| C-8 | **Schema comment drift.** `Booking.clientUserId` is commented "Required for new bookings" but masseur walk-ins create it as `null`. Fields `preferredDate`, `preferredTime`, `clientEmail` are written as `null` and otherwise unused. | `prisma/schema.prisma`, both create routes | Open | not yet decided (to groom) |
 
 ### Checked and consistent
 
