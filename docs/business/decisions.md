@@ -44,6 +44,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | - (not implemented) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
@@ -58,7 +59,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 |---|---|---|---|---|
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Approved** (2026-11-16) |
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
-| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
+| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Approved** (2026-11-16) |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Approved** (2026-11-16) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
@@ -120,6 +121,14 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** No limit. **B.** Fixed window (e.g. 90 days). **C.** Per-masseur horizon.
 **Recommendation: B.**
 **Impact:** UI (limit calendar navigation), API (validate in create route and availability GET), no DB change.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option B with a window of 120 days** (instead of the suggested 90).
+
+1. **Booking horizon:** a client can see and book slots only up to **120 days from today**, the same for every masseur. The client calendar cannot be paged forward beyond that, and the server rejects bookings and availability requests beyond it.
+2. **The window is not per masseur:** there is no setting for it.
+3. **Related:** the "nearest free time" on the masseur card ([BR-010](#br-010)) is computed within this window; the 30-booking cap ([BR-008](#br-008)) and courses of up to 20 sessions fit inside it.
+
+**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** limit the masseur's weekly copy to the same horizon (about 17 weeks; today up to 52, default 12) and limit what a masseur can publish; how "120 days" is counted at the end of the window (from today's date in the masseur's timezone, [BR-006](#br-006)); what the masseur sees beyond the window (their own calendar may show it); wording of the message when a client tries to go past the window.
 
 ### BR-004
 
