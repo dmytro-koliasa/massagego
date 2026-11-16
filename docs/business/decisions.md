@@ -42,6 +42,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
 | 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
+| 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -58,7 +59,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Approved** (2026-11-16) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
-| [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions | Open |
+| [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Approved** (2026-11-16) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings | Open |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability | Open |
@@ -195,6 +196,17 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** Keep global window and per-hour availability. **B.** Per-masseur weekly schedule plus per-hour exceptions. **C.** B plus date-range time off.
 **Recommendation: B**, and apply one window rule to every write path.
 **Impact:** UI (schedule editor), API (all availability and booking routes), **DB** (schedule table or JSON), existing availability rows unaffected.
+
+**Decision (Approved 2026-11-16, not implemented):**
+
+1. **Working hours (option A):** one **global** window **05:00-23:00** for all masseurs (the last slot starts at 22:00). It is not configurable per masseur and there is no weekly schedule. It is evaluated in the **masseur's timezone** ([BR-006](#br-006)).
+2. **Enforced on every write path:** the window applies to manual availability changes, to the weekly copy (including a client-supplied template) and to the masseur's walk-in bookings. A slot outside the window cannot be created by any of them.
+3. **Days off (option A):** there is no explicit days-off, vacation or time-off concept. A day is off simply because no availability slots exist for it. No "close dates" action and no stored time-off periods are introduced now.
+4. **Past edits (option A):** the server rejects any availability change (add or remove) for a slot whose hour has already started, in line with the existing UI and the other booking routes.
+
+**Resolves when implemented:** C-3 (window not enforced for walk-ins and the weekly template) and C-4 (past edits only blocked in the UI).
+
+**Open sub-questions for track 2 (not yet groomed):** how existing availability or bookings outside the window (if any) are handled when the window starts being enforced (none are expected: check production data first); the error code returned for the new rejections; whether a future "close dates / time off" feature is added later (considered and not chosen: a "close dates" bulk action and stored time-off periods).
 
 ### BR-008
 
