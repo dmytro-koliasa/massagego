@@ -66,7 +66,11 @@ export async function POST(request: Request) {
 
       await tx.booking.update({
         where: { id: booking.id },
-        data: { status: "cancelled" },
+        data: {
+          status: "cancelled",
+          cancelledBy: "masseur",
+          cancelledAt: new Date(),
+        },
       });
 
       if (keepAvailable) {

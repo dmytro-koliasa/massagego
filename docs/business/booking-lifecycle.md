@@ -3,6 +3,8 @@
 > **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
 > **Status:** descriptive snapshot of `master` at commit `f29ca32` (2026-11-15). It documents the lifecycle the code **implements today**; it is not an approved product flow.
 > Tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)).
+>
+> **Superseded in part ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)):** `status` is now the enum `BookingStatus` with `confirmed` (formerly `pending`) and `cancelled`, and a cancelled booking records `cancelledBy` and `cancelledAt` (approved rules AR-1 to AR-3 in [business-rules.md](business-rules.md#approved-rules)). The sections below still describe the snapshot.
 
 ## 1. Statuses - Implemented
 

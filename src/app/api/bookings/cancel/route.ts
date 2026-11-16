@@ -60,7 +60,11 @@ export async function POST(request: Request) {
 
     await prisma.booking.update({
       where: { id: booking.id },
-      data: { status: "cancelled" },
+      data: {
+        status: "cancelled",
+        cancelledBy: "client",
+        cancelledAt: new Date(),
+      },
     });
 
     return NextResponse.json({ ok: true, bookingId: booking.id });

@@ -1,6 +1,6 @@
 # Data Model and Configuration Changes
 
-> **Status:** consolidated list of what the **Approved** decisions in [decisions.md](decisions.md) require, as of 2026-11-16. Nothing here is implemented. It is an input for the implementation plan (track 2); the exact schema and names are decided when each item is groomed for implementation.
+> **Status:** consolidated list of what the **Approved** decisions in [decisions.md](decisions.md) require, as of 2026-11-16. Nothing here is implemented unless a row says **Implemented**. It is an input for the implementation plan (track 2); the exact schema and names are decided when each item is groomed for implementation.
 > The current database holds test data and will be wiped (see the data note in decisions.md), but schema changes and migrations are still needed.
 
 ## 1. Changes to existing tables
@@ -27,13 +27,13 @@
 
 | Change | Decision |
 |---|---|
-| `status` restricted to a fixed set: `confirmed` (renamed from `pending`) and `cancelled` | [BR-005](decisions.md#br-005) |
-| `cancelledBy` (client or masseur) and `cancelledAt` | [BR-005](decisions.md#br-005) |
-| Cancellation reason from a fixed list (including the system reason "client account deleted") and the free text for "Other" (up to 200 characters) | [BR-004](decisions.md#br-004), [BR-011](decisions.md#br-011) |
-| Index on status and `cancelledAt` (and on `slotStart` for completed bookings) for the cleanup job | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
+| **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): `status` restricted to the enum `BookingStatus` (`confirmed`, renamed from `pending`, and `cancelled`) | [BR-005](decisions.md#br-005) |
+| **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): `cancelledBy` (enum `CancelledBy`: `client`, `masseur`) and `cancelledAt` | [BR-005](decisions.md#br-005) |
+| **Storage implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): cancellation reason `cancelReason` (enum `CancellationReason`, including the system key `client_account_deleted`) and `cancelReasonText` (`VARCHAR(200)`) for "Other". Still to do: accepting and requiring the reason in the API and the UI (PR 5 of the plan) | [BR-004](decisions.md#br-004), [BR-011](decisions.md#br-011) |
+| **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): indexes on (`status`, `cancelledAt`) and (`status`, `slotStart`) for the cleanup job | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
 | Database guard against a client holding two active bookings for the same hour (exclusion constraint on the client account, rows without a client excluded), in addition to the application check | [BR-008](decisions.md#br-008) (open sub-question) |
 | Name and phone for client bookings copied from the account at booking time (no schema change; a server rule) | [BR-008](decisions.md#br-008) |
-| Remove the unused columns `preferredDate`, `preferredTime`, `clientEmail`; correct the schema comment on `clientUserId` | C-8 (decided 2026-11-16), see [decisions.md](decisions.md#code-inconsistencies) |
+| **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): removed the unused columns `preferredDate`, `preferredTime`, `clientEmail`; corrected the schema comment on `clientUserId` | C-8 (decided 2026-11-16), see [decisions.md](decisions.md#code-inconsistencies) |
 
 ### `AvailabilitySlot`
 No schema change. Only rules change (working window in the masseur's timezone, past edits rejected, weekly copy limited to about 17 weeks).
@@ -59,7 +59,7 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 | Cancelled booking retention | 7 days from `cancelledAt` | [BR-011](decisions.md#br-011) |
 | Completed booking retention | 3 months from the session start | [BR-018](decisions.md#br-018) |
 | Excluded countries | one shared list for phone and city: all African countries, Russia, Belarus | [BR-013](decisions.md#br-013) |
-| Cancellation reasons list | five reasons plus the system reason | [BR-004](decisions.md#br-004) |
+| Cancellation reasons list | five reasons plus the system reason; keys defined by the enum `CancellationReason` ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)), labels still to be added with PR 5 | [BR-004](decisions.md#br-004) |
 
 ## 4. Background jobs
 

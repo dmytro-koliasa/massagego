@@ -23,7 +23,12 @@ Rules the product owner has approved **and** that are implemented. A rule is add
 
 | ID | Rule | Source decision | Implemented in |
 |---|---|---|---|
-| - | none yet | - | - |
+| AR-1 | A booking has exactly one of two statuses: `confirmed` (it occupies the hour from creation; there is no masseur confirmation) or `cancelled`. The database rejects any other value. Whether a session took place is derived from time; there are no post-session statuses. | [BR-005](decisions.md#br-005) | `prisma/schema.prisma` (`enum BookingStatus`, `Booking.status`); `src/app/api/bookings/route.ts` (`POST`); `src/app/api/masseur/bookings/route.ts` (`POST`); migration `20261116174000_booking_status_and_cancel_data`; [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| AR-2 | A cancelled booking records who cancelled (`cancelledBy`: `client` or `masseur`) and when (`cancelledAt`). The client cancel and the masseur cancel both set them. | [BR-005](decisions.md#br-005) | `src/app/api/bookings/cancel/route.ts`; `src/app/api/masseur/bookings/resolve/route.ts`; `prisma/schema.prisma` (`enum CancelledBy`); [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| AR-3 | Every status except `cancelled` occupies the hour in the overlap constraint `Booking_no_overlapping_active_slots`; it must be reviewed whenever a status is added. | [BR-005](decisions.md#br-005) | migration `20261116174000_booking_status_and_cancel_data`; `tests/booking-status.test.ts`, `tests/booking-concurrency.test.ts`; [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| AR-4 | `Booking` stores no unused contact or legacy fields (`preferredDate`, `preferredTime`, `clientEmail` removed); `clientUserId` is empty for masseur walk-in bookings. | C-8 ([decisions.md](decisions.md#code-inconsistencies)) | `prisma/schema.prisma` (`Booking`); migration `20261116174000_booking_status_and_cancel_data`; [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+
+Storage for the cancellation reason (`cancelReason`, `cancelReasonText`) exists, but the reason rule of [BR-004](decisions.md#br-004) is **not yet implemented**: the API does not accept or require a reason yet.
 
 The only behavior that is clearly intended today is that a masseur cannot be double-booked for the same hour (section 5); it is listed as as-is because it has not been formally approved.
 
@@ -33,7 +38,7 @@ The only behavior that is clearly intended today is that a masseur cannot be dou
 
 - Two separate portals (`masseur`, `client`) with separate identities, cookies and sessions.
 - A masseur publishes **one-hour availability slots**. A client books one or more of them. A masseur may also book a slot for a walk-in/phone client.
-- A booking occupies exactly one hour, is created as `pending`, and can only ever become `cancelled`.
+- A booking occupies exactly one hour, is created as `pending`, and can only ever become `cancelled`. *(Superseded: `pending` is now `confirmed`, see AR-1.)*
 - A cancelled booking frees its hour; the hour can be booked again as a **new** row.
 - Double-booking is prevented by an application check, a per-masseur transaction lock, and a PostgreSQL exclusion constraint.
 
@@ -61,7 +66,7 @@ The two endpoints follow **different rules** (see the comparison table below). T
 | Rejects slots that already started | Only if started **more than 60 min ago** (`slotStart < now - SLOT_MS`) | If the slot has started at all (`start <= now`) |
 | `clientUserId` | Set to the logged-in client | `null` (walk-in) |
 | Client name / phone | Supplied in the request body (not read from the profile) | Supplied in the request body |
-| Initial status | `pending` | `pending` |
+| Initial status | `pending` (now `confirmed`, AR-1) | `pending` (now `confirmed`, AR-1) |
 | Conflict response | `409 slot_taken` | `409 slot_taken` |
 
 ### 2.3 Common input rules — Implemented
@@ -201,7 +206,7 @@ The masseur UI blocks changes to started hours (`isSlotExpired`). `POST /api/mas
 ## 8. Cancelled bookings and slot reuse — Implemented
 
 - Cancelling sets `status = 'cancelled'`; the row is retained.
-- All availability queries, conflict checks and the DB constraint treat only `cancelled` as "free". Any other status string would block the slot (today no other status besides `pending` is ever written).
+- All availability queries, conflict checks and the DB constraint treat only `cancelled` as "free". Any other status string would block the slot (today no other status besides `pending` is ever written). *(Superseded: the status is now an enum with only `confirmed` and `cancelled`, AR-1, AR-3.)*
 - **Client cancel:** the `AvailabilitySlot` is untouched, so the hour becomes bookable again immediately.
 - **Masseur cancel (`resolve`):** the masseur chooses `availability: "available"` (slot upserted, bookable again) or `"unavailable"` (slot deleted).
 - A cancelled booking disappears from the client's session list (`GET /api/bookings` filters out `cancelled`) and from the masseur calendar.
@@ -250,7 +255,7 @@ Open business decisions (`BR-001`...`BR-013`) and the code inconsistencies (`C-1
 |---|---|---|---|
 | 1 | Sessions last exactly 60 min | Yes - constant in routes, UI and DB | **Technical default**; no approved requirement found ([BR-001](decisions.md#br-001)) |
 | 2 | DB constraint assumes one-hour sessions | Yes - `interval '1 hour'` in the migration | **Technical consequence** of #1 |
-| 3 | Only `cancelled` releases a slot | Yes - all queries and the constraint | **Technical**; holds only because no other status exists ([BR-005](decisions.md#br-005)) |
+| 3 | Only `cancelled` releases a slot | Yes - all queries and the constraint | **Technical**; holds only because no other status exists ([BR-005](decisions.md#br-005)). Now an approved rule (AR-1, AR-3) |
 | 4 | Booking times aligned in server timezone | Yes - `setMinutes(0,0,0)`; business-hours/weekly copy also server-local | **Technical**; harmless for alignment in whole-hour zones, **not** harmless for the hours window ([BR-006](decisions.md#br-006)) |
 | 5 | Separate client and masseur creation endpoints | Yes | **Technical split that encodes different rules** (section 2.2): walk-ins skip the availability requirement and the hours check |
 | 6 | Locking plus exclusion constraint for concurrency | Yes - `lockMasseurBookings` and migration `20261115120000_booking_no_overlap` | **Technical** safeguard of the "no double booking" requirement, which is the only clearly intended business rule |
