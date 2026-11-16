@@ -43,6 +43,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
+| 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -60,7 +61,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Approved** (2026-11-16) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Approved** (2026-11-16) |
-| [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings | Open |
+| [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability | Open |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
@@ -68,6 +69,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it | Open |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
+| [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
 
 ### BR-001
 
@@ -217,6 +219,14 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** UI (selection cap and error), API (client create route), optional DB constraint on `clientUserId` (NULL walk-ins excluded), existing data to be checked first.
 
+**Decision (Approved 2026-11-16, not implemented):**
+
+1. **No overlapping bookings per client (option B):** one client account cannot hold two active (`confirmed`) bookings for the same hour, with the same or with different masseurs. Consequence accepted by the owner: booking another person, or a couple, in the same hour through one account is not possible; a second person needs their own account. Masseur walk-in bookings (no client account) are not affected.
+2. **Limit on active future bookings: 30 per client.** Only `confirmed` bookings whose session has not yet started count; past and cancelled bookings do not. The cap exists because massage is sold in **courses of 10-15, at most 20 sessions**, so a low limit would get in the way. A request that would take the client above 30 is rejected as a whole.
+3. **No separate limit per request:** the only cap is the total of 30. A course can be booked in one request.
+
+**Open sub-questions for track 2 (not yet groomed):** error codes and messages for "you already have a booking at this time" and "booking limit reached"; whether the overlap rule is also protected in the database (an exclusion constraint on the client account, excluding rows without a client, built the same way as the masseur one) in addition to the application check and the lock; how existing data is checked before enforcement (existing overlapping client bookings, if any); whether the limit value of 30 is stored as a constant or a setting.
+
 ### BR-009
 
 **Business question:** Must masseurs and clients be notified of bookings and cancellations?
@@ -294,6 +304,16 @@ Priority reflects impact on booking correctness, customer experience and availab
 - **C.** Text warning only, nothing recorded. Cheapest but nothing proves the client was warned.
 
 **Also to settle then:** where the price lives (per masseur or per massage type), the fee for no-shows ([BR-005](#br-005)), legal wording and the client's consent shown before booking, and how the fee interacts with bookings made inside the cutoff window. Related: [BR-004](#br-004), [BR-012](#br-012), [BR-009](#br-009).
+
+### BR-016
+
+**Status: Deferred (2026-11-16). A future to-do, not an approved rule.** Nothing here may be implemented or shown to users yet.
+
+**Idea (from the owner):** massage is often sold as a **course** of 10-15 sessions, at most 20. The application could support courses as a concept.
+
+**Why deferred:** there is no "course" (package) concept: no price per course, no validity period, no tracking of used and remaining sessions. It depends on prices and payments ([BR-012](#br-012), [BR-015](#br-015)). For now a client simply books many individual sessions; the cap of 30 active future bookings in [BR-008](#br-008) was chosen so that courses are not blocked.
+
+**Questions for when it is picked up:** who sells and prices a course (per masseur); how sessions are linked to a course and counted; validity period; cancellation and refund of unused sessions; whether a course is bound to one masseur; how it interacts with the cancellation cutoff ([BR-004](#br-004)) and the Thai-massage hints ([BR-014](#br-014)).
 
 
 ---
