@@ -38,6 +38,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 |---|---|---|---|
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
+| 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -49,7 +50,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | ID | Topic | Priority | Recommended (proposal) | Status |
 |---|---|---|---|---|
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Approved** (2026-11-16) |
-| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path | Open |
+| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start | Open |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | Open |
@@ -88,6 +89,18 @@ Priority reflects impact on booking correctness, customer experience and availab
 - **C.** Per-masseur lead time.
 **Recommendation: B**, defaulting to a small value, with the same "started slot" rule on all paths.
 **Impact:** UI (hide/disable slots inside the window), API (both create routes), no DB change, no data migration.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option C, per-masseur lead time**, with the following rules. The rule comes from a practising masseur.
+
+1. **Masseur walk-ins:** a masseur may book a slot up to its start. A 10:00 slot can be booked until 10:00 (not at or after the start) and appears in the masseur's own calendar as available.
+2. **Clients:** a client must book with a lead time. Slots inside the lead-time window are **not shown** to the client and cannot be booked.
+3. **Setting:** each masseur sets the lead time in their profile settings in the masseur dashboard. Allowed values: **1, 2, 3 or 4 hours** only (no free input). Default: **1 hour**.
+4. **Boundary (strict):** the lead time is measured from the exact start of the slot. A slot starting at `S` is available to clients while `now < S - L`. At `now = S - L` exactly, it is already hidden. Example with L = 1 h: a 10:00 slot is visible at 08:59:59 and hidden at 09:00:00.
+5. **Started slots:** a slot that has started is never bookable by a client. The current 60-minute grace in the client booking API (C-1) is removed.
+
+**Resolves when implemented:** C-1 (inconsistent started-slot rule across the client API, masseur API and UI).
+
+**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** existing masseurs receive the 1-hour default; changing the setting affects only new bookings, existing bookings are unchanged; if the window closes while a client is choosing slots, the server rejects the request (`slot_unavailable`) and the calendar refreshes; the masseur's own calendar still shows slots inside the client window; name and placement of the setting in the dashboard; interaction with the timezone rule of [BR-006](#br-006) (the window is evaluated against the instant, the displayed time is in the masseur's timezone).
 
 ### BR-003
 
