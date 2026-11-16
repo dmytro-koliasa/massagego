@@ -58,6 +58,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | - (not implemented) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | - (not implemented) |
@@ -84,7 +85,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
-| [BR-018](#br-018) | Retention of completed (held) bookings | Medium | - (not yet groomed) | Open |
+| [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Approved** (2026-11-16) |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
@@ -336,7 +337,19 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Business question:** How long are completed (held) bookings kept, and what happens to their personal data?
 **Current implementation:** kept indefinitely; no deletion or anonymisation exists.
-**Status:** Open. Not yet groomed. Created from point 4 of [BR-011](#br-011); no retention period may be introduced before it is decided.
+**Options considered:** **A.** keep while accounts exist, anonymise on account deletion; **B.** anonymise personal data after a fixed period; **C.** hard delete the record after a fixed period.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option C, with a period of 3 months.** Created from point 4 of [BR-011](#br-011), which left this open.
+
+1. **Hard delete after 3 months:** a completed (held) booking is **physically deleted** from the database **3 months after the session**, by the same regular background job as in [BR-011](#br-011). No anonymised copy or soft delete is kept. After deletion the booking appears nowhere (client session list, masseur calendar details, other screens).
+2. **Only when there are no obligations:** a booking with **financial or legal obligations** (payments, refunds, accounting, a dispute, a legal duty to keep it) is **never deleted automatically**. No payments exist today ([BR-015](#br-015) is deferred), so this clause has no data yet. When payments are introduced, payment data must live in **separate records with their own legally required retention**, which are not deleted together with the booking; the obligation flag and its criteria are to be designed with payments and legal advice.
+3. **Account deletion** ([BR-011](#br-011)) is unchanged: remaining bookings of a deleted account are anonymised if they still exist.
+4. **Consequence accepted by the owner:** a client's and a masseur's history of past sessions is available for **3 months only**. A course of up to 20 sessions ([BR-016](#br-016)) that lasts longer than 3 months loses its earliest sessions from the history before the course ends. Statistics over longer periods are not possible without a separate aggregate that holds no personal data.
+5. The period is a **product decision** to minimise personal data and database size, not a legal requirement; the legal review described in XR-1 applies (national exceptions, accounting and consumer-protection duties).
+
+**Acceptance criteria (for track 2):** a completed booking whose session was more than 3 months ago and that has no obligation no longer exists in the database and is not returned by any API or shown in any screen; a booking whose session was less than 3 months ago is unaffected; a booking with an obligation is never removed by the job; the job is idempotent and logs failures without losing data; the cancelled-booking rule (7 days) and this rule are enforced by the same job.
+
+**Open sub-questions for track 2 (not yet groomed):** whether the 3 months are counted from the start or the end of the session (the session lasts one hour, [BR-001](#br-001)); how screens behave for a client whose history is shorter than their activity (a message such as "history is kept for 3 months"); the obligation flag and the separate payment records, to be designed with [BR-015](#br-015); backups and logs under XR-1.
 
 ### BR-012
 
