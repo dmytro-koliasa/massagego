@@ -127,8 +127,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 1. **Booking horizon:** a client can see and book slots only up to **120 days from today**, the same for every masseur. The client calendar cannot be paged forward beyond that, and the server rejects bookings and availability requests beyond it.
 2. **The window is not per masseur:** there is no setting for it.
 3. **Related:** the "nearest free time" on the masseur card ([BR-010](#br-010)) is computed within this window; the 30-booking cap ([BR-008](#br-008)) and courses of up to 20 sessions fit inside it.
+4. **Weekly copy is capped at the horizon:** the masseur's bulk "copy week forward" is limited to about **17 weeks** (the 120-day window) instead of today's 52 (default stays 12). Individual edits are not capped (see 6).
+5. **Window boundary by calendar date:** the window ends at the end of the day "today + 120 days", counted in the **masseur's timezone** ([BR-006](#br-006)). Whole days are visible; the boundary does not move during the day.
+6. **The masseur is not restricted:** the masseur sees and may edit any date, and may take walk-in bookings beyond the window. Slots beyond the window are marked in the masseur calendar as **"not yet visible to clients"**.
+7. **Client message and navigation:** the "forward" button in the client calendar is disabled on the last week of the window, with a hint next to it. If a request still goes beyond the window (an old tab, a direct call), the server rejects it with a clear error and the interface shows the same message. Proposed text: Ukrainian "Запис доступний не більше ніж на 120 днів уперед — до {дата}."; English "Booking is available up to 120 days ahead — until {date}."
 
-**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** limit the masseur's weekly copy to the same horizon (about 17 weeks; today up to 52, default 12) and limit what a masseur can publish; how "120 days" is counted at the end of the window (from today's date in the masseur's timezone, [BR-006](#br-006)); what the masseur sees beyond the window (their own calendar may show it); wording of the message when a client tries to go past the window.
+**Open sub-questions for track 2 (not yet groomed):** the exact limit for the weekly copy (17 weeks assumes 120 days / 7, rounded); the error code name; how the "not yet visible to clients" marker looks in the masseur calendar; whether existing slots beyond the window are touched (they are only hidden from clients, not deleted).
 
 ### BR-004
 
