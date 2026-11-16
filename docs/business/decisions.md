@@ -519,9 +519,13 @@ Until each item is groomed and approved, its status stays **Open**. These are de
 | C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | Open | [BR-007](#br-007) |
 | C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open | [BR-004](#br-004) |
 | C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | Open | [BR-006](#br-006) |
-| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | Open | not yet decided (to groom) |
+| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | **Approved** (2026-11-16) | this item, see "Decisions on C-7 and C-8" below |
 | C-9 | **Masseur email is returned to every client.** `GET /api/masseurs` selects `email` and includes it in the JSON, but the UI never displays it. Whether masseur contact details should be public is an undecided product/privacy question; no `BR` item exists yet (only the code behavior is recorded here). | `src/app/api/masseurs/route.ts` | Open | [BR-010](#br-010) |
 | C-8 | **Schema comment drift.** `Booking.clientUserId` is commented "Required for new bookings" but masseur walk-ins create it as `null`. Fields `preferredDate`, `preferredTime`, `clientEmail` are written as `null` and otherwise unused. | `prisma/schema.prisma`, both create routes | Open | not yet decided (to groom) |
+
+**Decisions on C-7 and C-8 (grooming, 2026-11-16):**
+
+- **C-7 (Approved, not implemented), option A:** when a client cancels a booking that is **their own and already cancelled**, the request **succeeds** ("already cancelled"). When the booking **does not exist or belongs to someone else**, the server returns the **same 404 `not_found`** for both cases, so that other people's bookings cannot be probed. The `403 forbidden` for these cases goes away. This matters because cancelled bookings are deleted after 7 days ([BR-011](#br-011)), so "no such booking" becomes an ordinary situation (for example an old browser tab).
 
 ### Checked and consistent
 
