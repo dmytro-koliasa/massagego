@@ -347,10 +347,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 4. **Consequence accepted by the owner:** a client's and a masseur's history of past sessions is available for **3 months only**. A course of up to 20 sessions ([BR-016](#br-016)) that lasts longer than 3 months loses its earliest sessions from the history before the course ends. Statistics over longer periods are not possible without a separate aggregate that holds no personal data.
 5. The period is a **product decision** to minimise personal data and database size, not a legal requirement; the legal review described in XR-1 applies (national exceptions, accounting and consumer-protection duties).
 6. **The 3 months are counted from the session start** (`slotStart`), not from its end.
+7. **History hint:** the screens that show past sessions (the client's session list and the masseur's history views) show a short hint such as "Sessions from the last 3 months are shown", in English and Ukrainian. The full retention information belongs in the privacy policy (XR-1).
 
 **Acceptance criteria (for track 2):** a completed booking whose session started more than 3 months ago and that has no obligation no longer exists in the database and is not returned by any API or shown in any screen; a booking whose session was less than 3 months ago is unaffected; a booking with an obligation is never removed by the job; the job is idempotent and logs failures without losing data; the cancelled-booking rule (7 days) and this rule are enforced by the same job.
 
-**Open sub-questions for track 2 (not yet groomed):** how screens behave for a client whose history is shorter than their activity (a message such as "history is kept for 3 months"); the obligation flag and the separate payment records, to be designed with [BR-015](#br-015); backups and logs under XR-1.
+**Open sub-questions for track 2 (not yet groomed):** the exact wording of the history hint; the obligation flag and the separate payment records, to be designed with [BR-015](#br-015); backups and logs under XR-1.
 
 ### BR-012
 
