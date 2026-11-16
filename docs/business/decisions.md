@@ -36,7 +36,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 
 | Date | ID | Chosen option | PR |
 |---|---|---|---|
-| - | - | none yet | - |
+| 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
 
 ---
 
@@ -51,7 +51,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start | Open |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | Open |
-| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | Open |
+| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions | Open |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings | Open |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation | Open |
@@ -125,6 +125,16 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** Assume one fixed timezone (Europe/Kyiv) everywhere. **B.** Store an IANA timezone per masseur; compute hours and display in it. **C.** Keep browser-local.
 **Recommendation: B** (A is acceptable as a stopgap if all masseurs are in one zone).
 **Impact:** UI (render calendars in masseur tz and say so), API (hour validation and weekly copy in that tz), **DB** (new `User.timezone`), existing data needs a default timezone.
+
+**Decision (Approved 2026-11-16, not implemented):**
+
+1. **Timezone model:** each masseur has an IANA timezone (e.g. `Europe/Kyiv`). Slots, working hours (currently 05:00-23:00, see BR-007) and "today" are evaluated in the masseur's timezone, independent of the server and of the viewer's browser. Instants stay stored as UTC.
+2. **Display to clients:** times are shown in the **masseur's** timezone with a visible label (e.g. "Kyiv, UTC+2").
+3. **Daylight saving:** when a masseur copies a week forward, slots keep the same **local clock time** (a 10:00 slot stays 10:00 across a DST change); the stored UTC instant changes accordingly.
+
+**Resolves when implemented:** C-2 (business hours evaluated in server time), C-6 (week copy shifts by +7 days in server time).
+
+**Open sub-questions for track 2 (not yet groomed):** default timezone for existing masseurs; how a masseur sets or changes the timezone (auto-detect vs explicit choice, and whether it may change once bookings exist); what happens to existing and walk-in bookings if the timezone changes; wording and format of the timezone label.
 
 ### BR-007
 
