@@ -44,6 +44,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -63,7 +64,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Approved** (2026-11-16) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
-| [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability | Open |
+| [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it | Open |
@@ -247,6 +248,18 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** List all. **B.** List only masseurs with required profile fields and at least one future slot. **C.** Explicit "published" toggle.
 **Recommendation: B.**
 **Impact:** UI (list), `GET /api/masseurs` query, no DB change for B, C needs a flag.
+
+**Decision (Approved 2026-11-16, not implemented):** a fourth variant chosen by the owner.
+
+1. **Who is listed:** a masseur appears in the client list only if (a) the **profile is complete** (name in at least one language, city, address and phone) **and** (b) they have **at least one availability record in their history** (past, future or booked; "ever published a slot"). A masseur who never published any slot is not listed. A masseur whose slots are all booked, in the past or inside the lead-time window **stays listed**. Known limitation accepted by the owner: availability records that were deleted are not remembered, so a masseur who removed every slot disappears again.
+2. **Card label** (option C): every card in the grid shows a status plaque. **Green:** the nearest free time that a client can book, e.g. "Nearest: tomorrow, 10:00". **Red:** "No free time". "Free" means a future slot that is not booked and is outside that masseur's client lead time ([BR-002](#br-002)). The time is shown in the masseur's timezone with a label ([BR-006](#br-006)). The label always contains text, not only colour (accessibility).
+3. **Order in the list:** masseurs with free time first, then the others; within each group, newest first.
+4. **Direct link to a profile that is not listed or not complete:** the page still opens, but booking is not possible and a "profile is not ready yet" message is shown. Existing links do not break.
+5. **Masseur email is removed from the list response** (`GET /api/masseurs`): clients do not need it, and the contact for clients is the masseur's phone ([BR-004](#br-004)).
+
+**Resolves when implemented:** C-9 (masseur email returned to every client).
+
+**Open sub-questions for track 2 (not yet groomed):** exact definition of "complete profile" for existing masseurs (the phone becomes required under BR-004) and how existing profiles are treated until they are completed; the horizon used for "nearest free time" (no limit today; see [BR-003](#br-003)); exact label wording in English and Ukrainian; how the label and the order are computed efficiently for the 9 cards on a page; whether the city filter and pagination counts take the visibility rule into account.
 
 ### BR-011
 
