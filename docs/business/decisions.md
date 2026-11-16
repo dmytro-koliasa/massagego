@@ -532,5 +532,34 @@ Until each item is groomed and approved, its status stays **Open**. These are de
 
 ### Suggested enhancements (not inconsistencies)
 
-Rate limiting on auth and booking endpoints; a stored duration/end on `Booking`; an enum for `status`; booking audit fields (`cancelledAt`, `cancelledBy`); replacing the duplicated `SLOT_MS`/`alignToHour` helpers with one shared module. These are **Proposed** only.
+Rate limiting on auth and booking endpoints; a stored duration/end on `Booking`; an enum for `status`; booking audit fields (`cancelledAt`, `cancelledBy`); replacing the duplicated `SLOT_MS`/`alignToHour` helpers with one shared module. These are **Proposed** only. (Several of them were later decided: rate limiting is [BR-020](#br-020), the `status` enum and audit fields are in [BR-005](#br-005).)
+
+---
+
+## Cross-decision review
+
+A review of all **Approved** decisions against each other, made on 2026-11-16. The consolidated data changes are in [data-model-changes.md](data-model-changes.md).
+
+### Checked and consistent
+
+- Lead time and cancellation cutoff: the cutoff cannot be below the lead time ([BR-002](#br-002), [BR-004](#br-004)), so a freed slot can be booked again.
+- Account deletion and cancellation: a client deleting an account cancels future bookings regardless of the cutoff, while a masseur cannot delete with future bookings ([BR-011](#br-011), [BR-004](#br-004)).
+- Cancellation data and deletion: the reason, `cancelledBy` and the notice live only until the 7-day deletion; the notice is sent at once ([BR-004](#br-004), [BR-005](#br-005), [BR-009](#br-009), [BR-011](#br-011)).
+- Name and phone from the account, anonymised on account deletion ([BR-008](#br-008), [BR-011](#br-011)); the email of a deleted client is erased ([BR-009](#br-009)).
+- Timezone: the working window, the booking window, the card label and notification times all use the masseur's timezone ([BR-006](#br-006), [BR-007](#br-007), [BR-003](#br-003), [BR-010](#br-010), [BR-009](#br-009)).
+- Phones: the masseur's public phone is shown in the application but is not put into notifications ([BR-004](#br-004), [BR-009](#br-009)); the same blocklist drives phone and city ([BR-013](#br-013), [BR-017](#br-017)).
+- The 30-booking cap counts only active future bookings, so the 3-month and 7-day deletions do not affect it ([BR-008](#br-008), [BR-018](#br-018)).
+- Courses: the cap of 30 and the 120-day window fit a course of up to 20 sessions, but the 3-month history can drop its earliest sessions; this was accepted ([BR-016](#br-016), [BR-018](#br-018)).
+
+### Findings that need attention
+
+| ID | Finding | Where it comes from | Suggested handling | Status |
+|---|---|---|---|---|
+| X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | Open (to groom) |
+| X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question) |
+| X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | UX note for implementation: keep the form short and clear; no decision needed now | Note |
+| X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
+| X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Open (BR-019) |
+
+No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts.
 
