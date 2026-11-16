@@ -33,11 +33,15 @@ import {
 	NAME_MAX,
 	zodErrorCode,
 } from '@/lib/validation';
-
-const SLOT_MS = 60 * 60 * 1000;
-const DAY_START_HOUR = 5;
-const DAY_END_HOUR = 23;
-const REPEAT_WEEKS_AHEAD = 12;
+import {
+	CALENDAR_SLOT_DURATION,
+	CALENDAR_SLOT_MAX_TIME,
+	CALENDAR_SLOT_MIN_TIME,
+	DAY_END_HOUR,
+	DAY_START_HOUR,
+	SLOT_MS,
+	WEEKLY_COPY_DEFAULT_WEEKS,
+} from '@/lib/booking-constants';
 
 export type AvailabilityCalendarHandle = {
 	save: () => Promise<boolean>;
@@ -740,7 +744,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 					body: JSON.stringify({
 						from: range.from,
 						to: range.to,
-						weeksAhead: REPEAT_WEEKS_AHEAD,
+						weeksAhead: WEEKLY_COPY_DEFAULT_WEEKS,
 						template,
 					}),
 				});
@@ -868,16 +872,16 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						locale={locale === 'uk' ? ukLocale : 'en'}
 						headerToolbar={false}
 						allDaySlot={false}
-						slotMinTime='05:00:00'
-						slotMaxTime='23:00:00'
-						slotDuration='01:00:00'
-						slotLabelInterval='01:00:00'
+						slotMinTime={CALENDAR_SLOT_MIN_TIME}
+						slotMaxTime={CALENDAR_SLOT_MAX_TIME}
+						slotDuration={CALENDAR_SLOT_DURATION}
+						slotLabelInterval={CALENDAR_SLOT_DURATION}
 						slotLabelFormat={{
 							hour: '2-digit',
 							minute: '2-digit',
 							hour12: false,
 						}}
-						snapDuration='01:00:00'
+						snapDuration={CALENDAR_SLOT_DURATION}
 						height='auto'
 						expandRows
 						nowIndicator

@@ -27,6 +27,9 @@ Rules the product owner has approved **and** that are implemented. A rule is add
 | AR-2 | A cancelled booking records who cancelled (`cancelledBy`: `client` or `masseur`) and when (`cancelledAt`). The client cancel and the masseur cancel both set them. | [BR-005](decisions.md#br-005) | `src/app/api/bookings/cancel/route.ts`; `src/app/api/masseur/bookings/resolve/route.ts`; `prisma/schema.prisma` (`enum CancelledBy`); [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
 | AR-3 | Every status except `cancelled` occupies the hour in the overlap constraint `Booking_no_overlapping_active_slots`; it must be reviewed whenever a status is added. | [BR-005](decisions.md#br-005) | migration `20261116174000_booking_status_and_cancel_data`; `tests/booking-status.test.ts`, `tests/booking-concurrency.test.ts`; [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
 | AR-4 | `Booking` stores no unused contact or legacy fields (`preferredDate`, `preferredTime`, `clientEmail` removed); `clientUserId` is empty for masseur walk-in bookings. | C-8 ([decisions.md](decisions.md#code-inconsistencies)) | `prisma/schema.prisma` (`Booking`); migration `20261116174000_booking_status_and_cancel_data`; [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| AR-5 | Every session is exactly 60 minutes. The length is one shared constant used by the routes and the calendars; the overlap constraint uses the same hour in SQL. | [BR-001](decisions.md#br-001) | `src/lib/booking-constants.ts` (`SESSION_MINUTES`, `SLOT_MS`, `CALENDAR_SLOT_DURATION`); [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
+| AR-6 | Each masseur has an IANA time zone (default `Europe/Kyiv`). The server aligns slot starts to the hour, checks the 05:00-23:00 window and copies weeks in the masseur's zone, never in the server's local time; a copied week keeps the same local clock time across daylight-saving changes. Instants are stored in UTC. | [BR-006](decisions.md#br-006) (server side) | `prisma/schema.prisma` (`User.timezone`); `src/lib/masseur-time.ts`, `src/lib/masseur-time.server.ts`; `src/app/api/masseur/availability/route.ts`; `src/app/api/bookings/route.ts`; `src/app/api/bookings/cancel/route.ts`; `src/app/api/masseur/bookings/route.ts`; `src/app/api/masseur/bookings/resolve/route.ts`; `tests/masseur-time.test.ts`, `tests/masseur-timezone-routes.test.ts`; [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
+The calendars still display times in the viewer's browser time zone and a masseur cannot choose the zone yet (PR 2a and PR 8 of the [implementation plan](implementation-plan.md)), so AR-6 covers the server only.
 
 Storage for the cancellation reason (`cancelReason`, `cancelReasonText`) exists, but the reason rule of [BR-004](decisions.md#br-004) is **not yet implemented**: the API does not accept or require a reason yet.
 
@@ -108,6 +111,7 @@ For each slot, inside one transaction (client route: `prisma.$transaction`):
 - **Implemented:** every session is exactly **60 minutes**. This is a constant (`SLOT_MS`) duplicated in the booking routes, the availability routes, the masseur resolve route, and the calendar components (`slotDuration="01:00:00"`).
 - **Implemented:** `AvailabilitySlot.end` is stored but always equals `start + 1h`. `Booking` stores **only** `slotStart`; its end is always derived as `slotStart + 1h`.
 - The database exclusion constraint `Booking_no_overlapping_active_slots` hard-codes `interval '1 hour'`.
+- *(Superseded: the length is now an approved rule with one shared constant, AR-5.)*
 - **Classification:** the 60-minute length is a **technical default**. No document, schema comment or configuration marks it as an approved requirement. Changing it touches the constants above, the calendar UI, the migration, and the data model (no stored end/duration on `Booking`). See [BR-001](decisions.md#br-001).
 
 ---
@@ -119,7 +123,7 @@ For each slot, inside one transaction (client route: `prisma.$transaction`):
 - Fixed window **05:00-23:00** (last slot starts 22:00). Constants `DAY_START_HOUR = 5`, `DAY_END_HOUR = 23` in `src/app/api/masseur/availability/route.ts` (`isWithinBusinessHours`) and `src/components/masseur-availability-calendar.tsx`; calendars use `slotMinTime="05:00:00"`, `slotMaxTime="23:00:00"`.
 - It is **global**: not configurable per masseur.
 - It is enforced **only** when a masseur edits availability (`POST /api/masseur/availability`, error `out_of_hours`). It is **not** enforced by the weekly-copy template (`PUT`) or by the masseur walk-in booking route.
-- The server evaluates the window with `Date.getHours()` (server-local time) while the UI evaluates it in the browser's local time. See [timezone](#7-timezone-handling) and inconsistency C-2.
+- The server evaluates the window with `Date.getHours()` (server-local time) while the UI evaluates it in the browser's local time. See [timezone](#7-timezone-handling) and inconsistency C-2. *(Superseded on the server: the window is evaluated in the masseur's time zone, AR-6; the UI still uses the browser's time zone.)*
 
 ### 4.2 Days off - Needs Decision
 
@@ -133,7 +137,7 @@ For each slot, inside one transaction (client route: `prisma.$transaction`):
 - Only allowed while "now" is inside the source week (`not_current_week` otherwise).
 - Copies the week's slots (or a client-supplied template) forward by 1-52 weeks (default 12; `weeksAhead`).
 - First **deletes** existing future availability in the target range, except hours that already have an active booking; then inserts the copy. Booked hours are skipped when copying.
-- Dates are shifted with `setDate(+7 days)` in server-local time (see C-6).
+- Dates are shifted with `setDate(+7 days)` in server-local time (see C-6). *(Superseded: weeks are added in the masseur's time zone keeping the local clock time, AR-6.)*
 
 ### 4.4 What a client sees — Implemented
 
@@ -200,6 +204,7 @@ The masseur UI blocks changes to started hours (`isSlotExpired`). `POST /api/mas
 - **Hour alignment** (`alignToHour`) uses `Date.setMinutes(0,0,0)`, i.e. the **server's** local timezone. For whole-hour-offset zones (which covers all EU countries and Ukraine, the supported phone markets) this is identical to UTC alignment, so it is currently harmless. It would misalign in zones with 30/45-minute offsets.
 - **Business hours** and **weekly copy** use server-local `getHours()` / `setDate()`. If the server runs in UTC (typical for hosted environments) while users are in Europe/Kyiv, the 05:00-23:00 window and the +7-day shift do not match the users' local clocks (C-2, C-6). The deployment's actual server timezone was not verified.
 - **Classification:** timezone handling is a **technical implementation**, not an approved rule. See [BR-006](decisions.md#br-006).
+- *(Superseded on the server: each masseur has a stored time zone, and alignment, the working window and the weekly copy use it, AR-6. Display is still browser-local.)*
 
 ---
 

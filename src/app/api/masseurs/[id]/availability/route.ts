@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
+import { SLOT_MS } from "@/lib/booking-constants";
 import { requireClientSession } from "@/lib/client-session.server";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
-
-const SLOT_MS = 60 * 60 * 1000;
 
 export async function GET(request: Request, context: RouteContext) {
   try {

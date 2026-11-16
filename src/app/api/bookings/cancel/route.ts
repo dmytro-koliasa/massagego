@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireClientSession } from "@/lib/client-session.server";
+import { alignToHour } from "@/lib/masseur-time";
+import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
 import { bookingCancelSchema, parseWithSchema } from "@/lib/validation";
-
-function alignToHour(date: Date) {
-  const aligned = new Date(date);
-  aligned.setMinutes(0, 0, 0);
-  return aligned;
-}
 
 export async function POST(request: Request) {
   try {
@@ -37,20 +33,23 @@ export async function POST(request: Request) {
         select: { id: true },
       });
     } else {
-      const slotStart = alignToHour(new Date(parsed.data.slotStart));
-      if (Number.isNaN(slotStart.getTime())) {
+      const requested = new Date(parsed.data.slotStart);
+      if (Number.isNaN(requested.getTime())) {
         return NextResponse.json({ error: "invalid_slot" }, { status: 400 });
       }
 
-      booking = await prisma.booking.findFirst({
-        where: {
-          masseurId: parsed.data.masseurId,
-          slotStart,
-          clientUserId: client.userId,
-          status: { not: "cancelled" },
-        },
-        select: { id: true },
-      });
+      const timeZone = await getMasseurTimeZone(parsed.data.masseurId);
+      if (timeZone) {
+        booking = await prisma.booking.findFirst({
+          where: {
+            masseurId: parsed.data.masseurId,
+            slotStart: alignToHour(requested, timeZone),
+            clientUserId: client.userId,
+            status: { not: "cancelled" },
+          },
+          select: { id: true },
+        });
+      }
     }
 
     // Own-booking only: missing or someone else's booking looks the same.
