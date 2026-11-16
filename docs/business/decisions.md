@@ -41,6 +41,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
 | 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
+| 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -55,7 +56,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
-| [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | Open |
+| [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Approved** (2026-11-16) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions | Open |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings | Open |
@@ -156,6 +157,16 @@ Priority reflects impact on booking correctness, customer experience and availab
 - **C.** Add post-session states (`completed`, `no_show`).
 **Recommendation: A now**, B/C only if the product needs approval or reporting. Whichever is chosen, constrain `status` to an enum.
 **Impact:** UI labels; API; **DB** (rename or enum migration, and the exclusion constraint's `<> 'cancelled'` predicate must be reviewed for any new releasing state such as `declined`).
+
+**Decision (Approved 2026-11-16, not implemented):**
+
+1. **No confirmation by the masseur (option A).** A booking is valid as soon as it is created. The status `pending` is renamed to **`confirmed`**; the only statuses are **`confirmed`** and **`cancelled`**. There is no confirm/decline flow, no "awaiting approval" state and no per-masseur confirmation setting. A masseur who does not want a booking cancels it (rules in [BR-004](#br-004)).
+2. **No post-session statuses (option A).** There are no `completed` or `no_show` statuses. Whether a session took place is derived from time: a `confirmed` booking whose session time has passed is a past (held) session. Past bookings cannot be cancelled by the client ([BR-004](#br-004)). Tracking no-shows can be reconsidered together with [BR-015](#br-015) (late-cancellation fee) or reporting.
+3. **Cancellation data (option A).** A cancelled booking records **who cancelled** (`cancelledBy`: client or masseur) and **when** (`cancelledAt`), in addition to the client's cancellation reason from [BR-004](#br-004). A full event log is not introduced.
+
+**Open sub-questions for track 2 (not yet groomed; proposed defaults):** restrict `status` to a fixed set (database enum or constraint) so that values cannot be mistyped (proposed: yes); migrate the existing `pending` rows to `confirmed` and decide how to rename the status in code, API responses and UI labels (UI currently shows "booked" and never the word "pending"); whether `cancelledBy` and `cancelledAt` are set for historical cancelled rows (proposed: left empty); that the exclusion constraint predicate (`status <> 'cancelled'`) stays correct with two statuses, and must be reviewed if a new status is ever added.
+
+**Resolves when implemented:** the misleading `pending` name and the free-text `status` field.
 
 ### BR-006
 
