@@ -34,6 +34,8 @@ export default async function MasseurDashboardPage() {
       massageTypes: true,
       city: true,
       address: true,
+      bookingLeadHours: true,
+      cancelCutoffHours: true,
     },
   });
 

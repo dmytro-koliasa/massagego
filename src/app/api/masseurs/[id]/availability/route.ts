@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { SLOT_MS } from "@/lib/booking-constants";
+import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
-import { resolveTimeZone } from "@/lib/masseur-time";
+import {
+  clientBookingWindowExclusiveEnd,
+  isClientBookableSlot,
+  resolveTimeZone,
+} from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -34,7 +39,7 @@ export async function GET(request: Request, context: RouteContext) {
         id,
         portal: "masseur",
       },
-      select: { id: true, timezone: true },
+      select: { id: true, timezone: true, bookingLeadHours: true },
     });
 
     if (!masseur) {
@@ -42,15 +47,35 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const timezone = resolveTimeZone(masseur.timezone);
-
+    const leadHours = resolveBookingLeadHours(masseur.bookingLeadHours);
     const now = new Date();
+    const windowEnd = clientBookingWindowExclusiveEnd(now, timezone);
+
+    // Entire requested range is beyond the 120-day window.
+    if (from.getTime() >= windowEnd.getTime()) {
+      return NextResponse.json(
+        { error: "BOOKING_WINDOW_EXCEEDED" },
+        { status: 400 },
+      );
+    }
+
     const rangeStart = from > now ? from : now;
+    const rangeEnd = to.getTime() < windowEnd.getTime() ? to : windowEnd;
+
+    if (rangeStart.getTime() >= rangeEnd.getTime()) {
+      return NextResponse.json({
+        timezone,
+        bookingLeadHours: leadHours,
+        bookingWindowEnd: windowEnd.toISOString(),
+        slots: [],
+      });
+    }
 
     const [slots, bookings] = await Promise.all([
       prisma.availabilitySlot.findMany({
         where: {
           masseurId: id,
-          start: { gte: rangeStart, lt: to },
+          start: { gte: rangeStart, lt: rangeEnd },
         },
         orderBy: { start: "asc" },
         select: { id: true, start: true, end: true },
@@ -58,7 +83,7 @@ export async function GET(request: Request, context: RouteContext) {
       prisma.booking.findMany({
         where: {
           masseurId: id,
-          slotStart: { gte: rangeStart, lt: to },
+          slotStart: { gte: rangeStart, lt: rangeEnd },
           status: { not: "cancelled" },
         },
         select: {
@@ -122,9 +147,22 @@ export async function GET(request: Request, context: RouteContext) {
       });
     }
 
+    // Hide free slots inside the lead time; keep the client's own bookings.
+    const visible = [...byStart.values()].filter((slot) => {
+      if (slot.status === "booked" && slot.mine) return true;
+      return isClientBookableSlot(
+        new Date(slot.start),
+        timezone,
+        leadHours,
+        now,
+      );
+    });
+
     return NextResponse.json({
       timezone,
-      slots: [...byStart.values()].sort((a, b) => a.start.localeCompare(b.start)),
+      bookingLeadHours: leadHours,
+      bookingWindowEnd: windowEnd.toISOString(),
+      slots: visible.sort((a, b) => a.start.localeCompare(b.start)),
     });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });

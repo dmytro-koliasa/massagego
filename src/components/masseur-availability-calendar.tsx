@@ -49,7 +49,10 @@ import {
 	formatWeekTitle,
 	getWeekSlotStarts,
 } from '@/lib/calendar-time';
-import { resolveTimeZone } from '@/lib/masseur-time';
+import {
+	isWithinClientBookingWindow,
+	resolveTimeZone,
+} from '@/lib/masseur-time';
 
 export type AvailabilityCalendarHandle = {
 	save: () => Promise<boolean>;
@@ -288,6 +291,10 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			() =>
 				slots.map(slot => {
 					const booked = slot.status === 'booked';
+					const beyondClientWindow = !isWithinClientBookingWindow(
+						new Date(slot.start),
+						timeZone,
+					);
 					const hours = formatHourRange(
 						new Date(slot.start),
 						new Date(slot.end),
@@ -318,13 +325,17 @@ export const MasseurAvailabilityCalendar = forwardRef<
 								hours.start,
 								hours.end,
 							);
+					const classNames = [
+						booked ? 'fc-event-booked' : 'fc-event-available',
+						...(beyondClientWindow ? ['fc-event-beyond-window'] : []),
+					];
 					return {
 						id: slot.id,
 						start: slot.start,
 						end: slot.end,
 						title: label,
 						display: 'block' as const,
-						classNames: booked ? ['fc-event-booked'] : ['fc-event-available'],
+						classNames,
 						borderColor: 'transparent',
 						extendedProps: {
 							hint,
@@ -333,6 +344,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							clientPhone: slot.clientPhone ?? null,
 							massageType: slot.massageType ?? null,
 							booked,
+							beyondClientWindow,
 						},
 					};
 				}),
@@ -1000,6 +1012,11 @@ export const MasseurAvailabilityCalendar = forwardRef<
 										<p className='mt-1 text-sm text-muted'>
 											{dayLabel}, {hours.start} - {hours.end}
 										</p>
+										{!isWithinClientBookingWindow(start, timeZone) ? (
+											<p className='mt-2 text-sm text-muted'>
+												{t.availabilityNotYetVisibleToClients}
+											</p>
+										) : null}
 										{slotAction.mode === 'booked' ? (
 											<div className='mt-2 space-y-0.5 text-sm text-muted'>
 												{slotAction.clientName?.trim() ? (

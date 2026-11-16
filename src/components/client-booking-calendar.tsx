@@ -21,7 +21,11 @@ import {
 	formatSlotDateTime,
 	formatWeekTitle,
 } from '@/lib/calendar-time';
-import { resolveTimeZone } from '@/lib/masseur-time';
+import {
+	clientBookingWindowExclusiveEnd,
+	clientBookingWindowLastDay,
+	resolveTimeZone,
+} from '@/lib/masseur-time';
 import { getMassageTypeLabel } from '@/lib/massage-types';
 
 type SlotStatus = 'available' | 'booked';
@@ -66,6 +70,7 @@ export function ClientBookingCalendar({
 	const timeZoneRef = useRef(timeZone);
 	timeZoneRef.current = timeZone;
 	const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+	const [bookingWindowEnd, setBookingWindowEnd] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [cancelPending, setCancelPending] = useState(false);
 	const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
@@ -121,6 +126,30 @@ export function ClientBookingCalendar({
 		const now = Date.now();
 		return now >= new Date(range.from).getTime() && now < new Date(range.to).getTime();
 	}, [range]);
+
+	const windowEndMs = useMemo(() => {
+		if (bookingWindowEnd) return new Date(bookingWindowEnd).getTime();
+		return clientBookingWindowExclusiveEnd(new Date(), timeZone).getTime();
+	}, [bookingWindowEnd, timeZone]);
+
+	const canGoNext = useMemo(() => {
+		if (!range) return true;
+		return new Date(range.to).getTime() < windowEndMs;
+	}, [range, windowEndMs]);
+
+	const bookingWindowMessage = useMemo(() => {
+		const lastDay = clientBookingWindowLastDay(new Date(), timeZone);
+		const dateLabel = new Intl.DateTimeFormat(
+			locale === 'uk' ? 'uk-UA' : 'en-GB',
+			{
+				timeZone,
+				day: 'numeric',
+				month: 'short',
+				year: 'numeric',
+			},
+		).format(lastDay);
+		return t.bookingWindowLimit.replaceAll('{date}', dateLabel);
+	}, [locale, timeZone, t.bookingWindowLimit]);
 
 	const events = useMemo(
 		() =>
@@ -209,6 +238,23 @@ export function ClientBookingCalendar({
 					`/api/masseurs/${masseurId}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 				);
 				if (!response.ok) {
+					const data = (await response.json().catch(() => null)) as {
+						error?: string;
+					} | null;
+					if (data?.error === 'BOOKING_WINDOW_EXCEEDED') {
+						const lastDay = clientBookingWindowLastDay(new Date(), timeZoneRef.current);
+						const dateLabel = new Intl.DateTimeFormat(
+							locale === 'uk' ? 'uk-UA' : 'en-GB',
+							{
+								timeZone: timeZoneRef.current,
+								day: 'numeric',
+								month: 'short',
+								year: 'numeric',
+							},
+						).format(lastDay);
+						toast.error(t.bookingWindowLimit.replaceAll('{date}', dateLabel));
+						return;
+					}
 					toast.error(
 						response.status === 401 || response.status === 403
 							? t.bookingUnauthorized
@@ -218,6 +264,7 @@ export function ClientBookingCalendar({
 				}
 				const data = (await response.json()) as {
 					timezone?: string;
+					bookingWindowEnd?: string;
 					slots?: Array<{
 						id: string;
 						start: string;
@@ -230,6 +277,16 @@ export function ClientBookingCalendar({
 				};
 				if (typeof data.timezone === 'string') {
 					setTimeZone(resolveTimeZone(data.timezone));
+				}
+				if (typeof data.bookingWindowEnd === 'string') {
+					setBookingWindowEnd(data.bookingWindowEnd);
+				} else {
+					setBookingWindowEnd(
+						clientBookingWindowExclusiveEnd(
+							new Date(),
+							timeZoneRef.current,
+						).toISOString(),
+					);
 				}
 				setSlots(
 					(data.slots ?? []).map(slot => ({
@@ -251,7 +308,13 @@ export function ClientBookingCalendar({
 				setLoading(false);
 			}
 		},
-		[masseurId, t.availabilityLoadError, t.bookingUnauthorized],
+		[
+			masseurId,
+			locale,
+			t.availabilityLoadError,
+			t.bookingUnauthorized,
+			t.bookingWindowLimit,
+		],
 	);
 
 	useEffect(() => {
@@ -358,6 +421,7 @@ export function ClientBookingCalendar({
 	}
 
 	function goToNext() {
+		if (!canGoNext) return;
 		calendarRef.current?.getApi().next();
 	}
 
@@ -384,31 +448,37 @@ export function ClientBookingCalendar({
 				)}
 
 				<div className='mb-3 flex flex-wrap items-start justify-between gap-3'>
-					<div className='flex flex-wrap items-center gap-1'>
-						<button
-							type='button'
-							onClick={goToPrev}
-							className='AvailabilityCalendarNavBtn'
-							aria-label='Previous week'
-						>
-							‹
-						</button>
-						<button
-							type='button'
-							onClick={goToNext}
-							className='AvailabilityCalendarNavBtn'
-							aria-label='Next week'
-						>
-							›
-						</button>
-						<button
-							type='button'
-							onClick={goToToday}
-							disabled={isCurrentWeek}
-							className='AvailabilityCalendarNavBtn AvailabilityCalendarNavBtnWide disabled:cursor-not-allowed disabled:opacity-45'
-						>
-							{t.availabilityToday}
-						</button>
+					<div className='flex min-w-0 flex-1 flex-col gap-1'>
+						<div className='flex flex-wrap items-center gap-1'>
+							<button
+								type='button'
+								onClick={goToPrev}
+								className='AvailabilityCalendarNavBtn'
+								aria-label='Previous week'
+							>
+								‹
+							</button>
+							<button
+								type='button'
+								onClick={goToNext}
+								disabled={!canGoNext}
+								className='AvailabilityCalendarNavBtn disabled:cursor-not-allowed disabled:opacity-45'
+								aria-label='Next week'
+							>
+								›
+							</button>
+							<button
+								type='button'
+								onClick={goToToday}
+								disabled={isCurrentWeek}
+								className='AvailabilityCalendarNavBtn AvailabilityCalendarNavBtnWide disabled:cursor-not-allowed disabled:opacity-45'
+							>
+								{t.availabilityToday}
+							</button>
+						</div>
+						{!canGoNext ? (
+							<p className='max-w-md text-xs text-muted'>{bookingWindowMessage}</p>
+						) : null}
 					</div>
 
 					<div className='pt-1 text-right'>

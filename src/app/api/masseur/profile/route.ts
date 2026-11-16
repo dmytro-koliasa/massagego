@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
+import { resolveBookingSettings } from "@/lib/booking-settings";
 import {
   normalizeMassageTypesInput,
   parseMassageTypes,
@@ -32,6 +33,8 @@ const profileSelect = {
   massageTypes: true,
   city: true,
   address: true,
+  bookingLeadHours: true,
+  cancelCutoffHours: true,
 } as const;
 
 function toProfileResponse(user: {
@@ -47,10 +50,15 @@ function toProfileResponse(user: {
   massageTypes: string;
   city: string | null;
   address: string | null;
+  bookingLeadHours: number;
+  cancelCutoffHours: number;
 }) {
+  const settings = resolveBookingSettings(user);
   return {
     ...user,
     massageTypes: parseMassageTypes(user.massageTypes),
+    bookingLeadHours: settings.bookingLeadHours,
+    cancelCutoffHours: settings.cancelCutoffHours,
   };
 }
 
