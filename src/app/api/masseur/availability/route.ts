@@ -8,10 +8,16 @@ import {
 import {
   addLocalWeeks,
   alignToHour,
+  isSlotStarted,
   isWithinWorkingHours,
 } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
+
+function statusForSlotError(error: string | undefined) {
+  if (error === "slot_in_past" || error === "slot_booked") return 409;
+  return 400;
+}
 
 async function requireMasseur() {
   const session = await auth();
@@ -135,6 +141,9 @@ async function applySlotChange(
   if (!isWithinWorkingHours(start, timeZone)) {
     return { error: "out_of_hours" as const };
   }
+  if (isSlotStarted(start)) {
+    return { error: "slot_in_past" as const };
+  }
 
   const end = new Date(start.getTime() + SLOT_MS);
   const existing = await prisma.availabilitySlot.findUnique({
@@ -226,7 +235,11 @@ export async function POST(request: Request) {
           change.active,
         );
         if ("error" in result) {
-          return NextResponse.json({ error: result.error }, { status: 400 });
+          const error = result.error;
+          return NextResponse.json(
+            { error },
+            { status: statusForSlotError(error) },
+          );
         }
         results.push(result);
       }
@@ -260,7 +273,11 @@ export async function POST(request: Request) {
       !existingCheck,
     );
     if ("error" in result) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      const error = result.error;
+      return NextResponse.json(
+        { error },
+        { status: statusForSlotError(error) },
+      );
     }
     return NextResponse.json(result);
   } catch {
@@ -327,6 +344,12 @@ export async function PUT(request: Request) {
         select: { start: true, end: true },
         orderBy: { start: "asc" },
       });
+    }
+
+    if (
+      template.some((slot) => !isWithinWorkingHours(slot.start, gate.timeZone))
+    ) {
+      return NextResponse.json({ error: "out_of_hours" }, { status: 400 });
     }
 
     const futureEnd = addLocalWeeks(to, weeksAhead, gate.timeZone);
