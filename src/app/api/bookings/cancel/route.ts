@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { resolveBookingSettings } from "@/lib/booking-settings";
+import {
+  isWithinClientCancelWindow,
+  neighbouringSlotStarts,
+} from "@/lib/client-booking-rules";
 import { requireClientSession } from "@/lib/client-session.server";
 import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
@@ -18,19 +23,52 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = parseWithSchema(bookingCancelSchema, body);
     if (!parsed.ok) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
+      const error =
+        parsed.error === "CANCEL_REASON_REQUIRED"
+          ? "CANCEL_REASON_REQUIRED"
+          : parsed.error;
+      return NextResponse.json({ error }, { status: 400 });
     }
 
-    let booking: { id: string } | null = null;
+    const { cancelReason, cancelReasonText } = parsed.data;
+    const reasonText =
+      cancelReason === "other" ? cancelReasonText || null : null;
+
+    let booking: {
+      id: string;
+      status: "confirmed" | "cancelled";
+      slotStart: Date | null;
+      massageType: string | null;
+      masseurId: string;
+      masseur: {
+        phone: string | null;
+        timezone: string;
+        cancelCutoffHours: number;
+        bookingLeadHours: number;
+      };
+    } | null = null;
 
     if ("bookingId" in parsed.data) {
       booking = await prisma.booking.findFirst({
         where: {
           id: parsed.data.bookingId,
           clientUserId: client.userId,
-          status: { not: "cancelled" },
         },
-        select: { id: true },
+        select: {
+          id: true,
+          status: true,
+          slotStart: true,
+          massageType: true,
+          masseurId: true,
+          masseur: {
+            select: {
+              phone: true,
+              timezone: true,
+              cancelCutoffHours: true,
+              bookingLeadHours: true,
+            },
+          },
+        },
       });
     } else {
       const requested = new Date(parsed.data.slotStart);
@@ -45,16 +83,53 @@ export async function POST(request: Request) {
             masseurId: parsed.data.masseurId,
             slotStart: alignToHour(requested, timeZone),
             clientUserId: client.userId,
-            status: { not: "cancelled" },
           },
-          select: { id: true },
+          select: {
+            id: true,
+            status: true,
+            slotStart: true,
+            massageType: true,
+            masseurId: true,
+            masseur: {
+              select: {
+                phone: true,
+                timezone: true,
+                cancelCutoffHours: true,
+                bookingLeadHours: true,
+              },
+            },
+          },
         });
       }
     }
 
-    // Own-booking only: missing or someone else's booking looks the same.
+    // Own-booking only: missing or someone else's booking looks the same (404).
     if (!booking) {
-      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    // Idempotent: already cancelled by this client.
+    if (booking.status === "cancelled") {
+      return NextResponse.json({ ok: true, bookingId: booking.id });
+    }
+
+    if (!booking.slotStart) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    const { cancelCutoffHours: cutoffHours } = resolveBookingSettings(
+      booking.masseur,
+    );
+    const now = new Date();
+    if (!isWithinClientCancelWindow(booking.slotStart, cutoffHours, now)) {
+      const phone = booking.masseur.phone?.trim() || null;
+      return NextResponse.json(
+        {
+          error: "CANCEL_CUTOFF_PASSED",
+          masseurPhone: phone,
+        },
+        { status: 409 },
+      );
     }
 
     await prisma.booking.update({
@@ -62,11 +137,44 @@ export async function POST(request: Request) {
       data: {
         status: "cancelled",
         cancelledBy: "client",
-        cancelledAt: new Date(),
+        cancelledAt: now,
+        cancelReason,
+        cancelReasonText: reasonText,
       },
     });
 
-    return NextResponse.json({ ok: true, bookingId: booking.id });
+    let neighborHint:
+      | { type: "thai_cutoff"; masseurPhone: string | null }
+      | undefined;
+
+    if (booking.massageType === "thai") {
+      const neighbourStarts = neighbouringSlotStarts(booking.slotStart);
+      const neighbour = await prisma.booking.findFirst({
+        where: {
+          clientUserId: client.userId,
+          masseurId: booking.masseurId,
+          massageType: "thai",
+          status: { not: "cancelled" },
+          slotStart: { in: neighbourStarts },
+        },
+        select: { slotStart: true },
+      });
+      if (
+        neighbour?.slotStart &&
+        !isWithinClientCancelWindow(neighbour.slotStart, cutoffHours, now)
+      ) {
+        neighborHint = {
+          type: "thai_cutoff",
+          masseurPhone: booking.masseur.phone?.trim() || null,
+        };
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      bookingId: booking.id,
+      ...(neighborHint ? { neighborHint } : {}),
+    });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }

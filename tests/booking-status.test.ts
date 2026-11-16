@@ -45,8 +45,6 @@ describeDb("booking status and cancellation data (database)", () => {
     const response = await clientPost(
       post("/api/bookings", {
         masseurId,
-        clientName: "Status Client",
-        clientPhone: "+380501234567",
         slotStarts: [start.toISOString()],
       }),
     );
@@ -66,7 +64,12 @@ describeDb("booking status and cancellation data (database)", () => {
       data: { email: "status-masseur@test.local", portal: "masseur" },
     });
     const client = await prisma.user.create({
-      data: { email: "status-client@test.local", portal: "client" },
+      data: {
+        email: "status-client@test.local",
+        portal: "client",
+        name: "Status Client",
+        phone: "+380501234567",
+      },
     });
     masseurId = masseur.id;
     session.masseurId = masseur.id;
@@ -118,7 +121,12 @@ describeDb("booking status and cancellation data (database)", () => {
     const id = await bookAsClient(base);
 
     const before = Date.now();
-    const response = await clientCancel(post("/api/bookings/cancel", { bookingId: id }));
+    const response = await clientCancel(
+      post("/api/bookings/cancel", {
+        bookingId: id,
+        cancelReason: "changed_mind",
+      }),
+    );
     const after = Date.now();
     expect(response.status).toBe(200);
 
@@ -127,7 +135,8 @@ describeDb("booking status and cancellation data (database)", () => {
     expect(booking.cancelledBy).toBe("client");
     expect(booking.cancelledAt!.getTime()).toBeGreaterThanOrEqual(before);
     expect(booking.cancelledAt!.getTime()).toBeLessThanOrEqual(after);
-    expect(booking.cancelReason).toBeNull();
+    expect(booking.cancelReason).toBe("changed_mind");
+    expect(booking.cancelReasonText).toBeNull();
   });
 
   it("records cancelledBy masseur and cancelledAt when the masseur cancels", async () => {
@@ -155,8 +164,6 @@ describeDb("booking status and cancellation data (database)", () => {
     const again = await clientPost(
       post("/api/bookings", {
         masseurId,
-        clientName: "Status Client",
-        clientPhone: "+380501234567",
         slotStarts: [base.toISOString()],
       }),
     );

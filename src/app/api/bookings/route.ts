@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import {
-  isMassageTypeValue,
-  parseMassageTypes,
-} from "@/lib/massage-types";
-import {
   isBookingConflictError,
+  isClientBookingConflictError,
+  lockClientBookings,
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
-import { SLOT_MS } from "@/lib/booking-constants";
+import {
+  MAX_ACTIVE_FUTURE_BOOKINGS_PER_CLIENT,
+  SLOT_MS,
+} from "@/lib/booking-constants";
 import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
 import {
@@ -16,6 +17,10 @@ import {
   isWithinClientBookingWindow,
   resolveTimeZone,
 } from "@/lib/masseur-time";
+import {
+  isMassageTypeValue,
+  parseMassageTypes,
+} from "@/lib/massage-types";
 import { prisma } from "@/lib/prisma";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
@@ -87,6 +92,8 @@ export async function GET(request: Request) {
             nameEn: true,
             nameUk: true,
             timezone: true,
+            phone: true,
+            cancelCutoffHours: true,
           },
         },
       },
@@ -105,6 +112,8 @@ export async function GET(request: Request) {
           nameEn: booking.masseur.nameEn,
           nameUk: booking.masseur.nameUk,
           timezone: resolveTimeZone(booking.masseur.timezone),
+          phone: booking.masseur.phone,
+          cancelCutoffHours: booking.masseur.cancelCutoffHours,
         },
       })),
     });
@@ -131,12 +140,27 @@ export async function POST(request: Request) {
 
     const {
       masseurId,
-      clientName,
-      clientPhone,
       note,
       massageType: massageTypeRaw,
       slotStarts: rawStarts,
     } = parsed.data;
+
+    const account = await prisma.user.findUnique({
+      where: { id: client.userId },
+      select: { name: true, phone: true, portal: true },
+    });
+    if (!account || account.portal !== "client") {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    const clientName = account.name?.trim() || "";
+    const clientPhone = account.phone?.trim() || "";
+    if (!clientName || !clientPhone) {
+      return NextResponse.json(
+        { error: "CLIENT_PROFILE_INCOMPLETE" },
+        { status: 400 },
+      );
+    }
 
     const masseur = await prisma.user.findFirst({
       where: {
@@ -196,7 +220,37 @@ export async function POST(request: Request) {
     }
 
     const bookings = await prisma.$transaction(async (tx) => {
+      await lockClientBookings(tx, client.userId);
       await lockMasseurBookings(tx, masseurId);
+
+      const activeFutureCount = await tx.booking.count({
+        where: {
+          clientUserId: client.userId,
+          status: { not: "cancelled" },
+          slotStart: { gt: now },
+        },
+      });
+      if (
+        activeFutureCount + parsedSlots.starts.length >
+        MAX_ACTIVE_FUTURE_BOOKINGS_PER_CLIENT
+      ) {
+        throw new Error("CLIENT_BOOKING_LIMIT");
+      }
+
+      for (const slotStart of parsedSlots.starts) {
+        const clientOverlap = await tx.booking.findFirst({
+          where: {
+            clientUserId: client.userId,
+            status: { not: "cancelled" },
+            slotStart,
+          },
+          select: { id: true },
+        });
+        if (clientOverlap) {
+          throw new Error("CLIENT_SLOT_OVERLAP");
+        }
+      }
+
       const created = [];
 
       for (const slotStart of parsedSlots.starts) {
@@ -252,8 +306,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ bookings }, { status: 201 });
   } catch (error) {
-    // Concurrent requests can both pass the check above; the database
-    // exclusion constraint rejects the loser.
+    if (isClientBookingConflictError(error)) {
+      return NextResponse.json(
+        { error: "CLIENT_SLOT_OVERLAP" },
+        { status: 409 },
+      );
+    }
     if (isBookingConflictError(error)) {
       return NextResponse.json({ error: "slot_taken" }, { status: 409 });
     }
@@ -263,6 +321,18 @@ export async function POST(request: Request) {
       }
       if (error.message === "slot_taken") {
         return NextResponse.json({ error: "slot_taken" }, { status: 409 });
+      }
+      if (error.message === "CLIENT_SLOT_OVERLAP") {
+        return NextResponse.json(
+          { error: "CLIENT_SLOT_OVERLAP" },
+          { status: 409 },
+        );
+      }
+      if (error.message === "CLIENT_BOOKING_LIMIT") {
+        return NextResponse.json(
+          { error: "CLIENT_BOOKING_LIMIT" },
+          { status: 409 },
+        );
       }
     }
     return NextResponse.json({ error: "server_error" }, { status: 500 });

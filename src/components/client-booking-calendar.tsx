@@ -7,11 +7,17 @@ import interactionPlugin from '@fullcalendar/interaction';
 import luxonPlugin from '@fullcalendar/luxon3';
 import ukLocale from '@fullcalendar/core/locales/uk';
 import { toast } from 'sonner';
+import {
+	CancelBookingDialog,
+	cutoffPassedMessage,
+	thaiNeighborCutoffMessage,
+} from '@/components/cancel-booking-dialog';
 import { useLanguage } from '@/components/language-provider';
 import {
 	CALENDAR_SLOT_DURATION,
 	CALENDAR_SLOT_MAX_TIME,
 	CALENDAR_SLOT_MIN_TIME,
+	DEFAULT_CANCEL_CUTOFF_HOURS,
 	DEFAULT_MASSEUR_TIME_ZONE,
 } from '@/lib/booking-constants';
 import {
@@ -21,6 +27,8 @@ import {
 	formatSlotDateTime,
 	formatWeekTitle,
 } from '@/lib/calendar-time';
+import { isWithinClientCancelWindow } from '@/lib/client-booking-rules';
+import type { ClientCancelReasonKey } from '@/lib/client-booking-rules';
 import {
 	clientBookingWindowExclusiveEnd,
 	clientBookingWindowLastDay,
@@ -51,6 +59,10 @@ type ClientBookingCalendarProps = {
 	selectedStarts: string[];
 	onChangeSelected: (slotStarts: string[]) => void;
 	refreshKey?: number;
+	onRulesLoaded?: (rules: {
+		cancelCutoffHours: number;
+		masseurPhone: string | null;
+	}) => void;
 };
 
 function fillTimeHint(template: string, start: string, end: string) {
@@ -62,6 +74,7 @@ export function ClientBookingCalendar({
 	selectedStarts,
 	onChangeSelected,
 	refreshKey = 0,
+	onRulesLoaded,
 }: ClientBookingCalendarProps) {
 	const { t, locale } = useLanguage();
 	const calendarRef = useRef<FullCalendar | null>(null);
@@ -71,6 +84,10 @@ export function ClientBookingCalendar({
 	timeZoneRef.current = timeZone;
 	const [range, setRange] = useState<{ from: string; to: string } | null>(null);
 	const [bookingWindowEnd, setBookingWindowEnd] = useState<string | null>(null);
+	const [cancelCutoffHours, setCancelCutoffHours] = useState<number>(
+		DEFAULT_CANCEL_CUTOFF_HOURS,
+	);
+	const [masseurPhone, setMasseurPhone] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [cancelPending, setCancelPending] = useState(false);
 	const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
@@ -265,6 +282,8 @@ export function ClientBookingCalendar({
 				const data = (await response.json()) as {
 					timezone?: string;
 					bookingWindowEnd?: string;
+					cancelCutoffHours?: number;
+					masseurPhone?: string | null;
 					slots?: Array<{
 						id: string;
 						start: string;
@@ -288,6 +307,17 @@ export function ClientBookingCalendar({
 						).toISOString(),
 					);
 				}
+				const cutoff =
+					typeof data.cancelCutoffHours === 'number'
+						? data.cancelCutoffHours
+						: DEFAULT_CANCEL_CUTOFF_HOURS;
+				const phone =
+					typeof data.masseurPhone === 'string' && data.masseurPhone.trim()
+						? data.masseurPhone.trim()
+						: null;
+				setCancelCutoffHours(cutoff);
+				setMasseurPhone(phone);
+				onRulesLoaded?.({ cancelCutoffHours: cutoff, masseurPhone: phone });
 				setSlots(
 					(data.slots ?? []).map(slot => ({
 						id: slot.id,
@@ -311,6 +341,7 @@ export function ClientBookingCalendar({
 		[
 			masseurId,
 			locale,
+			onRulesLoaded,
 			t.availabilityLoadError,
 			t.bookingUnauthorized,
 			t.bookingWindowLimit,
@@ -374,6 +405,15 @@ export function ClientBookingCalendar({
 	) {
 		if (cancelPending || !bookingId) return;
 		hideSlotTip();
+		if (
+			!isWithinClientCancelWindow(
+				new Date(startIso),
+				cancelCutoffHours,
+			)
+		) {
+			toast.error(cutoffPassedMessage(masseurPhone, t));
+			return;
+		}
 		setCancelTarget({ startIso, bookingId, massageType });
 	}
 
@@ -382,7 +422,10 @@ export function ClientBookingCalendar({
 		setCancelTarget(null);
 	}
 
-	async function confirmCancelBooking() {
+	async function confirmCancelBooking(input: {
+		cancelReason: ClientCancelReasonKey;
+		cancelReasonText: string;
+	}) {
 		if (!cancelTarget || cancelPending) return;
 
 		setCancelPending(true);
@@ -392,19 +435,44 @@ export function ClientBookingCalendar({
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					bookingId: cancelTarget.bookingId,
+					cancelReason: input.cancelReason,
+					cancelReasonText: input.cancelReasonText || undefined,
 				}),
 			});
 
+			const data = (await response.json().catch(() => null)) as {
+				error?: string;
+				masseurPhone?: string | null;
+				neighborHint?: {
+					type: string;
+					masseurPhone?: string | null;
+				};
+			} | null;
+
 			if (!response.ok) {
-				toast.error(
-					response.status === 403
-						? t.bookingCancelForbidden
-						: t.bookingCancelError,
-				);
+				if (data?.error === 'CANCEL_CUTOFF_PASSED') {
+					toast.error(
+						cutoffPassedMessage(data.masseurPhone ?? masseurPhone, t),
+					);
+				} else if (data?.error === 'CANCEL_REASON_REQUIRED') {
+					toast.error(t.bookingCancelReasonRequired);
+				} else if (response.status === 404) {
+					toast.error(t.bookingCancelForbidden);
+				} else {
+					toast.error(t.bookingCancelError);
+				}
 				return;
 			}
 
 			toast.success(t.bookingCancelSuccess);
+			if (data?.neighborHint?.type === 'thai_cutoff') {
+				toast.message(
+					thaiNeighborCutoffMessage(
+						data.neighborHint.masseurPhone ?? masseurPhone,
+						t,
+					),
+				);
+			}
 			setCancelTarget(null);
 			if (range) {
 				await loadSlots(range.from, range.to);
@@ -557,54 +625,15 @@ export function ClientBookingCalendar({
 			) : null}
 
 			{cancelTarget ? (
-				<div
-					className='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
-					role='presentation'
-					onClick={closeCancelDialog}
-				>
-					<div
-						role='dialog'
-						aria-modal='true'
-						aria-labelledby='booking-cancel-title'
-						className='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
-						onClick={event => event.stopPropagation()}
-					>
-						<p
-							id='booking-cancel-title'
-							className='text-base font-medium text-foreground'
-						>
-							{t.bookingCancelConfirm}
-						</p>
-						<div className='mt-2 space-y-1 text-sm text-muted'>
-							<p>{t.bookingBookedByYou}</p>
-							<p>{formatSlotDateTime(cancelTarget.startIso, locale, timeZone)}</p>
-							{cancelTarget.massageType ? (
-								<p>
-									{t.bookingMassageType}:{' '}
-									{getMassageTypeLabel(cancelTarget.massageType, locale)}
-								</p>
-							) : null}
-						</div>
-						<div className='mt-5 flex flex-wrap justify-end gap-2'>
-							<button
-								type='button'
-								disabled={cancelPending}
-								onClick={closeCancelDialog}
-								className='h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
-							>
-								{t.bookingCancelKeep}
-							</button>
-							<button
-								type='button'
-								disabled={cancelPending}
-								onClick={() => void confirmCancelBooking()}
-								className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
-							>
-								{cancelPending ? t.authPleaseWait : t.bookingCancelConfirmAction}
-							</button>
-						</div>
-					</div>
-				</div>
+				<CancelBookingDialog
+					startIso={cancelTarget.startIso}
+					timeZone={timeZone}
+					massageType={cancelTarget.massageType}
+					subtitle={t.bookingBookedByYou}
+					pending={cancelPending}
+					onClose={closeCancelDialog}
+					onConfirm={input => void confirmCancelBooking(input)}
+				/>
 			) : null}
 		</div>
 	);

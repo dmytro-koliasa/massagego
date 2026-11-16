@@ -31,8 +31,8 @@
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): `cancelledBy` (enum `CancelledBy`: `client`, `masseur`) and `cancelledAt` | [BR-005](decisions.md#br-005) |
 | **Storage implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): cancellation reason `cancelReason` (enum `CancellationReason`, including the system key `client_account_deleted`) and `cancelReasonText` (`VARCHAR(200)`) for "Other". Still to do: accepting and requiring the reason in the API and the UI (PR 5 of the plan) | [BR-004](decisions.md#br-004), [BR-011](decisions.md#br-011) |
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): indexes on (`status`, `cancelledAt`) and (`status`, `slotStart`) for the cleanup job | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
-| Database guard against a client holding two active bookings for the same hour (exclusion constraint on the client account, rows without a client excluded), in addition to the application check | [BR-008](decisions.md#br-008) (open sub-question) |
-| Name and phone for client bookings copied from the account at booking time (no schema change; a server rule) | [BR-008](decisions.md#br-008) |
+| **Implemented** (PR 5): exclusion constraint `Booking_no_overlapping_active_client_slots` on (`clientUserId`, hour range) where status is not cancelled and `clientUserId` is not null | [BR-008](decisions.md#br-008) |
+| **Implemented** (PR 5): name and phone for client bookings copied from the account (`User.name`, `User.phone`) at booking time | [BR-008](decisions.md#br-008) |
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): removed the unused columns `preferredDate`, `preferredTime`, `clientEmail`; corrected the schema comment on `clientUserId` | C-8 (decided 2026-11-16), see [decisions.md](decisions.md#code-inconsistencies) |
 
 ### `AvailabilitySlot`

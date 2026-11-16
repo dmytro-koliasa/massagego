@@ -1,5 +1,8 @@
 import { z } from "zod";
 import {
+  CLIENT_CANCEL_REASON_KEYS,
+} from "@/lib/client-booking-rules";
+import {
   NAME_MAX,
   NOTE_MAX,
   phoneSchema,
@@ -14,11 +17,20 @@ const isoLikeDate = z
     message: "invalid_slot",
   });
 
+const cancelReasonTextSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .optional()
+  .transform((value) => value ?? "");
+
 export const bookingCreateSchema = z
   .object({
     masseurId: requiredText(64),
-    clientName: requiredText(NAME_MAX),
-    clientPhone: phoneSchema,
+    // Ignored for client bookings (taken from the account). Kept optional so
+    // older clients that still send the fields do not fail validation.
+    clientName: z.string().trim().max(NAME_MAX).optional(),
+    clientPhone: z.string().trim().optional(),
     note: z
       .string()
       .trim()
@@ -55,22 +67,51 @@ export const bookingCreateSchema = z
 
     return {
       masseurId: value.masseurId,
-      clientName: value.clientName,
-      clientPhone: value.clientPhone,
       note: value.note,
       massageType: value.massageType?.trim() || "",
       slotStarts: starts,
     };
   });
 
+const cancelReasonSchema = z.enum(CLIENT_CANCEL_REASON_KEYS);
+
+const cancelReasonFields = z
+  .object({
+    cancelReason: cancelReasonSchema,
+    cancelReasonText: cancelReasonTextSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.cancelReason === "other") {
+      if (!value.cancelReasonText) {
+        ctx.addIssue({
+          code: "custom",
+          message: "CANCEL_REASON_REQUIRED",
+          path: ["cancelReasonText"],
+        });
+      }
+      return;
+    }
+    if (value.cancelReasonText) {
+      ctx.addIssue({
+        code: "custom",
+        message: "CANCEL_REASON_REQUIRED",
+        path: ["cancelReasonText"],
+      });
+    }
+  });
+
 export const bookingCancelSchema = z.union([
-  z.object({
-    bookingId: requiredText(64),
-  }),
-  z.object({
-    masseurId: requiredText(64),
-    slotStart: isoLikeDate,
-  }),
+  cancelReasonFields.and(
+    z.object({
+      bookingId: requiredText(64),
+    }),
+  ),
+  cancelReasonFields.and(
+    z.object({
+      masseurId: requiredText(64),
+      slotStart: isoLikeDate,
+    }),
+  ),
 ]);
 
 /** Masseur books a slot on behalf of a walk-in / phone client. */
