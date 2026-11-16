@@ -3,6 +3,8 @@
 > **Status:** working register created from the as-is analysis of `master` at commit `f29ca32` (2026-11-15).
 > Nothing in this file is approved until its status says **Approved** or **Implemented**.
 > Current as-is behavior is described in [business-rules.md](business-rules.md); approved rules move there (section "Approved rules").
+>
+> **Data note (owner, 2026-11-16):** the current database holds **test data only** and will be **wiped and refilled** before real use. Track 2 questions about handling or migrating existing data (for example default values for existing masseurs, renaming `pending`, existing clients without a city, cities in excluded countries) are therefore **not blockers**. This note applies to those questions only; schema changes and migrations are still needed, and the production state of the migration `20261115120000_booking_no_overlap` has not been verified.
 
 ## Workflow
 
@@ -311,7 +313,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 5. **One shared blocklist:** the excluded countries are defined **once**, as a single list of country codes in the code base, used by **both** the phone validation and the city search, so that the two can never disagree. Changing the list is a code change (there is no administration screen for it).
 6. **Scope of the rule:** it restricts phone numbers and the cities that can be chosen; it does not detect where a person actually is.
 
-**Open sub-questions for track 2 (not yet groomed):** whether any masseur or client city already stored in an excluded country exists (check data before enforcing; decide how such profiles are treated); the message shown when a city search finds nothing because of the exclusion; the exact list of excluded countries and territories (which definition of "Africa" to use, how to treat dependent territories and countries spanning two continents, e.g. Egypt); the shared dialling code +7 of Russia and Kazakhstan, so that Kazakhstan numbers stay allowed and Russian ones are rejected; the error message shown for an excluded number; whether existing accounts or bookings with such numbers exist (none expected, as only EU and Ukraine numbers were accepted before).
+**Open sub-questions for track 2 (not yet groomed):** the message shown when a city search finds nothing because of the exclusion; the exact list of excluded countries and territories (which definition of "Africa" to use, how to treat dependent territories and countries spanning two continents, e.g. Egypt); the shared dialling code +7 of Russia and Kazakhstan, so that Kazakhstan numbers stay allowed and Russian ones are rejected; the error message shown for an excluded number; whether existing accounts or bookings with such numbers exist (none expected, as only EU and Ukraine numbers were accepted before).
 
 ### BR-014
 
