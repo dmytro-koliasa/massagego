@@ -59,6 +59,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | - (not implemented) |
+| 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | - (not implemented) |
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | - (not implemented) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
@@ -89,7 +90,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
 | [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16) |
-| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | - (not yet groomed) | Open |
+| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16) |
 | [BR-021](#br-021) | Administrator or support role | Low | - (not yet groomed) | Open |
 | [BR-022](#br-022) | Image upload rules | Low | - (not yet groomed) | Open |
 | [BR-023](#br-023) | Phone number verification | Low | - (not yet groomed) | Open |
@@ -486,7 +487,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** How is the service protected from abuse (brute-force login, mass registration, booking spam)?
 **Current implementation:** No rate limiting on registration, login or booking creation; the strength of the password hash (bcrypt cost 12) is the only protection. There is no phone or SMS verification.
 **Why:** Open endpoints can be attacked; the booking limits in [BR-008](#br-008) do not stop automated abuse.
-**Status:** Open. Not yet groomed. Added 2026-11-16.
+**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16.
+
+**Decision (option A):** basic **rate limits per IP and per account** on the sensitive requests: sign-in, registration, password reset ([BR-019](#br-019)), booking creation and cancellation. After the limit is exceeded the request is blocked for a while with a clear message. Considered and not chosen: limits only on sign-in and reset (B), a captcha on top of limits (C; may be added later if real bots appear, it would send data to a provider, XR-1), and doing nothing (D).
+
+**To decide for implementation (not yet groomed):** the exact limits and intervals; where the counters are stored (an in-memory counter does not work across the serverless instances of the hosting platform); the messages and what the user sees when blocked; how limits interact with legitimate shared IPs.
 
 ### BR-021
 
