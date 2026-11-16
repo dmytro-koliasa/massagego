@@ -43,6 +43,8 @@ Requirements from the owner that apply to **every** item, not to a single `BR-xx
 |---|---|---|
 | XR-1 | **Privacy and data protection.** When implementing, take into account the **GDPR** and the **other privacy and personal-data regulations that may apply** to the service and its users (the exact set is to be identified, ideally with legal advice). Personal data handling must be designed in, not added afterwards. | 2026-11-16 |
 
+**Rationale and limits of XR-1 for retention (owner, 2026-11-16):** the seven-day deletion of cancelled bookings ([BR-011](#br-011)) is a **product decision to minimise personal data and database size**, not a legal requirement. **National or sector-specific legal exceptions** (for example accounting, tax, consumer-protection or dispute-resolution retention duties) **may apply and need legal review** before release.
+
 Features that already touch personal data and must be reviewed against XR-1 when implemented: the masseur's **public phone number** ([BR-004](#br-004)); **account deletion and retention** ([BR-011](#br-011)); the cancellation reason free text ([BR-004](#br-004)); client and masseur **city** and phone numbers ([BR-013](#br-013), [BR-017](#br-017)); name and phone copied into bookings ([BR-008](#br-008)); **notifications** and the consent for them ([BR-009](#br-009)); any future payment data ([BR-015](#br-015)). Likely needs, to be confirmed with legal advice: privacy policy and terms shown at registration with consent, a way to export and erase one's data, retention periods, and consent for cookies or tracking if used. This is a requirement to design for, not a legal opinion.
 
 ## Approved decisions log
@@ -56,6 +58,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | - (not implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | - (not implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
+| 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | - (not implemented) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | - (not implemented) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
@@ -80,7 +83,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
-| [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
+| [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
+| [BR-018](#br-018) | Retention of completed (held) bookings | Medium | - (not yet groomed) | Open |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Approved** (2026-11-16) |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
@@ -297,6 +301,42 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** Hard delete. **B.** Soft delete with anonymisation of personal data, retaining booking history. **C.** Retention period.
 **Recommendation: B.**
 **Impact:** UI (delete account), API, DB (soft-delete fields / anonymisation job), existing rows unaffected.
+
+**Decision (Approved 2026-11-16, not implemented):**
+
+*Account deletion (question 1, option B).* A user deletes their own account in the application. Personal data is erased or anonymised (name, phone, email, photo, address, description). Bookings that remain are kept for the other party's history, with the deleted person's name and phone replaced by "deleted user" and no phone number. The phone number becomes free for a new registration.
+
+*Future bookings on deletion (question 2, option C).*
+- **Client:** may delete the account at any time. Their future bookings are **cancelled automatically** (the cancellation cutoff of [BR-004](#br-004) does not apply), with the reason "client account deleted" (no free text) and `cancelledBy` = client; the hours become free; the masseur sees it in the calendar and, once [BR-009](#br-009) exists, is notified.
+- **Masseur:** cannot delete the account while there are **active future bookings**. They must first cancel them under the normal masseur cancellation rules.
+
+*Cancelled bookings (question 3, owner's modified option B).*
+1. A cancelled booking **without payment or open obligations** is **physically deleted** from the database (hard delete, no anonymisation and no soft delete) **7 days after the cancellation** (counted from `cancelledAt`, [BR-005](#br-005)). It applies to cancellations by the client, by the masseur and to automatic cancellations on account deletion.
+2. After deletion the booking appears **nowhere** (history, calendars, other screens).
+3. A cancelled booking with **financial or legal obligations** (refunds, accounting, a dispute, a legal duty to keep it) keeps **only the data needed for that purpose** and is **not deleted automatically**. No payments exist today ([BR-015](#br-015) is deferred), so this branch has no data yet; its criteria must be defined when payments or disputes are introduced.
+4. **Completed (held) bookings:** the retention policy is **not decided here** and no new retention period is introduced; see [BR-018](#br-018). Until then they are kept while the accounts exist and are anonymised when an account is deleted (see account deletion above).
+5. The previously agreed account-deletion behaviour is kept, as it does not conflict with this decision.
+6. A **regular background job** (cron) deletes the bookings that meet the conditions. It must take into account relations between tables, financial records, audit and unresolved disputes.
+7. Rationale: the seven days is a product decision (minimise personal data and database growth), not a legal requirement; see XR-1 above.
+
+**Acceptance criteria (for track 2):**
+- A booking cancelled more than 7 days ago, with no payment or open obligation, no longer exists in the database and is not returned by any API or shown in any screen.
+- A booking cancelled less than 7 days ago still exists and is shown as before (for example the cancellation reason in the masseur's slot details, [BR-004](#br-004)).
+- The seven days are counted from the cancellation time (`cancelledAt`), not from the session time.
+- A booking with a financial or legal obligation is never removed by the job.
+- After the job runs, the hour of a deleted cancelled booking is unaffected (availability is a separate record) and the booking exclusion constraint is not affected.
+- Deleting a client account cancels their future bookings, frees the hours and anonymises the remaining data; deleting a masseur account is refused while future bookings exist.
+- The job is idempotent and safe to run repeatedly, and failures are logged without losing data.
+
+**Technical consequences (for track 2):** a scheduled job (for example a cron route or a platform cron) running at least daily; `cancelledAt` must exist ([BR-005](#br-005)) and be indexed together with the status; deleted bookings leave no cancellation history, so the reason, `cancelledBy` and the notification ([BR-009](#br-009)) must be used within the 7 days; account deletion needs a transaction that cancels bookings, anonymises the user and frees identifiers; copies of the data in backups and logs must follow the same minimisation (to be reviewed under XR-1); the obligation flag needed for point 3 does not exist yet and must be designed with payments; the one-way nature of hard delete means a wrongly cancelled booking cannot be restored after 7 days.
+
+**Effects on earlier decisions:** the cancellation reason and `cancelledBy` ([BR-004](#br-004), [BR-005](#br-005)) are visible to the masseur only until the booking is deleted; the "last cancellation" shown in slot details is limited to the last 7 days; per-reason statistics over longer periods are not possible without a separate aggregate that holds no personal data.
+
+### BR-018
+
+**Business question:** How long are completed (held) bookings kept, and what happens to their personal data?
+**Current implementation:** kept indefinitely; no deletion or anonymisation exists.
+**Status:** Open. Not yet groomed. Created from point 4 of [BR-011](#br-011); no retention period may be introduced before it is decided.
 
 ### BR-012
 
