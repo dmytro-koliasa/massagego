@@ -39,6 +39,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
+| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -52,12 +53,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Approved** (2026-11-16) |
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
-| [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start | Open |
+| [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | Open |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Approved** (2026-11-16) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions | Open |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings | Open |
-| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation | Open |
+| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (scope now covers all events; to be groomed as a separate new feature) | Open |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability | Open |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
@@ -123,6 +124,22 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B**, as the minimum fix; C once reporting is needed.
 **Impact:** UI (disable cancel inside the cutoff), API (`/api/bookings/cancel` time check), DB (none for B; a nullable `cancelledBy`/`cancelReason` for C), existing data unaffected.
 
+**Decision (Approved 2026-11-16, not implemented):** a **per-masseur client cancellation cutoff** (stronger than the options above).
+
+1. **Cutoff setting:** each masseur sets, in their dashboard, how long before the session start a client may still cancel. Allowed values (a fixed list, no free input): **1, 2, 3, 4, 6, 8, 12, 24, 36, 48, 72 hours**. Default: **24 hours**.
+2. **Client cancellation:** a client may cancel their own booking only while `now <= start - cutoff` of that masseur. After that the client cannot cancel in the application. Sessions that have started or are in the past cannot be cancelled by the client (this follows from the cutoff being at least 1 hour).
+3. **Bookings made inside the cutoff window:** they remain non-cancellable by the client from the start. Before confirming such a booking, the client sees a clear notice that cancellation is no longer possible for this slot (stating the masseur's cutoff). There is no grace period after booking.
+4. **After the window closes:** the client sees a message that cancellation in the application is no longer possible and the **masseur's phone number**, so the client can contact them. The masseur may still cancel the booking on their side.
+5. **Masseur phone:** a **required** field in the masseur profile (validated like other phone numbers) and **visible to any client**. The masseur must be told on the profile form that the number is public to clients. Existing masseurs without a phone are shown without a contact until they add one.
+6. **Relation to BR-002:** the cutoff cannot be shorter than the masseur's client lead time. Cutoff options below the lead time are not selectable, so a slot freed by a cancellation can always be booked again by clients. If the lead time is raised above the current cutoff, the cutoff must be raised or the masseur must be warned.
+7. **Notification of the masseur** about client cancellations is wanted, but it is **not decided here**: it is part of the separate notifications feature, see [BR-009](#br-009).
+
+**Not decided / out of scope of this decision:** any fee, penalty or payment for late cancellation (no prices or payments exist yet; related to [BR-012](#br-012)); cancellation reasons or a "cancelled by" marker; a cancellation request flow; behavior of the masseur's own cancellation (currently: allowed until slot start, with a choice to keep the hour available or remove it) is **unchanged** because no decision was made; handling of past bookings and statuses ([BR-005](#br-005)).
+
+**Resolves when implemented:** C-5 (client could cancel past or in-progress bookings, a masseur could not).
+
+**Open sub-questions for track 2 (not yet groomed):** default cutoff for existing masseurs (24 h proposed); what happens to existing future bookings that fall inside a newly chosen cutoff; exact wording of the notice and the post-cutoff message in English and Ukrainian; where the cutoff and phone fields live in the dashboard; whether the post-cutoff message shows the phone as a tap-to-call link; how the phone is collected from existing masseurs; privacy wording shown on the profile form.
+
 ### BR-005
 
 **Business question:** Does a booking need masseur confirmation, and are `completed` / `no_show` states needed?
@@ -180,6 +197,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** None. **B.** Email/SMS to masseur on new booking and to client on masseur cancellation. **C.** B plus reminders.
 **Recommendation: B.**
 **Impact:** new provider integration, API hooks, possibly `Booking`/`User` contact fields; clients register by phone only, so SMS or a collected email is needed.
+
+**Owner note (2026-11-16):** notifications are to be handled as a **separate new, not yet implemented feature**, and must cover **all relevant events**, not only cancellations. Known requirement so far: the masseur is notified when a client cancels a booking ([BR-004](#br-004)). Channels (email, SMS, in-app), the full list of events, recipients and message content are still to be groomed. Status stays **Open**.
 
 ### BR-010
 
