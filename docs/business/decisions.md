@@ -416,7 +416,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 1. **Booking hint.** When the client selects the massage type **Thai** (changing the type to Thai), a toast recommends choosing more than one consecutive slot.
 2. **Slot-selection hint.** While the type is Thai, the same toast is shown again after the client selects a slot in the calendar.
-3. **Cancellation hint.** When a client cancels one of several consecutive slots and the massage type is Thai, a toast recommends cancelling the neighbouring slot as well, because the massage type is Thai.
+3. **Cancellation hint.** When a client cancels one of several consecutive slots and the massage type is Thai, a toast recommends cancelling the neighbouring slot as well, because the massage type is Thai. **If the neighbouring slot can no longer be cancelled** (it is already inside the masseur's cancellation cutoff, [BR-004](#br-004)), the toast says so and shows the masseur's phone number, so the client can contact the masseur (decided 2026-11-16, finding X-1, option A). Bookings stay independent: no grouping and no forced joint cancellation, so in that rare one-hour window a client may end up with only part of a long session.
 4. **Toast behavior.** These toasts are closed **only by the user** (no auto-dismiss).
 5. Booking more or fewer slots remains allowed; the toasts are recommendations, not validation.
 
@@ -560,11 +560,11 @@ A review of all **Approved** decisions against each other, made on 2026-11-16. T
 
 | ID | Finding | Where it comes from | Suggested handling | Status |
 |---|---|---|---|---|
-| X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | Open (to groom) |
+| X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | **Approved** (2026-11-16): option A, see below |
 | X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question) |
 | X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | UX note for implementation: keep the form short and clear; no decision needed now | Note |
 | X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
 | X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Open (BR-019) |
 
-No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts.
+No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts. X-1 was decided on 2026-11-16 (option A, in [BR-014](#br-014)); X-2 to X-4 are notes for implementation; X-5 is decided in [BR-019](#br-019) when groomed.
 
