@@ -13,6 +13,7 @@ import {
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import luxonPlugin from '@fullcalendar/luxon3';
 import ukLocale from '@fullcalendar/core/locales/uk';
 import PhoneInput, { type Country } from 'react-phone-number-input/max';
 import flags from 'react-phone-number-input/flags';
@@ -37,11 +38,18 @@ import {
 	CALENDAR_SLOT_DURATION,
 	CALENDAR_SLOT_MAX_TIME,
 	CALENDAR_SLOT_MIN_TIME,
-	DAY_END_HOUR,
-	DAY_START_HOUR,
+	DEFAULT_MASSEUR_TIME_ZONE,
 	SLOT_MS,
 	WEEKLY_COPY_DEFAULT_WEEKS,
 } from '@/lib/booking-constants';
+import {
+	alignToHourIso,
+	formatCalendarTimeZoneLine,
+	formatHourRange,
+	formatWeekTitle,
+	getWeekSlotStarts,
+} from '@/lib/calendar-time';
+import { resolveTimeZone } from '@/lib/masseur-time';
 
 export type AvailabilityCalendarHandle = {
 	save: () => Promise<boolean>;
@@ -60,72 +68,11 @@ type AvailabilitySlot = {
 	bookingId?: string | null;
 };
 
-function alignToHourIso(date: Date) {
-	const aligned = new Date(date);
-	aligned.setMinutes(0, 0, 0);
-	return aligned.toISOString();
-}
-
 /** Slot can no longer be edited once its start time has begun (e.g. 8:01 for 8:00–9:00). */
 function isSlotExpired(startIso: string) {
 	const startMs = Date.parse(startIso);
 	if (Number.isNaN(startMs)) return false;
 	return startMs <= Date.now();
-}
-
-function getMonthName(date: Date, locale: 'en' | 'uk') {
-	const localeTag = locale === 'uk' ? 'uk-UA' : 'en-GB';
-
-	// uk-UA with a day forces the genitive month form: "вересня", "жовтня", ...
-	if (locale === 'uk') {
-		return (
-			new Intl.DateTimeFormat(localeTag, {
-				day: 'numeric',
-				month: 'long',
-			})
-				.formatToParts(date)
-				.find(part => part.type === 'month')?.value ?? ''
-		);
-	}
-
-	return new Intl.DateTimeFormat(localeTag, {
-		month: 'long',
-	}).format(date);
-}
-
-function formatWeekTitle(fromIso: string, toIso: string, locale: 'en' | 'uk') {
-	const start = new Date(fromIso);
-	const end = new Date(new Date(toIso).getTime() - 1);
-
-	const sameMonth =
-		start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
-
-	if (sameMonth) {
-		const month = getMonthName(start, locale);
-		return `${start.getDate()} – ${end.getDate()} ${month} ${start.getFullYear()}`;
-	}
-
-	const startMonth = getMonthName(start, locale);
-	const endMonth = getMonthName(end, locale);
-
-	if (start.getFullYear() === end.getFullYear()) {
-		return `${start.getDate()} ${startMonth} – ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-	}
-
-	return `${start.getDate()} ${startMonth} ${start.getFullYear()} – ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-}
-
-function formatHourRange(start: Date, end: Date, locale: 'en' | 'uk') {
-	const localeTag = locale === 'uk' ? 'uk-UA' : 'en-GB';
-	const formatter = new Intl.DateTimeFormat(localeTag, {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
-	return {
-		start: formatter.format(start),
-		end: formatter.format(end),
-	};
 }
 
 function fillTimeHint(template: string, start: string, end: string) {
@@ -185,30 +132,6 @@ function isCurrentWeekRange(fromIso: string, toIso: string) {
 	return now >= new Date(fromIso).getTime() && now < new Date(toIso).getTime();
 }
 
-function getWeekSlotStarts(fromIso: string, toIso: string, options?: { fromNow?: boolean }) {
-	const starts: string[] = [];
-	const cursor = new Date(fromIso);
-	cursor.setMinutes(0, 0, 0);
-	const endMs = new Date(toIso).getTime();
-
-	let minMs = Number.NEGATIVE_INFINITY;
-	if (options?.fromNow) {
-		const nowAligned = new Date();
-		nowAligned.setMinutes(0, 0, 0);
-		minMs = nowAligned.getTime();
-	}
-
-	while (cursor.getTime() < endMs) {
-		const hour = cursor.getHours();
-		if (hour >= DAY_START_HOUR && hour < DAY_END_HOUR && cursor.getTime() >= minMs) {
-			starts.push(cursor.toISOString());
-		}
-		cursor.setHours(cursor.getHours() + 1);
-	}
-
-	return starts;
-}
-
 function mergeSlotsWithPending(
 	serverSlots: AvailabilitySlot[],
 	pending: Map<string, boolean>,
@@ -257,6 +180,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		const calendarRef = useRef<FullCalendar | null>(null);
 		const [serverSlots, setServerSlots] = useState<AvailabilitySlot[]>([]);
 		const [pendingChanges, setPendingChanges] = useState<Map<string, boolean>>(() => new Map());
+		const [timeZone, setTimeZone] = useState(DEFAULT_MASSEUR_TIME_ZONE);
+		const timeZoneRef = useRef(timeZone);
+		timeZoneRef.current = timeZone;
 		const [range, setRange] = useState<{ from: string; to: string } | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [repeating, setRepeating] = useState(false);
@@ -322,12 +248,20 @@ export const MasseurAvailabilityCalendar = forwardRef<
 
 		const viewTitle = useMemo(() => {
 			if (!range) return '';
-			return formatWeekTitle(range.from, range.to, locale);
-		}, [range, locale]);
+			return formatWeekTitle(range.from, range.to, locale, timeZone);
+		}, [range, locale, timeZone]);
+
+		const timeZoneLine = useMemo(
+			() => formatCalendarTimeZoneLine(t.calendarTimeZoneLabel, timeZone),
+			[t.calendarTimeZoneLabel, timeZone],
+		);
 
 		const weekSlotStarts = useMemo(
-			() => (range ? getWeekSlotStarts(range.from, range.to, { fromNow: true }) : []),
-			[range],
+			() =>
+				range
+					? getWeekSlotStarts(range.from, range.to, timeZone, { fromNow: true })
+					: [],
+			[range, timeZone],
 		);
 
 		const slots = useMemo(() => {
@@ -358,6 +292,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						new Date(slot.start),
 						new Date(slot.end),
 						locale,
+						timeZone,
 					);
 					const clientName = slot.clientName?.trim() || '—';
 					const clientPhone = slot.clientPhone?.trim() || '—';
@@ -404,6 +339,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			[
 				slots,
 				locale,
+				timeZone,
 				t.availabilitySlotLabel,
 				t.availabilityBookedSlotLabel,
 				t.availabilitySlotAvailableHint,
@@ -426,6 +362,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						return;
 					}
 					const data = (await response.json()) as {
+						timezone?: string;
 						slots?: Array<{
 							id: string;
 							start: string;
@@ -437,6 +374,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							bookingId?: string | null;
 						}>;
 					};
+					if (typeof data.timezone === 'string') {
+						setTimeZone(resolveTimeZone(data.timezone));
+					}
 					setServerSlots(
 						(data.slots ?? []).map(slot => ({
 							id: slot.id,
@@ -515,7 +455,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		}
 
 		function resolveSlotStartIso(date: Date) {
-			const aligned = alignToHourIso(date);
+			const aligned = alignToHourIso(date, timeZoneRef.current);
 			const exact = slotsRef.current.find(slot => slot.start === aligned);
 			if (exact) return exact.start;
 
@@ -821,9 +761,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 									</button>
 								</div>
 
-								<h3 className='pt-1 text-base font-bold text-foreground sm:text-lg'>
-									{viewTitle}
-								</h3>
+								<div className='pt-1 text-right'>
+									<h3 className='text-base font-bold text-foreground sm:text-lg'>
+										{viewTitle}
+									</h3>
+									<p className='mt-0.5 text-xs text-muted'>{timeZoneLine}</p>
+								</div>
 							</div>
 
 							<div className='mt-2 mb-3 flex min-h-11 w-full flex-wrap items-center justify-between gap-3'>
@@ -865,10 +808,11 @@ export const MasseurAvailabilityCalendar = forwardRef<
 					</div>
 
 					<FullCalendar
-						key={locale}
+						key={`${locale}-${timeZone}`}
 						ref={calendarRef}
-						plugins={[timeGridPlugin, interactionPlugin]}
+						plugins={[luxonPlugin, timeGridPlugin, interactionPlugin]}
 						initialView='timeGridWeek'
+						timeZone={timeZone}
 						locale={locale === 'uk' ? ukLocale : 'en'}
 						headerToolbar={false}
 						allDaySlot={false}
@@ -895,10 +839,16 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						events={events}
 						slotLaneDidMount={arg => {
 							if (!arg.date) return;
-							const start = new Date(arg.date);
-							start.setMinutes(0, 0, 0);
+							const start = new Date(
+								alignToHourIso(new Date(arg.date), timeZoneRef.current),
+							);
 							const end = new Date(start.getTime() + SLOT_MS);
-							const hours = formatHourRange(start, end, localeRef.current);
+							const hours = formatHourRange(
+								start,
+								end,
+								localeRef.current,
+								timeZoneRef.current,
+							);
 							const text = fillTimeHint(
 								emptyHintRef.current,
 								hours.start,
@@ -1007,10 +957,11 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							{(() => {
 								const start = new Date(slotAction.startIso);
 								const end = new Date(start.getTime() + SLOT_MS);
-								const hours = formatHourRange(start, end, locale);
+								const hours = formatHourRange(start, end, locale, timeZone);
 								const dayLabel = new Intl.DateTimeFormat(
 									locale === 'uk' ? 'uk-UA' : 'en-GB',
 									{
+										timeZone,
 										weekday: 'short',
 										day: 'numeric',
 										month: 'short',

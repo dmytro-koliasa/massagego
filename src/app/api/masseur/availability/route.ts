@@ -115,6 +115,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
+    timezone: gate.timeZone,
     slots: [...byStart.values()].sort((a, b) => a.start.localeCompare(b.start)),
   });
 }

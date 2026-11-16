@@ -11,8 +11,14 @@ import {
   CALENDAR_SLOT_DURATION,
   CALENDAR_SLOT_MAX_TIME,
   CALENDAR_SLOT_MIN_TIME,
-  SLOT_MS,
+  DEFAULT_MASSEUR_TIME_ZONE,
 } from "@/lib/booking-constants";
+import {
+  formatHourRange,
+  formatSlotDateTime,
+  formatWeekTitle,
+} from "@/lib/calendar-time";
+import { resolveTimeZone, timeZoneLabel } from "@/lib/masseur-time";
 import { getMassageTypeLabel } from "@/lib/massage-types";
 
 type ClientSession = {
@@ -25,6 +31,7 @@ type ClientSession = {
     name: string | null;
     nameEn: string | null;
     nameUk: string | null;
+    timezone: string;
   };
 };
 
@@ -35,83 +42,14 @@ type CancelTarget = {
   massageTypeLabel: string | null;
 };
 
-function getMonthName(date: Date, locale: "en" | "uk") {
-  const localeTag = locale === "uk" ? "uk-UA" : "en-GB";
-
-  if (locale === "uk") {
-    return (
-      new Intl.DateTimeFormat(localeTag, {
-        day: "numeric",
-        month: "long",
-      })
-        .formatToParts(date)
-        .find((part) => part.type === "month")?.value ?? ""
-    );
-  }
-
-  return new Intl.DateTimeFormat(localeTag, {
-    month: "long",
-  }).format(date);
-}
-
-function formatWeekTitle(fromIso: string, toIso: string, locale: "en" | "uk") {
-  const start = new Date(fromIso);
-  const end = new Date(new Date(toIso).getTime() - 1);
-
-  const sameMonth =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth();
-
-  if (sameMonth) {
-    const month = getMonthName(start, locale);
-    return `${start.getDate()} – ${end.getDate()} ${month} ${start.getFullYear()}`;
-  }
-
-  const startMonth = getMonthName(start, locale);
-  const endMonth = getMonthName(end, locale);
-
-  if (start.getFullYear() === end.getFullYear()) {
-    return `${start.getDate()} ${startMonth} – ${end.getDate()} ${endMonth} ${start.getFullYear()}`;
-  }
-
-  return `${start.getDate()} ${startMonth} ${start.getFullYear()} – ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
-}
-
-function formatSessionSlot(startIso: string, locale: "en" | "uk") {
-  const start = new Date(startIso);
-  const end = new Date(start.getTime() + SLOT_MS);
-  const localeTag = locale === "uk" ? "uk-UA" : "en-GB";
-
-  const datePart = new Intl.DateTimeFormat(localeTag, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(start);
-
-  const timeFormatter = new Intl.DateTimeFormat(localeTag, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  return `${datePart}, ${timeFormatter.format(start)}-${timeFormatter.format(end)}`;
-}
-
-function formatHourRange(start: Date, end: Date, locale: "en" | "uk") {
-  const localeTag = locale === "uk" ? "uk-UA" : "en-GB";
-  const formatter = new Intl.DateTimeFormat(localeTag, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return {
-    start: formatter.format(start),
-    end: formatter.format(end),
-  };
-}
-
 function fillTimeHint(template: string, start: string, end: string) {
   return template.replaceAll("{start}", start).replaceAll("{end}", end);
+}
+
+function browserTimeZone() {
+  return (
+    Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_MASSEUR_TIME_ZONE
+  );
 }
 
 export function ClientSessionsCalendar() {
@@ -119,6 +57,7 @@ export function ClientSessionsCalendar() {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [sessions, setSessions] = useState<ClientSession[]>([]);
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+  const localZone = browserTimeZone();
   const [loading, setLoading] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
@@ -148,8 +87,8 @@ export function ClientSessionsCalendar() {
 
   const viewTitle = useMemo(() => {
     if (!range) return "";
-    return formatWeekTitle(range.from, range.to, locale);
-  }, [range, locale]);
+    return formatWeekTitle(range.from, range.to, locale, localZone);
+  }, [range, locale, localZone]);
 
   const isCurrentWeek = useMemo(() => {
     if (!range) return false;
@@ -170,10 +109,13 @@ export function ClientSessionsCalendar() {
           )?.trim() ||
           session.masseur.name?.trim() ||
           t.masseurFallbackName;
+        const zone = resolveTimeZone(session.masseur.timezone);
+        const zoneLabel = timeZoneLabel(zone, new Date(session.start));
         const hours = formatHourRange(
           new Date(session.start),
           new Date(session.end),
           locale,
+          zone,
         );
         const massageTypeLabel = session.massageType
           ? getMassageTypeLabel(session.massageType, locale)
@@ -185,7 +127,7 @@ export function ClientSessionsCalendar() {
         );
         const [timeLine, ...restHint] = baseHint.split("\n");
         const hint = [
-          timeLine,
+          `${timeLine} (${zoneLabel})`,
           masseurName,
           massageTypeLabel
             ? `${t.bookingMassageType}: ${massageTypeLabel}`
@@ -199,7 +141,7 @@ export function ClientSessionsCalendar() {
           id: session.id,
           start: session.start,
           end: session.end,
-          title: masseurName,
+          title: `${masseurName} · ${zoneLabel}`,
           display: "block" as const,
           classNames: ["fc-event-booked", "fc-event-booked-mine"],
           borderColor: "transparent",
@@ -208,6 +150,7 @@ export function ClientSessionsCalendar() {
             bookingId: session.id,
             startIso: session.start,
             masseurName,
+            masseurTimeZone: zone,
             massageType: session.massageType,
             hint,
           },
@@ -239,7 +182,15 @@ export function ClientSessionsCalendar() {
           return;
         }
         const data = (await response.json()) as { bookings?: ClientSession[] };
-        setSessions(data.bookings ?? []);
+        setSessions(
+          (data.bookings ?? []).map((booking) => ({
+            ...booking,
+            masseur: {
+              ...booking.masseur,
+              timezone: resolveTimeZone(booking.masseur?.timezone),
+            },
+          })),
+        );
       } catch {
         toast.error(t.clientSessionsLoadError);
       } finally {
@@ -258,14 +209,16 @@ export function ClientSessionsCalendar() {
     bookingId: string;
     startIso: string;
     masseurName: string;
+    masseurTimeZone: string;
     massageType: string | null;
   }) {
     if (cancelPending) return;
     hideSlotTip();
+    const zone = resolveTimeZone(session.masseurTimeZone);
     setCancelTarget({
       bookingId: session.bookingId,
       startIso: session.startIso,
-      label: `${session.masseurName} · ${formatSessionSlot(session.startIso, locale)}`,
+      label: `${session.masseurName} · ${formatSlotDateTime(session.startIso, locale, zone)} (${timeZoneLabel(zone, new Date(session.startIso))})`,
       massageTypeLabel: session.massageType
         ? getMassageTypeLabel(session.massageType, locale)
         : null,
@@ -414,6 +367,10 @@ export function ClientSessionsCalendar() {
               bookingId: props.bookingId,
               startIso: props.startIso,
               masseurName: props.masseurName,
+              masseurTimeZone:
+                typeof props.masseurTimeZone === "string"
+                  ? props.masseurTimeZone
+                  : DEFAULT_MASSEUR_TIME_ZONE,
               massageType:
                 typeof props.massageType === "string"
                   ? props.massageType

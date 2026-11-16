@@ -206,6 +206,7 @@ export const dictionaries = {
 		galleryInvalidType: 'Use a JPG or PNG image.',
 		galleryTooLarge: 'Photo must be smaller than 5 MB.',
 		availabilityTitle: 'Weekly availability',
+		calendarTimeZoneLabel: 'Times in {label}',
 		availabilitySupport:
 			'Click hour slots to mark when you are available. Click again to clear. Booked hours stay locked. Save profile to keep changes.',
 		availabilityEmptyWeek:
@@ -467,6 +468,7 @@ export const dictionaries = {
 		galleryInvalidType: 'Використовуйте зображення JPG або PNG.',
 		galleryTooLarge: 'Фото має бути меншим за 5 МБ.',
 		availabilityTitle: 'Тижнева доступність',
+		calendarTimeZoneLabel: 'Час: {label}',
 		availabilitySupport:
 			'Клікайте годинні слоти, щоб позначити доступність. Повторний клік знімає вибір. Заброньовані години заблоковані. Збережіть профіль, щоб застосувати зміни.',
 		availabilityEmptyWeek: 'Цього тижня ще немає слотів. Позначте години й натисніть «Зберегти».',

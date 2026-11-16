@@ -80,6 +80,7 @@ export async function GET(request: Request) {
             name: true,
             nameEn: true,
             nameUk: true,
+            timezone: true,
           },
         },
       },
@@ -97,6 +98,7 @@ export async function GET(request: Request) {
           name: booking.masseur.name,
           nameEn: booking.masseur.nameEn,
           nameUk: booking.masseur.nameUk,
+          timezone: resolveTimeZone(booking.masseur.timezone),
         },
       })),
     });
