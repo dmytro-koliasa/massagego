@@ -28,6 +28,10 @@ model User {
   /// evaluated in it). Unused for clients. Keep the default in sync with
   /// DEFAULT_MASSEUR_TIME_ZONE in src/lib/booking-constants.ts.
   timezone       String    @default("Europe/Kyiv")
+  /// Client booking lead time in hours (1/2/3/4). Masseur-only (BR-002).
+  bookingLeadHours   Int       @default(1)
+  /// Client cancellation cutoff in hours; never below bookingLeadHours (BR-004).
+  cancelCutoffHours  Int       @default(24)
   passwordHash   String?
   /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
   portal         String

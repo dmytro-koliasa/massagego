@@ -10,8 +10,8 @@
 | Change | Role | Decision |
 |---|---|---|
 | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): `timezone` (IANA name, default `Europe/Kyiv`); editing it in the profile comes with PR 8 | masseur | [BR-006](decisions.md#br-006) |
-| Client booking lead time in hours, one of 1 / 2 / 3 / 4, default 1 | masseur | [BR-002](decisions.md#br-002) |
-| Client cancellation cutoff in hours, one of 1, 2, 3, 4, 6, 8, 12, 24, 36, 48, 72, default 24; not below the lead time | masseur | [BR-004](decisions.md#br-004) |
+| **Implemented** (PR 4): `bookingLeadHours` (1 / 2 / 3 / 4, default 1) | masseur | [BR-002](decisions.md#br-002) |
+| **Implemented** (PR 4): `cancelCutoffHours` (1, 2, 3, 4, 6, 8, 12, 24, 36, 48, 72, default 24; never below the lead time; raising lead above cutoff auto-raises cutoff with a message) | masseur | [BR-004](decisions.md#br-004) |
 | Phone becomes required and public (validated with the country rule) | masseur | [BR-004](decisions.md#br-004), [BR-013](decisions.md#br-013) |
 | Real email, required and **verified** (the current synthetic email derived from the phone is replaced) | client | [BR-009](decisions.md#br-009) |
 | Email verified (the existing `emailVerified` field may be used) | both | [BR-009](decisions.md#br-009) |
@@ -49,14 +49,14 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 
 ## 3. Configuration and constants in code
 
-The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): session length, working window, default masseur time zone, 120-day window, weekly copy default and maximum (still 12 and 52), the cap of 30 and both retention periods. Rules that use the window, the cap and the retention periods come with their own pull requests.
+The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), PR 4): session length, working window, default masseur time zone, 120-day window, weekly copy default **12** and maximum **17**, lead-time and cutoff option lists, the cap of 30 and both retention periods.
 
 | Item | Value | Decision |
 |---|---|---|
 | Session length | 60 minutes | [BR-001](decisions.md#br-001) |
 | Working window | 05:00-23:00 in the masseur's timezone | [BR-007](decisions.md#br-007) |
 | Booking window for clients | 120 days (date-based, masseur's timezone) | [BR-003](decisions.md#br-003) |
-| Weekly copy limit | about 17 weeks | [BR-003](decisions.md#br-003) |
+| Weekly copy limit | **17 weeks** (PR 4) | [BR-003](decisions.md#br-003) |
 | Active future bookings per client | 30 | [BR-008](decisions.md#br-008) |
 | Cancelled booking retention | 7 days from `cancelledAt` | [BR-011](decisions.md#br-011) |
 | Completed booking retention | 3 months from the session start | [BR-018](decisions.md#br-018) |

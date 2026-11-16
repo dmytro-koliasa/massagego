@@ -188,6 +188,11 @@ export function MasseurBookingView({
           toast.error(t.bookingSlotUnavailable);
         } else if (data.error === "slot_taken") {
           toast.error(t.bookingSlotTaken);
+        } else if (
+          data.error === "BOOKING_LEAD_TIME" ||
+          data.error === "BOOKING_WINDOW_EXCEEDED"
+        ) {
+          toast.error(t.bookingSlotUnavailable);
         } else {
           toast.error(t.bookingError);
         }

@@ -106,16 +106,18 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 4 - Booking lead time, 120-day window, cancellation cutoff
 
-**Scope:** masseur settings for the client booking lead time (1, 2, 3 or 4 hours, default 1) and the client cancellation cutoff (1, 2, 3, 4, 6, 8, 12, 24, 36, 48 or 72 hours, default 24, never below the lead time), with the settings screen; the client availability endpoint hides slots inside the lead time and beyond 120 days (date-based, masseur timezone); the booking route enforces both with a strict boundary; the 60-minute grace for started slots is removed; weekly copy is limited to about 17 weeks; the masseur calendar marks slots beyond the window as "not yet visible to clients"; the client calendar disables forward navigation on the last week of the window with the message.
+**Status:** implementing on branch `feat/booking-lead-window-cutoff` (groomed 2026-11-16).
+
+**Groomed decisions:** weekly copy max = **17**; raising lead above cutoff **auto-raises cutoff** with message; 120-day copy as in BR-003; auto-raise copy as groomed; beyond-window slots are **dimmed** with "Not yet visible to clients" / "Ще не видно клієнтам" in slot details; API codes `BOOKING_LEAD_TIME`, `BOOKING_WINDOW_EXCEEDED`, `CUTOFF_TOO_LOW`; changing settings does **not** alter existing bookings (cutoff enforcement on cancel stays PR 5).
+
+**Scope:** masseur settings for the client booking lead time (1, 2, 3 or 4 hours, default 1) and the client cancellation cutoff (1, 2, 3, 4, 6, 8, 12, 24, 36, 48 or 72 hours, default 24, never below the lead time), with the settings screen; the client availability endpoint hides slots inside the lead time and beyond 120 days (date-based, masseur timezone); the booking route enforces both with a strict boundary; the 60-minute grace for started slots is removed; weekly copy is limited to 17 weeks; the masseur calendar marks slots beyond the window as "not yet visible to clients"; the client calendar disables forward navigation on the last week of the window with the message.
 
 **Acceptance criteria:**
 - With a lead time of 1 hour, a 10:00 slot is visible and bookable at 08:59:59 and hidden and rejected at 09:00:00.
 - A client cannot book or see a slot beyond the end of the day `today + 120 days` in the masseur's timezone; the masseur can still create slots and walk-ins beyond it.
-- The cutoff cannot be saved below the lead time; changing the lead time above the cutoff is refused or the cutoff is raised, with a message.
-- The message "Booking is available up to 120 days ahead - until {date}" appears in both languages.
+- The cutoff cannot be saved below the lead time; changing the lead time above the cutoff raises the cutoff, with a message.
+- The message "Booking is available up to 120 days ahead — until {date}" appears in both languages.
 - Closes C-1.
-
-**To groom first:** the exact weekly-copy limit; how the cutoff and lead time interact when one is changed; wording of the messages; whether the masseur's existing bookings are affected by a new setting (they are not).
 
 ### PR 5 - Client booking and cancellation rules
 

@@ -53,8 +53,8 @@ Features that already touch personal data and must be reviewed against XR-1 when
 |---|---|---|---|
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (server); [#6](https://github.com/dmytro-koliasa/massagego/pull/6) (calendars); choosing the zone in PR 8 |
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (one shared constant) |
-| 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
-| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
+| 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | PR 4 (`feat/booking-lead-window-cutoff`) |
+| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | settings in PR 4; cancel enforcement + reason UI in PR 5 |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | - (not implemented) |
@@ -67,7 +67,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | - (not implemented) |
-| 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | - (not implemented) |
+| 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
@@ -85,8 +85,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 | ID | Topic | Priority | Recommended (proposal) | Status |
 |---|---|---|---|---|
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) |
-| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Approved** (2026-11-16) |
-| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Approved** (2026-11-16) |
+| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Implemented** (PR 4) |
+| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Implemented** (PR 4) |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)); choosing the zone remains for PR 8 |
@@ -136,7 +136,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B**, defaulting to a small value, with the same "started slot" rule on all paths.
 **Impact:** UI (hide/disable slots inside the window), API (both create routes), no DB change, no data migration.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option C, per-masseur lead time**, with the following rules. The rule comes from a practising masseur.
+**Decision (Implemented in PR 4):** **Option C, per-masseur lead time**, with the following rules. The rule comes from a practising masseur.
 
 1. **Masseur walk-ins:** a masseur may book a slot up to its start. A 10:00 slot can be booked until 10:00 (not at or after the start) and appears in the masseur's own calendar as available.
 2. **Clients:** a client must book with a lead time. Slots inside the lead-time window are **not shown** to the client and cannot be booked.
@@ -146,7 +146,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Resolves when implemented:** C-1 (inconsistent started-slot rule across the client API, masseur API and UI).
 
-**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** existing masseurs receive the 1-hour default; changing the setting affects only new bookings, existing bookings are unchanged; if the window closes while a client is choosing slots, the server rejects the request (`slot_unavailable`) and the calendar refreshes; the masseur's own calendar still shows slots inside the client window; name and placement of the setting in the dashboard; interaction with the timezone rule of [BR-006](#br-006) (the window is evaluated against the instant, the displayed time is in the masseur's timezone).
+**Implementation (PR 4):** `User.bookingLeadHours` (1/2/3/4, default 1); settings on the masseur dashboard; client availability and booking use a strict boundary with error `BOOKING_LEAD_TIME`; the 60-minute grace is removed; existing bookings are unchanged when the setting changes.
 
 ### BR-003
 
@@ -157,7 +157,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** UI (limit calendar navigation), API (validate in create route and availability GET), no DB change.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option B with a window of 120 days** (instead of the suggested 90).
+**Decision (Implemented in PR 4):** **Option B with a window of 120 days** (instead of the suggested 90).
 
 1. **Booking horizon:** a client can see and book slots only up to **120 days from today**, the same for every masseur. The client calendar cannot be paged forward beyond that, and the server rejects bookings and availability requests beyond it.
 2. **The window is not per masseur:** there is no setting for it.
@@ -167,7 +167,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 6. **The masseur is not restricted:** the masseur sees and may edit any date, and may take walk-in bookings beyond the window. Slots beyond the window are marked in the masseur calendar as **"not yet visible to clients"**.
 7. **Client message and navigation:** the "forward" button in the client calendar is disabled on the last week of the window, with a hint next to it. If a request still goes beyond the window (an old tab, a direct call), the server rejects it with a clear error and the interface shows the same message. Proposed text: Ukrainian "Запис доступний не більше ніж на 120 днів уперед — до {дата}."; English "Booking is available up to 120 days ahead — until {date}."
 
-**Open sub-questions for track 2 (not yet groomed):** the exact limit for the weekly copy (17 weeks assumes 120 days / 7, rounded); the error code name; how the "not yet visible to clients" marker looks in the masseur calendar; whether existing slots beyond the window are touched (they are only hidden from clients, not deleted).
+**Implementation (PR 4):** weekly copy max **17**; error `BOOKING_WINDOW_EXCEEDED`; masseur calendar dims beyond-window slots and shows "Not yet visible to clients" / "Ще не видно клієнтам" in slot details; slots beyond the window are only hidden from clients, not deleted; client forward nav disabled on the last week with the BR-003 message.
 
 ### BR-004
 
@@ -181,7 +181,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B**, as the minimum fix; C once reporting is needed.
 **Impact:** UI (disable cancel inside the cutoff), API (`/api/bookings/cancel` time check), DB (none for B; a nullable `cancelledBy`/`cancelReason` for C), existing data unaffected.
 
-**Decision (Approved 2026-11-16, not implemented):** a **per-masseur client cancellation cutoff** (stronger than the options above).
+**Decision (Approved 2026-11-16; settings Implemented in PR 4, cancel flow in PR 5):** a **per-masseur client cancellation cutoff** (stronger than the options above).
 
 1. **Cutoff setting:** each masseur sets, in their dashboard, how long before the session start a client may still cancel. Allowed values (a fixed list, no free input): **1, 2, 3, 4, 6, 8, 12, 24, 36, 48, 72 hours**. Default: **24 hours**.
 2. **Client cancellation:** a client may cancel their own booking only while `now <= start - cutoff` of that masseur. After that the client cannot cancel in the application. Sessions that have started or are in the past cannot be cancelled by the client (this follows from the cutoff being at least 1 hour).

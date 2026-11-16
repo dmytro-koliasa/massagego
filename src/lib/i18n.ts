@@ -172,6 +172,24 @@ export const dictionaries = {
 		profileMassageTypeCustomAdd: 'Add',
 		profileMassageTypeCustomExists: 'This type is already in the list.',
 		profileMassageTypesSaved: 'Massage types saved.',
+		bookingRulesTitle: 'Booking rules',
+		bookingRulesSupport:
+			'These rules apply to client bookings. Existing bookings are not changed.',
+		bookingLeadHoursLabel: 'Minimum booking lead time',
+		bookingLeadHoursSupport:
+			'Clients can only book a slot while it is more than this many hours away.',
+		cancelCutoffHoursLabel: 'Cancellation notice',
+		cancelCutoffHoursSupport:
+			'Clients may cancel only while at least this many hours remain before the session. Cannot be shorter than the lead time.',
+		bookingRulesHours: '{n} h',
+		bookingRulesSave: 'Save booking rules',
+		bookingRulesSaved: 'Booking rules saved.',
+		bookingRulesSaveError: 'Could not save booking rules. Please try again.',
+		bookingRulesCutoffRaised:
+			'Cancellation notice was raised to {n} h to stay at or above the booking lead time.',
+		bookingWindowLimit:
+			'Booking is available up to 120 days ahead — until {date}.',
+		availabilityNotYetVisibleToClients: 'Not yet visible to clients',
 		galleryTitle: 'Gallery',
 		galleryEmptySupport:
 			'Add photos so clients can see them when placing an order.',
@@ -438,6 +456,24 @@ export const dictionaries = {
 		profileMassageTypeCustomAdd: 'Додати',
 		profileMassageTypeCustomExists: 'Такий вид уже є в списку.',
 		profileMassageTypesSaved: 'Види масажу збережено.',
+		bookingRulesTitle: 'Правила запису',
+		bookingRulesSupport:
+			'Ці правила діють для записів клієнтів. Уже створені бронювання не змінюються.',
+		bookingLeadHoursLabel: 'Мінімальний час до запису',
+		bookingLeadHoursSupport:
+			'Клієнт може записатися на слот, лише поки до його початку більше ніж стільки годин.',
+		cancelCutoffHoursLabel: 'Термін скасування',
+		cancelCutoffHoursSupport:
+			'Клієнт може скасувати запис, лише поки до сеансу залишилось не менше стількох годин. Не може бути коротшим за мінімальний час запису.',
+		bookingRulesHours: '{n} год',
+		bookingRulesSave: 'Зберегти правила запису',
+		bookingRulesSaved: 'Правила запису збережено.',
+		bookingRulesSaveError: 'Не вдалося зберегти правила запису. Спробуйте ще раз.',
+		bookingRulesCutoffRaised:
+			'Термін скасування піднято до {n} год, щоб він був не коротшим за мінімальний час запису.',
+		bookingWindowLimit:
+			'Запис доступний не більше ніж на 120 днів уперед — до {date}.',
+		availabilityNotYetVisibleToClients: 'Ще не видно клієнтам',
 		galleryTitle: 'Галерея',
 		galleryEmptySupport:
 			'Додайте фото, щоб клієнт бачив їх при оформленні замовлення.',

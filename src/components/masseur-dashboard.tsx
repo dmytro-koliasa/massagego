@@ -22,6 +22,13 @@ import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
 import { CityAutocomplete } from '@/components/city-autocomplete';
 import {
+	BOOKING_LEAD_HOURS_OPTIONS,
+	CANCEL_CUTOFF_HOURS_OPTIONS,
+	type BookingLeadHours,
+	type CancelCutoffHours,
+} from '@/lib/booking-constants';
+import { resolveBookingSettings } from '@/lib/booking-settings';
+import {
 	ADDRESS_MAX,
 	DESCRIPTION_MAX,
 	NAME_MAX,
@@ -43,12 +50,15 @@ type Profile = {
 	massageTypes: MassageTypeValue[];
 	city: string | null;
 	address: string | null;
+	bookingLeadHours?: number;
+	cancelCutoffHours?: number;
 };
 
 export function DashboardView({ profile }: { profile: Profile }) {
 	const { t, locale } = useLanguage();
 	const { update: updateSession } = useSession();
 	const availabilityRef = useRef<AvailabilityCalendarHandle>(null);
+	const initialSettings = resolveBookingSettings(profile);
 	const [nameEn, setNameEn] = useState(profile.nameEn ?? profile.name ?? '');
 	const [nameUk, setNameUk] = useState(profile.nameUk ?? '');
 	const [descriptionEn, setDescriptionEn] = useState(profile.descriptionEn ?? '');
@@ -64,6 +74,13 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	);
 	const [image, setImage] = useState(profile.image);
 	const [slug, setSlug] = useState(profile.slug);
+	const [bookingLeadHours, setBookingLeadHours] = useState<BookingLeadHours>(
+		initialSettings.bookingLeadHours,
+	);
+	const [cancelCutoffHours, setCancelCutoffHours] = useState<CancelCutoffHours>(
+		initialSettings.cancelCutoffHours,
+	);
+	const [bookingRulesPending, setBookingRulesPending] = useState(false);
 	const [nameLocale, setNameLocale] = useState<'en' | 'uk'>('uk');
 	const [descriptionLocale, setDescriptionLocale] = useState<'en' | 'uk'>('uk');
 	const [pending, setPending] = useState(false);
@@ -230,6 +247,50 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			toast.error(t.profileSaveError);
 		} finally {
 			setAddressPending(false);
+		}
+	}
+
+	async function saveBookingRules() {
+		setBookingRulesPending(true);
+		try {
+			const response = await fetch('/api/masseur/booking-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					bookingLeadHours,
+					cancelCutoffHours,
+				}),
+			});
+			const data = (await response.json().catch(() => null)) as {
+				error?: string;
+				cutoffRaised?: boolean;
+				settings?: {
+					bookingLeadHours: BookingLeadHours;
+					cancelCutoffHours: CancelCutoffHours;
+				};
+			} | null;
+
+			if (!response.ok || !data?.settings) {
+				toast.error(t.bookingRulesSaveError);
+				return;
+			}
+
+			setBookingLeadHours(data.settings.bookingLeadHours);
+			setCancelCutoffHours(data.settings.cancelCutoffHours);
+			if (data.cutoffRaised) {
+				toast.success(
+					t.bookingRulesCutoffRaised.replaceAll(
+						'{n}',
+						String(data.settings.cancelCutoffHours),
+					),
+				);
+			} else {
+				toast.success(t.bookingRulesSaved);
+			}
+		} catch {
+			toast.error(t.bookingRulesSaveError);
+		} finally {
+			setBookingRulesPending(false);
 		}
 	}
 
@@ -633,6 +694,80 @@ export function DashboardView({ profile }: { profile: Profile }) {
 							</button>
 						</div>
 					)}
+				</section>
+
+				<section className='mt-10 rounded-2xl border border-surface-border bg-surface p-6 sm:p-8'>
+					<div className='mb-6 text-left'>
+						<h2 className='text-xl font-bold tracking-[-0.02em] text-foreground'>
+							{t.bookingRulesTitle}
+						</h2>
+						<p className='mt-2 text-sm text-muted'>{t.bookingRulesSupport}</p>
+					</div>
+
+					<div className='grid gap-5 sm:grid-cols-2'>
+						<label className='block text-left'>
+							<span className='mb-1.5 block text-sm text-muted'>
+								{t.bookingLeadHoursLabel}
+							</span>
+							<select
+								value={bookingLeadHours}
+								onChange={event => {
+									const next = Number(event.target.value) as BookingLeadHours;
+									setBookingLeadHours(next);
+									if (cancelCutoffHours < next) {
+										setCancelCutoffHours(next);
+									}
+								}}
+								className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+							>
+								{BOOKING_LEAD_HOURS_OPTIONS.map(hours => (
+									<option key={hours} value={hours}>
+										{t.bookingRulesHours.replaceAll('{n}', String(hours))}
+									</option>
+								))}
+							</select>
+							<span className='mt-1.5 block text-xs text-muted'>
+								{t.bookingLeadHoursSupport}
+							</span>
+						</label>
+
+						<label className='block text-left'>
+							<span className='mb-1.5 block text-sm text-muted'>
+								{t.cancelCutoffHoursLabel}
+							</span>
+							<select
+								value={cancelCutoffHours}
+								onChange={event =>
+									setCancelCutoffHours(
+										Number(event.target.value) as CancelCutoffHours,
+									)
+								}
+								className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+							>
+								{CANCEL_CUTOFF_HOURS_OPTIONS.filter(
+									hours => hours >= bookingLeadHours,
+								).map(hours => (
+									<option key={hours} value={hours}>
+										{t.bookingRulesHours.replaceAll('{n}', String(hours))}
+									</option>
+								))}
+							</select>
+							<span className='mt-1.5 block text-xs text-muted'>
+								{t.cancelCutoffHoursSupport}
+							</span>
+						</label>
+					</div>
+
+					<div className='mt-5'>
+						<button
+							type='button'
+							disabled={bookingRulesPending}
+							onClick={() => void saveBookingRules()}
+							className='h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+						>
+							{bookingRulesPending ? t.authPleaseWait : t.bookingRulesSave}
+						</button>
+					</div>
 				</section>
 
 				<MasseurGallery editable />

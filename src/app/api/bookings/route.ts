@@ -8,8 +8,14 @@ import {
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
 import { SLOT_MS } from "@/lib/booking-constants";
+import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
-import { alignToHour, resolveTimeZone } from "@/lib/masseur-time";
+import {
+  alignToHour,
+  isOutsideClientLeadTime,
+  isWithinClientBookingWindow,
+  resolveTimeZone,
+} from "@/lib/masseur-time";
 import { prisma } from "@/lib/prisma";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
@@ -137,25 +143,39 @@ export async function POST(request: Request) {
         id: masseurId,
         portal: "masseur",
       },
-      select: { id: true, massageTypes: true, timezone: true },
+      select: {
+        id: true,
+        massageTypes: true,
+        timezone: true,
+        bookingLeadHours: true,
+      },
     });
 
     if (!masseur) {
       return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
     }
 
-    const parsedSlots = parseAlignedSlots(
-      rawStarts,
-      resolveTimeZone(masseur.timezone),
-    );
+    const timeZone = resolveTimeZone(masseur.timezone);
+    const leadHours = resolveBookingLeadHours(masseur.bookingLeadHours);
+
+    const parsedSlots = parseAlignedSlots(rawStarts, timeZone);
     if ("error" in parsedSlots) {
       return NextResponse.json({ error: parsedSlots.error }, { status: 400 });
     }
 
-    const now = Date.now();
+    const now = new Date();
     for (const slotStart of parsedSlots.starts) {
-      if (slotStart.getTime() < now - SLOT_MS) {
-        return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });
+      if (!isWithinClientBookingWindow(slotStart, timeZone, now)) {
+        return NextResponse.json(
+          { error: "BOOKING_WINDOW_EXCEEDED" },
+          { status: 409 },
+        );
+      }
+      if (!isOutsideClientLeadTime(slotStart, leadHours, now)) {
+        return NextResponse.json(
+          { error: "BOOKING_LEAD_TIME" },
+          { status: 409 },
+        );
       }
     }
 

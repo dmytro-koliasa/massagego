@@ -421,6 +421,10 @@ select:not(.PhoneInputCountrySelect):disabled {
   opacity: 0.92;
 }
 
+.AvailabilityCalendar .fc .fc-event.fc-event-beyond-window {
+  opacity: 0.45;
+}
+
 .AvailabilityCalendar .fc .fc-event.fc-event-booked .fc-event-main {
   position: relative;
   color: #fff;

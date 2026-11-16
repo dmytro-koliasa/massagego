@@ -3,13 +3,18 @@ import {
   CALENDAR_SLOT_DURATION,
   CALENDAR_SLOT_MAX_TIME,
   CALENDAR_SLOT_MIN_TIME,
+  CLIENT_BOOKING_WINDOW_DAYS,
   DEFAULT_MASSEUR_TIME_ZONE,
+  WEEKLY_COPY_MAX_WEEKS,
 } from "@/lib/booking-constants";
 import {
   addLocalWeeks,
   alignToHour,
+  clientBookingWindowExclusiveEnd,
   formatInMasseurTimeZone,
+  isOutsideClientLeadTime,
   isValidTimeZone,
+  isWithinClientBookingWindow,
   isWithinWorkingHours,
   resolveTimeZone,
   startOfLocalDay,
@@ -130,5 +135,36 @@ describe("calendar constants", () => {
     expect(CALENDAR_SLOT_MIN_TIME).toBe("05:00:00");
     expect(CALENDAR_SLOT_MAX_TIME).toBe("23:00:00");
     expect(CALENDAR_SLOT_DURATION).toBe("01:00:00");
+  });
+
+  it("caps weekly copy near the 120-day client window", () => {
+    expect(CLIENT_BOOKING_WINDOW_DAYS).toBe(120);
+    expect(WEEKLY_COPY_MAX_WEEKS).toBe(17);
+  });
+});
+
+describe("client lead time and booking window", () => {
+  it("hides a slot at exactly start − lead (strict boundary)", () => {
+    const slot = utc("2031-07-15T07:00:00"); // 10:00 Kyiv summer
+    const leadHours = 1;
+    expect(
+      isOutsideClientLeadTime(slot, leadHours, utc("2031-07-15T05:59:59.999")),
+    ).toBe(true);
+    expect(
+      isOutsideClientLeadTime(slot, leadHours, utc("2031-07-15T06:00:00.000")),
+    ).toBe(false);
+  });
+
+  it("ends the client window at the end of today + 120 days in the masseur zone", () => {
+    process.env.TZ = "UTC";
+    const now = utc("2031-01-10T12:00:00");
+    const end = clientBookingWindowExclusiveEnd(now, KYIV);
+    // 2031-01-10 + 120 days = 2031-05-10; exclusive end is 2031-05-11 00:00 Kyiv = 2031-05-10 21:00 UTC (EEST? May is UTC+3)
+    expect(end).toEqual(utc("2031-05-10T21:00:00"));
+
+    const lastDaySlot = utc("2031-05-10T20:00:00"); // 23:00 Kyiv on May 10
+    const nextDaySlot = utc("2031-05-10T21:00:00"); // 00:00 Kyiv on May 11
+    expect(isWithinClientBookingWindow(lastDaySlot, KYIV, now)).toBe(true);
+    expect(isWithinClientBookingWindow(nextDaySlot, KYIV, now)).toBe(false);
   });
 });

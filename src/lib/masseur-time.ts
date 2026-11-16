@@ -1,5 +1,6 @@
 import { DateTime, IANAZone } from "luxon";
 import {
+  CLIENT_BOOKING_WINDOW_DAYS,
   DAY_END_HOUR,
   DAY_START_HOUR,
   DEFAULT_MASSEUR_TIME_ZONE,
@@ -41,6 +42,63 @@ export function isWithinWorkingHours(start: Date, zone: string): boolean {
 /** True once the slot's start instant has been reached. */
 export function isSlotStarted(start: Date, now: Date = new Date()): boolean {
   return start.getTime() <= now.getTime();
+}
+
+/**
+ * Exclusive end of the client booking window: start of the local day after
+ * `today + CLIENT_BOOKING_WINDOW_DAYS` in the masseur's zone (BR-003).
+ */
+export function clientBookingWindowExclusiveEnd(
+  now: Date,
+  zone: string,
+): Date {
+  return inZone(now, zone)
+    .startOf("day")
+    .plus({ days: CLIENT_BOOKING_WINDOW_DAYS + 1 })
+    .toJSDate();
+}
+
+/** Last local calendar day a client may still book (inclusive). */
+export function clientBookingWindowLastDay(now: Date, zone: string): Date {
+  return inZone(now, zone)
+    .startOf("day")
+    .plus({ days: CLIENT_BOOKING_WINDOW_DAYS })
+    .toJSDate();
+}
+
+/** True when the slot's start falls on or before the last bookable local day. */
+export function isWithinClientBookingWindow(
+  slotStart: Date,
+  zone: string,
+  now: Date = new Date(),
+): boolean {
+  return slotStart.getTime() < clientBookingWindowExclusiveEnd(now, zone).getTime();
+}
+
+/**
+ * True while `now < slotStart - leadHours` (strict boundary, BR-002).
+ * At exactly `slotStart - leadHours` the slot is already hidden.
+ */
+export function isOutsideClientLeadTime(
+  slotStart: Date,
+  leadHours: number,
+  now: Date = new Date(),
+): boolean {
+  const leadMs = leadHours * 60 * 60 * 1000;
+  return now.getTime() + leadMs < slotStart.getTime();
+}
+
+/** Client may see and book the slot (lead time + 120-day window). */
+export function isClientBookableSlot(
+  slotStart: Date,
+  zone: string,
+  leadHours: number,
+  now: Date = new Date(),
+): boolean {
+  return (
+    isOutsideClientLeadTime(slotStart, leadHours, now) &&
+    isWithinClientBookingWindow(slotStart, zone, now)
+  );
 }
 
 /**
