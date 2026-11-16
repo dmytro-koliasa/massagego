@@ -121,6 +121,10 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 5 - Client booking and cancellation rules
 
+**Status:** implementing on branch `feat/client-booking-cancel-rules` (groomed 2026-11-16).
+
+**Groomed decisions:** client overlap also guarded by exclusion constraint `Booking_no_overlapping_active_client_slots` (walk-ins excluded); error codes `CLIENT_SLOT_OVERLAP`, `CLIENT_BOOKING_LIMIT`, `CANCEL_CUTOFF_PASSED`, `CANCEL_REASON_REQUIRED`, `CLIENT_PROFILE_INCOMPLETE`; post-cutoff and X-1 messages with/without phone + `tel:`-ready copy; pre-book notice when a selected slot is already inside cutoff; cancel reason labels as groomed; copy `User.name` + `User.phone` only (else refuse).
+
 **Scope:** a client cannot hold two active bookings for the same hour; at most 30 active future bookings; a client booking takes name and phone from the account and ignores the request fields; the client cancellation requires a reason from the list ("Other" needs a text up to 200 characters, other reasons have no text field); the cutoff is checked on cancellation; cancelling one's own already cancelled booking succeeds and a missing or foreign booking returns the same 404; after the cutoff the client sees the message and the masseur's phone; the message when only one of two consecutive Thai slots can still be cancelled.
 
 **Acceptance criteria:**
@@ -131,8 +135,6 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Cancellation after the cutoff is refused with the masseur's phone shown (or a message when the phone is not yet set).
 - A repeated cancel returns success; a foreign or missing booking returns 404 for both.
 - Closes C-5, C-7; implements X-1.
-
-**To groom first:** whether the client overlap is also guarded by a database constraint (as for the masseur); error codes; the masseur phone is required only in PR 8, so the message must work without it until then.
 
 ### PR 6 - Thai massage hints
 

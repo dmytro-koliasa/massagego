@@ -43,8 +43,6 @@ describeDb("booking conflicts (database)", () => {
       method: "POST",
       body: JSON.stringify({
         masseurId,
-        clientName: "Test Client",
-        clientPhone: "+380501234567",
         slotStarts: starts.map((d) => d.toISOString()),
       }),
     });
@@ -94,7 +92,12 @@ describeDb("booking conflicts (database)", () => {
     const clients = await Promise.all(
       Array.from({ length: 2 }, (_, i) =>
         prisma.user.create({
-          data: { email: `conc-client-${i}@test.local`, portal: "client" },
+          data: {
+            email: `conc-client-${i}@test.local`,
+            portal: "client",
+            name: `Conc Client ${i}`,
+            phone: `+38050123456${i}`,
+          },
         }),
       ),
     );

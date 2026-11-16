@@ -56,7 +56,12 @@ describeDb("booking lead time and 120-day window (database)", () => {
       },
     });
     const client = await prisma.user.create({
-      data: { email: "lead-window-client@test.local", portal: "client" },
+      data: {
+        email: "lead-window-client@test.local",
+        portal: "client",
+        name: "Lead Client",
+        phone: "+380501234567",
+      },
     });
     masseurId = masseur.id;
     session.masseurId = masseur.id;
@@ -101,8 +106,6 @@ describeDb("booking lead time and 120-day window (database)", () => {
           method: "POST",
           body: JSON.stringify({
             masseurId,
-            clientName: "Lead Client",
-            clientPhone: "+380501234567",
             slotStarts: [slot.toISOString()],
           }),
         }),
@@ -118,8 +121,6 @@ describeDb("booking lead time and 120-day window (database)", () => {
           method: "POST",
           body: JSON.stringify({
             masseurId,
-            clientName: "Lead Client",
-            clientPhone: "+380501234567",
             slotStarts: [slot.toISOString()],
           }),
         }),
@@ -174,8 +175,6 @@ describeDb("booking lead time and 120-day window (database)", () => {
           method: "POST",
           body: JSON.stringify({
             masseurId,
-            clientName: "Window Client",
-            clientPhone: "+380501234567",
             slotStarts: [beyond.toISOString()],
           }),
         }),

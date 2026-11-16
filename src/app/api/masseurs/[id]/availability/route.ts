@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { SLOT_MS } from "@/lib/booking-constants";
-import { resolveBookingLeadHours } from "@/lib/booking-settings";
+import {
+  resolveBookingLeadHours,
+  resolveBookingSettings,
+} from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
 import {
   clientBookingWindowExclusiveEnd,
@@ -39,7 +42,13 @@ export async function GET(request: Request, context: RouteContext) {
         id,
         portal: "masseur",
       },
-      select: { id: true, timezone: true, bookingLeadHours: true },
+      select: {
+        id: true,
+        timezone: true,
+        bookingLeadHours: true,
+        cancelCutoffHours: true,
+        phone: true,
+      },
     });
 
     if (!masseur) {
@@ -47,6 +56,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const timezone = resolveTimeZone(masseur.timezone);
+    const settings = resolveBookingSettings(masseur);
     const leadHours = resolveBookingLeadHours(masseur.bookingLeadHours);
     const now = new Date();
     const windowEnd = clientBookingWindowExclusiveEnd(now, timezone);
@@ -66,6 +76,8 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({
         timezone,
         bookingLeadHours: leadHours,
+        cancelCutoffHours: settings.cancelCutoffHours,
+        masseurPhone: masseur.phone?.trim() || null,
         bookingWindowEnd: windowEnd.toISOString(),
         slots: [],
       });
@@ -161,6 +173,8 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({
       timezone,
       bookingLeadHours: leadHours,
+      cancelCutoffHours: settings.cancelCutoffHours,
+      masseurPhone: masseur.phone?.trim() || null,
       bookingWindowEnd: windowEnd.toISOString(),
       slots: visible.sort((a, b) => a.start.localeCompare(b.start)),
     });

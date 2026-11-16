@@ -84,6 +84,9 @@ export const massageTypeSchema = z
 export function zodErrorCode(error: z.ZodError): string {
   for (const issue of error.issues) {
     const path = issue.path.join(".");
+    if (issue.message === "CANCEL_REASON_REQUIRED") {
+      return "CANCEL_REASON_REQUIRED";
+    }
     if (
       issue.message === "invalid_phone" ||
       path === "clientPhone" ||

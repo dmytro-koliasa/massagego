@@ -1,25 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
-import PhoneInput, {
-  type Country,
-} from "react-phone-number-input/max";
-import flags from "react-phone-number-input/flags";
-import "react-phone-number-input/style.css";
 import { ClientBookingCalendar } from "@/components/client-booking-calendar";
 import { BackNavLink } from "@/components/back-nav-link";
 import { MasseurGallery } from "@/components/masseur-gallery";
-import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
-import {
-  clampInternationalPhone,
-  nationalPhoneInsert,
-} from "@/lib/phone";
-import { parsePhoneNumber } from "libphonenumber-js/max";
+import { DEFAULT_CANCEL_CUTOFF_HOURS } from "@/lib/booking-constants";
+import { isNonCancellableAtBookingTime } from "@/lib/client-booking-rules";
 import {
   bookingCreateSchema,
-  NAME_MAX,
   NOTE_MAX,
   zodErrorCode,
 } from "@/lib/validation";
@@ -55,34 +45,6 @@ type ClientBookingProfile = {
   phone: string | null;
 };
 
-function resolveClientDisplayName(
-  client: ClientBookingProfile | undefined,
-  locale: "en" | "uk",
-) {
-  if (!client) return "";
-  const primary = (locale === "uk" ? client.nameUk : client.nameEn)?.trim();
-  const secondary = (locale === "uk" ? client.nameEn : client.nameUk)?.trim();
-  return primary || secondary || client.name?.trim() || "";
-}
-
-function resolveInitialPhone(client: ClientBookingProfile | undefined): {
-  phone: string | undefined;
-  country: Country;
-} {
-  const raw = client?.phone?.trim();
-  if (!raw) return { phone: undefined, country: "UA" };
-  try {
-    const parsed = parsePhoneNumber(raw);
-    const country = (parsed.country as Country | undefined) ?? "UA";
-    return {
-      phone: parsed.format("E.164"),
-      country,
-    };
-  } catch {
-    return { phone: raw.startsWith("+") ? raw : undefined, country: "UA" };
-  }
-}
-
 export function MasseurBookingView({
   masseur,
   clientProfile,
@@ -91,21 +53,17 @@ export function MasseurBookingView({
   clientProfile?: ClientBookingProfile;
 }) {
   const { t, locale } = useLanguage();
-  const initialPhone = resolveInitialPhone(clientProfile);
-  const [clientName, setClientName] = useState(() =>
-    resolveClientDisplayName(clientProfile, locale),
-  );
-  const [clientPhone, setClientPhone] = useState<string | undefined>(
-    () => initialPhone.phone,
-  );
-  const [phoneCountry, setPhoneCountry] = useState<Country>(
-    () => initialPhone.country,
-  );
+  const accountName = clientProfile?.name?.trim() || "";
+  const accountPhone = clientProfile?.phone?.trim() || "";
+  const profileComplete = Boolean(accountName && accountPhone);
   const [massageType, setMassageType] = useState("");
   const [selectedSlotStarts, setSelectedSlotStarts] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
+  const [cancelCutoffHours, setCancelCutoffHours] = useState<number>(
+    DEFAULT_CANCEL_CUTOFF_HOURS,
+  );
 
   const name =
     (locale === "uk" ? masseur.nameUk : masseur.nameEn)?.trim() ||
@@ -121,14 +79,24 @@ export function MasseurBookingView({
       : city || addressLine;
   const hasMassageTypes = masseur.massageTypes.length > 0;
 
+  const showNonCancellableNotice = useMemo(() => {
+    if (selectedSlotStarts.length === 0) return false;
+    const now = new Date();
+    return selectedSlotStarts.some((start) =>
+      isNonCancellableAtBookingTime(new Date(start), cancelCutoffHours, now),
+    );
+  }, [selectedSlotStarts, cancelCutoffHours]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!profileComplete) {
+      toast.error(t.bookingProfileIncomplete);
+      return;
+    }
     setPending(true);
 
     const parsed = bookingCreateSchema.safeParse({
       masseurId: masseur.id,
-      clientName,
-      clientPhone: clientPhone ?? "",
       massageType: hasMassageTypes ? massageType : undefined,
       slotStarts: selectedSlotStarts,
       note,
@@ -136,17 +104,13 @@ export function MasseurBookingView({
 
     if (!parsed.success) {
       const code = zodErrorCode(parsed.error);
-      if (code === "invalid_phone") {
-        toast.error(t.bookingInvalidPhone);
-      } else if (code === "invalid_slot" || parsed.error.issues.some((i) => i.path[0] === "slotStarts")) {
+      if (code === "invalid_slot" || parsed.error.issues.some((i) => i.path[0] === "slotStarts")) {
         toast.error(t.bookingSlotRequired);
       } else if (
         code === "invalid_massage_type" ||
         parsed.error.issues.some((i) => i.path[0] === "massageType")
       ) {
         toast.error(t.bookingMassageTypeRequired);
-      } else if (parsed.error.issues.some((i) => i.path[0] === "clientName")) {
-        toast.error(t.bookingClientNameRequired);
       } else {
         toast.error(t.bookingMissingFields);
       }
@@ -166,8 +130,6 @@ export function MasseurBookingView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           masseurId: parsed.data.masseurId,
-          clientName: parsed.data.clientName,
-          clientPhone: parsed.data.clientPhone,
           massageType: hasMassageTypes ? parsed.data.massageType : undefined,
           slotStarts: parsed.data.slotStarts,
           note: parsed.data.note,
@@ -178,8 +140,8 @@ export function MasseurBookingView({
         const data = (await response.json()) as { error?: string };
         if (data.error === "missing_fields") {
           toast.error(t.bookingMissingFields);
-        } else if (data.error === "invalid_phone") {
-          toast.error(t.bookingInvalidPhone);
+        } else if (data.error === "CLIENT_PROFILE_INCOMPLETE") {
+          toast.error(t.bookingProfileIncomplete);
         } else if (data.error === "invalid_massage_type") {
           toast.error(t.bookingMassageTypeRequired);
         } else if (data.error === "unauthorized" || data.error === "forbidden") {
@@ -188,6 +150,10 @@ export function MasseurBookingView({
           toast.error(t.bookingSlotUnavailable);
         } else if (data.error === "slot_taken") {
           toast.error(t.bookingSlotTaken);
+        } else if (data.error === "CLIENT_SLOT_OVERLAP") {
+          toast.error(t.bookingClientOverlap);
+        } else if (data.error === "CLIENT_BOOKING_LIMIT") {
+          toast.error(t.bookingClientLimit);
         } else if (
           data.error === "BOOKING_LEAD_TIME" ||
           data.error === "BOOKING_WINDOW_EXCEEDED"
@@ -298,6 +264,9 @@ export function MasseurBookingView({
             selectedStarts={selectedSlotStarts}
             onChangeSelected={setSelectedSlotStarts}
             refreshKey={calendarRefreshKey}
+            onRulesLoaded={(rules) =>
+              setCancelCutoffHours(rules.cancelCutoffHours)
+            }
           />
         </section>
 
@@ -342,14 +311,11 @@ export function MasseurBookingView({
                     {t.bookingClientName}
                   </span>
                   <input
-                    required
                     type="text"
                     name="name"
-                    autoComplete="name"
-                    value={clientName}
-                    maxLength={NAME_MAX}
-                    onChange={(event) => setClientName(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+                    value={accountName}
+                    readOnly
+                    className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
                   />
                 </label>
 
@@ -357,56 +323,19 @@ export function MasseurBookingView({
                   <span className="mb-1.5 block text-sm text-muted">
                     {t.bookingClientPhone}
                   </span>
-                  <PhoneInput
-                    international
-                    countryCallingCodeEditable={false}
-                    defaultCountry="UA"
-                    countries={[...PHONE_COUNTRIES_EU_UA]}
-                    addInternationalOption={false}
-                    flags={flags}
-                    limitMaxLength
-                    value={clientPhone}
-                    onChange={(value) =>
-                      setClientPhone(clampInternationalPhone(value, phoneCountry))
-                    }
-                    onCountryChange={(country) => {
-                      if (!country) return;
-                      setPhoneCountry(country);
-                      setClientPhone((current) =>
-                        clampInternationalPhone(current, country),
-                      );
-                    }}
-                    className="PhoneInputField"
-                    numberInputProps={{
-                      name: "tel",
-                      autoComplete: "tel",
-                      required: true,
-                      className:
-                        "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
-                      onBeforeInput: (
-                        event: FormEvent<HTMLInputElement>,
-                      ) => {
-                        const inserted =
-                          (event.nativeEvent as InputEvent).data ?? "";
-                        const input = event.currentTarget;
-                        const start =
-                          input.selectionStart ?? input.value.length;
-                        const end = input.selectionEnd ?? input.value.length;
-                        const next = nationalPhoneInsert(
-                          input.value,
-                          start,
-                          end,
-                          inserted,
-                          phoneCountry,
-                        );
-                        if (!next.exceeds) return;
-                        event.preventDefault();
-                        setClientPhone(next.value);
-                      },
-                    }}
+                  <input
+                    type="tel"
+                    name="tel"
+                    value={accountPhone}
+                    readOnly
+                    className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
                   />
                 </label>
               </div>
+
+              {!profileComplete ? (
+                <p className="text-sm text-accent">{t.bookingProfileIncomplete}</p>
+              ) : null}
 
               <label className="block text-left">
                 <span className="mb-1.5 block text-sm text-muted">
@@ -422,9 +351,18 @@ export function MasseurBookingView({
                 />
               </label>
 
+              {showNonCancellableNotice ? (
+                <p className="text-sm text-accent">
+                  {t.bookingCancelNonCancellableNotice.replaceAll(
+                    "{n}",
+                    String(cancelCutoffHours),
+                  )}
+                </p>
+              ) : null}
+
               <button
                 type="submit"
-                disabled={pending}
+                disabled={pending || !profileComplete}
                 className="h-12 rounded-lg bg-accent px-6 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
               >
                 {pending ? t.authPleaseWait : t.bookingSubmit}

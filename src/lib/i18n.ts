@@ -44,7 +44,31 @@ export const dictionaries = {
 		bookingTitle: 'Book a session',
 		bookingSupport: 'Leave your contacts. The masseur will get back to you.',
 		bookingClientName: 'Your name',
-		bookingClientPhone: 'Phone',
+		bookingClientPhone: 'Your phone',
+		bookingProfileIncomplete:
+			'Add your name and phone in the profile before booking.',
+		bookingClientOverlap: 'You already have a booking at this time.',
+		bookingClientLimit: 'You already have the maximum of 30 upcoming bookings.',
+		bookingCancelNonCancellableNotice:
+			'This slot can no longer be cancelled in the app (cancellation notice: {n} h).',
+		bookingCancelCutoffPassed:
+			'Cancellation is no longer available in the app. Please contact the masseur directly.',
+		bookingCancelCutoffPassedWithPhone:
+			'Cancellation is no longer available in the app. Please call the masseur: {phone}.',
+		bookingCancelReasonLabel: 'Reason for cancellation',
+		bookingCancelReasonPlaceholder: 'Choose a reason',
+		bookingCancelReasonOtherPlaceholder: 'Please describe the reason',
+		bookingCancelReasonRequired: 'Please choose a cancellation reason.',
+		bookingCancelReasonOtherRequired: 'Please describe the reason.',
+		cancelReason_cant_make_it: 'I can’t make it',
+		cancelReason_circumstances_changed: 'My circumstances changed',
+		cancelReason_changed_mind: 'I changed my mind',
+		cancelReason_wrong_slot: 'I booked the wrong time',
+		cancelReason_other: 'Other',
+		bookingThaiNeighborCutoff:
+			'The neighbouring Thai slot can no longer be cancelled in the app. Please contact the masseur directly.',
+		bookingThaiNeighborCutoffWithPhone:
+			'The neighbouring Thai slot can no longer be cancelled in the app. Please call the masseur: {phone}.',
 		bookingClientEmail: 'Email (optional)',
 		bookingDate: 'Preferred date',
 		bookingTime: 'Preferred time',
@@ -328,7 +352,31 @@ export const dictionaries = {
 		bookingTitle: 'Записатися на сеанс',
 		bookingSupport: 'Залиште контакти. Масажист зв’яжеться з вами.',
 		bookingClientName: 'Ваше ім’я',
-		bookingClientPhone: 'Телефон',
+		bookingClientPhone: 'Ваш телефон',
+		bookingProfileIncomplete:
+			'Перед записом вкажіть ім’я та телефон у профілі.',
+		bookingClientOverlap: 'У вас уже є запис на цей час.',
+		bookingClientLimit: 'У вас уже максимум 30 майбутніх записів.',
+		bookingCancelNonCancellableNotice:
+			'Цей слот уже не можна скасувати в застосунку (термін скасування: {n} год).',
+		bookingCancelCutoffPassed:
+			'Скасувати запис у застосунку вже не можна. Зв’яжіться з масажистом напряму.',
+		bookingCancelCutoffPassedWithPhone:
+			'Скасувати запис у застосунку вже не можна. Зателефонуйте масажисту: {phone}.',
+		bookingCancelReasonLabel: 'Причина скасування',
+		bookingCancelReasonPlaceholder: 'Оберіть причину',
+		bookingCancelReasonOtherPlaceholder: 'Опишіть причину',
+		bookingCancelReasonRequired: 'Оберіть причину скасування.',
+		bookingCancelReasonOtherRequired: 'Опишіть причину.',
+		cancelReason_cant_make_it: 'Не можу прийти',
+		cancelReason_circumstances_changed: 'Змінилися обставини',
+		cancelReason_changed_mind: 'Передумав(ла)',
+		cancelReason_wrong_slot: 'Записався(лась) не на той час',
+		cancelReason_other: 'Інше',
+		bookingThaiNeighborCutoff:
+			'Сусідній слот тайського масажу вже не можна скасувати в застосунку. Зв’яжіться з масажистом напряму.',
+		bookingThaiNeighborCutoffWithPhone:
+			'Сусідній слот тайського масажу вже не можна скасувати в застосунку. Зателефонуйте масажисту: {phone}.',
 		bookingClientEmail: 'Email (необов’язково)',
 		bookingDate: 'Бажана дата',
 		bookingTime: 'Бажаний час',
