@@ -29,6 +29,7 @@ Started only when the owner decides to implement approved items. Each item gets 
 | **Approved** | Option chosen by the owner; not implemented. Not yet binding in "Approved rules" |
 | **Implemented** | Merged to `master` and moved to Approved rules |
 | **Rejected** | Owner decided to keep current behavior or drop the item |
+| **Deferred** | A future idea recorded as a to-do. Not decided, not to be implemented yet |
 
 Suggested order: BR-006 and BR-001 first (they underpin availability maths and the database constraint), then BR-002 / BR-004 / BR-005, then BR-007 / BR-008 / BR-010, then the rest.
 
@@ -39,7 +40,7 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
 | 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | - (not implemented) |
-| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded | - (not implemented) |
+| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (list + short comment) for client cancellations; no cancellation requests; masseur cancellation unchanged | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
@@ -64,6 +65,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it | Open |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
+| [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 
 ### BR-001
 
@@ -133,12 +135,15 @@ Priority reflects impact on booking correctness, customer experience and availab
 5. **Masseur phone:** a **required** field in the masseur profile (validated like other phone numbers) and **visible to any client**. The masseur must be told on the profile form that the number is public to clients. Existing masseurs without a phone are shown without a contact until they add one.
 6. **Relation to BR-002:** the cutoff cannot be shorter than the masseur's client lead time. Cutoff options below the lead time are not selectable, so a slot freed by a cancellation can always be booked again by clients. If the lead time is raised above the current cutoff, the cutoff must be raised or the masseur must be warned.
 7. **Notification of the masseur** about client cancellations is wanted, but it is **not decided here**: it is part of the separate notifications feature, see [BR-009](#br-009).
+8. **Cancellation reason (client cancellations):** when a client cancels, choosing a reason is **mandatory**. The reason is picked from a fixed list: **"I can't make it in time"**, **"My circumstances changed"**, **"I changed my mind"**, **"I chose the time slot by mistake"**, **"Other"**. The client may also enter a **short free-text comment** in a text area.
+9. **No cancellation request flow:** a client cancellation within the allowed window takes effect **immediately**; the masseur does not approve or decline it.
+10. **Masseur cancellation is unchanged:** the masseur cancels as implemented today (allowed until the slot starts, with a choice to keep the hour available or remove it). The reason requirement above applies to clients only.
 
-**Not decided / out of scope of this decision:** any fee, penalty or payment for late cancellation (no prices or payments exist yet; related to [BR-012](#br-012)); cancellation reasons or a "cancelled by" marker; a cancellation request flow; behavior of the masseur's own cancellation (currently: allowed until slot start, with a choice to keep the hour available or remove it) is **unchanged** because no decision was made; handling of past bookings and statuses ([BR-005](#br-005)).
+**Not decided / out of scope of this decision:** any fee, penalty or payment for late cancellation (postponed, see [BR-015](#br-015)); a "cancelled by" marker; handling of past bookings and statuses ([BR-005](#br-005)).
 
 **Resolves when implemented:** C-5 (client could cancel past or in-progress bookings, a masseur could not).
 
-**Open sub-questions for track 2 (not yet groomed):** default cutoff for existing masseurs (24 h proposed); what happens to existing future bookings that fall inside a newly chosen cutoff; exact wording of the notice and the post-cutoff message in English and Ukrainian; where the cutoff and phone fields live in the dashboard; whether the post-cutoff message shows the phone as a tap-to-call link; how the phone is collected from existing masseurs; privacy wording shown on the profile form.
+**Open sub-questions for track 2 (not yet groomed):** whether the free-text comment is required when the reason is "Other" (proposed: yes) and its maximum length (proposed: 200 characters, like the booking note); whether the reason and comment are shown to the masseur and where (calendar slot details and the future notification, [BR-009](#br-009)); where the reason is stored (new nullable fields on `Booking`, plus a timestamp; the reason list must be translated to English and Ukrainian) and whether existing cancelled bookings keep it empty; how reasons work when several consecutive slots are cancelled one by one ([BR-014](#br-014)); default cutoff for existing masseurs (24 h proposed); what happens to existing future bookings that fall inside a newly chosen cutoff; exact wording of the notice and the post-cutoff message in English and Ukrainian; where the cutoff and phone fields live in the dashboard; whether the post-cutoff message shows the phone as a tap-to-call link; how the phone is collected from existing masseurs; privacy wording shown on the profile form.
 
 ### BR-005
 
@@ -251,6 +256,21 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Open sub-questions for track 2 (not yet groomed):** whether the toast is suppressed when two or more consecutive slots are already selected; how "consecutive" is detected on cancellation (same masseur, same client, adjacent hour, same type) and whether the toast offers a one-click cancel of the neighbour; whether other massage types may get the same hint later; exact wording in English and Ukrainian; whether the masseur's walk-in flow and the masseur's own cancel flow get the same hints.
 
 **Related:** [BR-001](#br-001), [BR-008](#br-008) (limit on hours per request), [BR-012](#br-012) (per-type duration and price).
+
+### BR-015
+
+**Status: Deferred (2026-11-16). A future to-do, not an approved rule.** Nothing here may be implemented or shown to users yet.
+
+**Idea (from the owner):** a client may cancel free of charge at least 24 hours before the session; a cancellation less than 24 hours before would require the client to pay **50% of the session price**. The "24 hours" is now superseded by the per-masseur cancellation cutoff of [BR-004](#br-004).
+
+**Why deferred:** the application has no prices and no payments (see [BR-012](#br-012)), so the fee cannot be shown, recorded or collected. The owner chose to postpone payment handling and keep it as an ideal future option.
+
+**Options (for when it is picked up):**
+- **A.** Policy plus record: the terms are shown before booking, a late cancellation requires explicit confirmation and is flagged on the booking, and the 50% is settled offline between client and masseur. **(Recommended)** - no payment infrastructure, and the flag is useful if online payment comes later.
+- **B.** Online payment inside the app: needs a session price, a payment provider, payment and refund handling, payment statuses, contracts and taxes. Most expensive.
+- **C.** Text warning only, nothing recorded. Cheapest but nothing proves the client was warned.
+
+**Also to settle then:** where the price lives (per masseur or per massage type), the fee for no-shows ([BR-005](#br-005)), legal wording and the client's consent shown before booking, and how the fee interacts with bookings made inside the cutoff window. Related: [BR-004](#br-004), [BR-012](#br-012), [BR-009](#br-009).
 
 
 ---
