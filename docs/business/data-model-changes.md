@@ -31,7 +31,7 @@
 | Index on status and `cancelledAt` (and on `slotStart` for completed bookings) for the cleanup job | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
 | Database guard against a client holding two active bookings for the same hour (exclusion constraint on the client account, rows without a client excluded), in addition to the application check | [BR-008](decisions.md#br-008) (open sub-question) |
 | Name and phone for client bookings copied from the account at booking time (no schema change; a server rule) | [BR-008](decisions.md#br-008) |
-| Unused columns (`preferredDate`, `preferredTime`, `clientEmail`) and a stale schema comment | open, see C-8 |
+| Remove the unused columns `preferredDate`, `preferredTime`, `clientEmail`; correct the schema comment on `clientUserId` | C-8 (decided 2026-11-16), see [decisions.md](decisions.md#code-inconsistencies) |
 
 ### `AvailabilitySlot`
 No schema change. Only rules change (working window in the masseur's timezone, past edits rejected, weekly copy limited to about 17 weeks).
