@@ -273,6 +273,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Owner note (2026-11-16):** notifications are to be handled as a **separate new, not yet implemented feature**, and must cover **all relevant events**, not only cancellations. Known requirement so far: the masseur is notified when a client cancels a booking ([BR-004](#br-004)). Channels (email, SMS, in-app), the full list of events, recipients and message content are still to be groomed. Status stays **Open**.
 
+**Decisions so far (grooming in progress; BR-009 stays Open until the whole feature is groomed):**
+
+1. **Channels (2026-11-16, option C):** **email is the main channel for both sides**, and users may **optionally connect Telegram** to receive the same events instantly. Email is the guaranteed fallback. WhatsApp, Viber and SMS are not part of this decision and may be considered later (they are paid and need business approval).
+2. **Consequences:** the **client** must give a **real email address at registration** (today the stored email is synthesised from the phone); the masseur already has an email. Connecting Telegram is voluntary and consent-based (the user starts the bot from a link in the app); a Telegram bot cannot write first. Using Telegram and an email provider means personal data goes to external processors, to be covered in the privacy policy and consent (XR-1).
+3. **Still to groom:** the list of events and recipients, message content and languages, consent and unsubscribe rules, reminders, what happens to a user who has not connected Telegram, and the interaction with the 7-day deletion of cancelled bookings ([BR-011](#br-011)): a cancellation notice must be sent before the booking is deleted.
+
 ### BR-010
 
 **Business question:** Which masseurs may clients see and book?
