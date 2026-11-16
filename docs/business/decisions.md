@@ -37,6 +37,8 @@ Suggested order: BR-006 and BR-001 first (they underpin availability maths and t
 | Date | ID | Chosen option | PR |
 |---|---|---|---|
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | - (not implemented) |
+| 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | - (no code change needed) |
+| 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | - (not implemented) |
 
 ---
 
@@ -46,7 +48,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 | ID | Topic | Priority | Recommended (proposal) | Status |
 |---|---|---|---|---|
-| [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | Open |
+| [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Approved** (2026-11-16) |
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path | Open |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: 90-day booking window | Open |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start | Open |
@@ -59,6 +61,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise | Open |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | Open |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it | Open |
+| [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 
 ### BR-001
 
@@ -71,6 +74,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 - **C.** Per-booking duration chosen from massage type.
 **Recommendation: A** for now: it is the cheapest, consistent with the existing UI, and avoids data-model changes until demand is proven. Revisit before onboarding masseurs who need other lengths.
 **Impact:** A - docs only. B/C - UI (calendar slot size, multi-hour selection), API (duration param, availability generation), **DB (new `durationMinutes`/`slotEnd` column and a replacement exclusion constraint on a stored end)**, and backfill of existing rows to 60.
+
+**Decision (Approved 2026-11-16, not implemented):** **Option A.** Every session is exactly 60 minutes. Rationale from the owner: an average massage lasts about 45 minutes, plus about 15 minutes reserved for rest/turnaround, so each session is priced and scheduled as one 60-minute slot. Longer sessions (e.g. Thai massage) are booked as several consecutive slots; see [BR-014](#br-014). No change to the data model or the exclusion constraint.
 
 ### BR-002
 
@@ -196,6 +201,24 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Options:** **A.** Keep and document. **B.** Allow all valid numbers.
 **Recommendation: A** if the launch market is EU + UA; revisit with expansion.
 **Impact:** none for A; B changes the phone picker and validation only.
+
+### BR-014
+
+**Business question:** How are sessions longer than 60 minutes (e.g. Thai massage) booked, given that [BR-001](#br-001) fixes the slot at 60 minutes?
+**Current implementation:** A client may select several hours in one request; each hour becomes an independent booking with no link between them. Nothing knows that Thai massage needs more than one slot, and cancelling one hour leaves the others booked.
+**Options considered:** (1) enforce a minimum number of consecutive slots per massage type; (2) UI hint only; (3) group bookings so that they are cancelled together.
+
+**Decision (Approved 2026-11-16, not implemented):** UI hints only, **no enforcement and no grouping**. The client is reminded through toasts; the data model is unchanged and each hour stays an independent booking.
+
+1. **Booking hint.** When the client selects the massage type **Thai** (changing the type to Thai), a toast recommends choosing more than one consecutive slot.
+2. **Slot-selection hint.** While the type is Thai, the same toast is shown again after the client selects a slot in the calendar.
+3. **Cancellation hint.** When a client cancels one of several consecutive slots and the massage type is Thai, a toast recommends cancelling the neighbouring slot as well, because the massage type is Thai.
+4. **Toast behavior.** These toasts are closed **only by the user** (no auto-dismiss).
+5. Booking more or fewer slots remains allowed; the toasts are recommendations, not validation.
+
+**Open sub-questions for track 2 (not yet groomed):** whether the toast is suppressed when two or more consecutive slots are already selected; how "consecutive" is detected on cancellation (same masseur, same client, adjacent hour, same type) and whether the toast offers a one-click cancel of the neighbour; whether other massage types may get the same hint later; exact wording in English and Ukrainian; whether the masseur's walk-in flow and the masseur's own cancel flow get the same hints.
+
+**Related:** [BR-001](#br-001), [BR-008](#br-008) (limit on hours per request), [BR-012](#br-012) (per-type duration and price).
 
 
 ---
