@@ -29,7 +29,7 @@
 | P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. | the first release to real users |
 | P-3 | Choose the email provider and set up sending (domain, sender, templates). | PR 8 (verification), PR 9, PR 12 |
 | P-4 | Create the Telegram bot and decide how its token is stored. | PR 13 |
-| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). | PR 9, PR 12, PR 14 |
+| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Partially addressed (PR 9):** rate-limit counters live in PostgreSQL (`RateLimitBucket`). Scheduled jobs for PR 12/14 still open. | PR 9, PR 12, PR 14 |
 | P-6 | Decide how the shared test database is provided in continuous integration (there is no CI today). | PR 1 onwards (recommended) |
 
 ## 3. Order and dependencies
@@ -162,7 +162,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 8 - Registration and profile fields
 
-**Status:** implementing on branch `feat/registration-profile-fields` (groomed 2026-11-17).
+**Status:** merged ([#12](https://github.com/dmytro-koliasa/massagego/pull/12), 2026-11-17).
 
 **Groomed decisions:** canonical city = Nominatim `placeId` + `countryCode` + EN/UK names (legacy `city` kept, no backfill); email verify = one-time link, TTL 24h, resend 60s / max 5 per hour, log adapter until P-3; single-screen client register; `preferredLocale` stored and syncs UI; masseur phone required + public notice; timezone editable with geo-tz suggestion from city + device mismatch warning; incomplete clients: banner, browse ok, booking blocked; empty city list = message + show all.
 
@@ -175,11 +175,18 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 9 - Password reset and rate limits
 
+**Status:** implementing on branch `feat/password-reset-rate-limits` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- Reset link TTL **1 hour**, one-time; a new request invalidates the previous token (`VerificationToken` with identifier `password-reset:${userId}`).
+- After a successful reset: delete all `Session` rows for that `userId` (force re-login).
+- Rate limits (sliding window) in **PostgreSQL** (`RateLimitBucket`): sign-in 10/15 min per IP and per account; registration 5/hour per IP; password-reset request 5/hour per IP and per identifier; booking create/cancel 30/15 min per IP and per account.
+- On limit: HTTP 429 with EN/UK “Too many attempts…” messages; reset request always returns the same success body; email only if `passwordHash` + `emailVerified` (Google-only / unverified → no email, same response).
+- Client lookup by phone; masseur by email; reuse `sendEmail` (log adapter until P-3).
+
 **Scope:** a one-time, time-limited reset link sent to the verified email (the request answers the same way whether or not the account exists); basic rate limits per IP and per account on sign-in, registration, reset and booking operations.
 
 **Acceptance criteria:** a reset link works once and expires; a masseur who signs in only with Google is not offered a reset; repeated sign-in failures are blocked for a while with a clear message; limits do not block normal use; the counters work across serverless instances (prerequisite P-5).
-
-**To groom first:** link lifetime, the exact limits and intervals, the effect on open sessions after a reset.
 
 ### PR 10 - Image upload checks
 

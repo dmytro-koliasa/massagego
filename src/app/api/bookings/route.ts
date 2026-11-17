@@ -12,6 +12,10 @@ import {
 import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
 import {
+  rateLimitJsonResponse,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
+import {
   alignToHour,
   isOutsideClientLeadTime,
   isWithinClientBookingWindow,
@@ -22,6 +26,8 @@ import {
   parseMassageTypes,
 } from "@/lib/massage-types";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
 function parseAlignedSlots(rawStarts: string[], timeZone: string) {
@@ -130,6 +136,25 @@ export async function POST(request: Request) {
         { error: client.error },
         { status: client.status },
       );
+    }
+
+    const locale = resolveRequestLocale(request);
+    const ipLimit = await checkRateLimit(
+      `booking-create:ip:${getClientIp(request)}`,
+      RATE_LIMITS.bookingCreate.limit,
+      RATE_LIMITS.bookingCreate.windowMs,
+    );
+    if (!ipLimit.ok) {
+      return rateLimitJsonResponse(ipLimit.retryAfterSec, locale);
+    }
+
+    const accountLimit = await checkRateLimit(
+      `booking-create:account:${client.userId}`,
+      RATE_LIMITS.bookingCreate.limit,
+      RATE_LIMITS.bookingCreate.windowMs,
+    );
+    if (!accountLimit.ok) {
+      return rateLimitJsonResponse(accountLimit.retryAfterSec, locale);
     }
 
     const body = await request.json();

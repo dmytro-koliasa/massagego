@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import PhoneInput, {
   type Country,
@@ -15,6 +15,7 @@ import type { CanonicalCity } from "@/lib/city";
 import {
   AUTH_INTENT_COOKIE,
   AUTH_PORTAL_COOKIE,
+  portalHomePath,
   type AuthIntent,
   type Portal,
 } from "@/lib/portals";
@@ -32,11 +33,25 @@ import {
   NAME_MAX,
   PASSWORD_MAX,
   PASSWORD_MIN,
+  passwordResetConfirmSchema,
+  passwordResetRequestSchema,
   registerSchema,
   zodErrorCode,
 } from "@/lib/validation";
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "forgot";
+
+function rateLimitedMessage(
+  code: string | undefined | null,
+  t: { authRateLimited: string },
+) {
+  if (!code?.startsWith("rate_limited_")) return null;
+  const minutes = Number(code.slice("rate_limited_".length));
+  if (!Number.isFinite(minutes) || minutes < 1) {
+    return t.authRateLimited.replace("{n}", "1");
+  }
+  return t.authRateLimited.replace("{n}", String(minutes));
+}
 
 type AuthPanelProps = {
   portal?: Portal;
@@ -65,6 +80,8 @@ export function MasseurAuthPanel({
 
   const { t, locale } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetToken = searchParams.get("resetToken")?.trim() || "";
   const validation = createNativeValidationHandlers(t);
   const [mode, setMode] = useState<AuthMode>(
     resolvedPortal === "client" ? "register" : "login",
@@ -83,7 +100,11 @@ export function MasseurAuthPanel({
   const [googleConfigured, setGoogleConfigured] = useState(true);
 
   useEffect(() => {
-    persistAuthContext(resolvedPortal, mode === "register" ? "register" : "login");
+    if (mode === "forgot") return;
+    persistAuthContext(
+      resolvedPortal,
+      mode === "register" ? "register" : "login",
+    );
   }, [resolvedPortal, mode]);
 
   useEffect(() => {
@@ -150,7 +171,12 @@ export function MasseurAuthPanel({
           if (!response.ok) {
             const data = (await response.json().catch(() => ({}))) as {
               error?: string;
+              message?: string;
             };
+            if (response.status === 429) {
+              toast.error(data.message || t.authRateLimited.replace("{n}", "1"));
+              return;
+            }
             toast.error(mapRegisterError(data.error, t));
             return;
           }
@@ -165,6 +191,11 @@ export function MasseurAuthPanel({
           });
 
           if (!result || result.error) {
+            const limited = rateLimitedMessage(result?.code, t);
+            if (limited) {
+              toast.error(limited);
+              return;
+            }
             toast.success(t.authAccountCreatedSignIn);
             setMode("login");
             setPassword("");
@@ -188,7 +219,8 @@ export function MasseurAuthPanel({
           });
 
           if (result?.error) {
-            toast.error(t.authInvalidPhoneCredentials);
+            const limited = rateLimitedMessage(result.code, t);
+            toast.error(limited || t.authInvalidPhoneCredentials);
             return;
           }
         }
@@ -220,7 +252,14 @@ export function MasseurAuthPanel({
         });
 
         if (!response.ok) {
-          const data = (await response.json()) as { error?: string };
+          const data = (await response.json().catch(() => ({}))) as {
+            error?: string;
+            message?: string;
+          };
+          if (response.status === 429) {
+            toast.error(data.message || t.authRateLimited.replace("{n}", "1"));
+            return;
+          }
           toast.error(mapRegisterError(data.error, t));
           return;
         }
@@ -239,14 +278,105 @@ export function MasseurAuthPanel({
       });
 
       if (result?.error) {
+        const limited = rateLimitedMessage(result.code, t);
         toast.error(
-          mode === "login" ? t.authInvalidCredentials : t.authGenericError,
+          limited ||
+            (mode === "login" ? t.authInvalidCredentials : t.authGenericError),
         );
         return;
       }
 
       router.push(resolvedCallback);
       router.refresh();
+    } catch {
+      toast.error(t.authGenericError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleForgotRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    try {
+      const payload = isClient
+        ? {
+            portal: "client" as const,
+            phone: phone ?? "",
+            preferredLocale: locale,
+          }
+        : {
+            portal: "masseur" as const,
+            email,
+            preferredLocale: locale,
+          };
+      const parsed = passwordResetRequestSchema.safeParse(payload);
+      if (!parsed.success) {
+        toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
+        return;
+      }
+
+      const response = await fetch("/api/auth/password-reset/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        error?: string;
+      };
+      if (response.status === 429) {
+        toast.error(data.message || t.authRateLimited.replace("{n}", "1"));
+        return;
+      }
+      if (!response.ok) {
+        toast.error(mapRegisterError(data.error, t));
+        return;
+      }
+      toast.success(data.message || t.authPasswordResetSent);
+      setMode("login");
+    } catch {
+      toast.error(t.authGenericError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleResetConfirm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    try {
+      const parsed = passwordResetConfirmSchema.safeParse({
+        token: resetToken,
+        password,
+        passwordConfirm,
+      });
+      if (!parsed.success) {
+        toast.error(mapRegisterError(zodErrorCode(parsed.error), t));
+        return;
+      }
+
+      const response = await fetch("/api/auth/password-reset/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) {
+        toast.error(
+          data.error === "invalid_token"
+            ? t.authResetTokenInvalid
+            : mapRegisterError(data.error, t),
+        );
+        return;
+      }
+
+      toast.success(t.authResetPasswordSuccess);
+      setPassword("");
+      setPasswordConfirm("");
+      router.replace(portalHomePath(resolvedPortal));
     } catch {
       toast.error(t.authGenericError);
     } finally {
@@ -274,6 +404,148 @@ export function MasseurAuthPanel({
       toast.error(t.authGoogleUnavailable);
       setPending(false);
     }
+  }
+
+  if (resetToken) {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+        <div className="space-y-5">
+          <h2 className="text-left font-display text-2xl tracking-[-0.03em] text-foreground">
+            {t.authResetPasswordTitle}
+          </h2>
+          <form onSubmit={handleResetConfirm} className="space-y-4" noValidate>
+            <PasswordField
+              id="password"
+              label={t.authPassword}
+              autoComplete="new-password"
+              value={password}
+              onChange={setPassword}
+              visible={showPassword}
+              onToggleVisible={() => setShowPassword((value) => !value)}
+              showLabel={t.authShowPassword}
+              hideLabel={t.authHidePassword}
+              required
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              validation={validation}
+            />
+            <PasswordField
+              id="passwordConfirm"
+              label={t.authPasswordConfirm}
+              autoComplete="new-password"
+              value={passwordConfirm}
+              onChange={setPasswordConfirm}
+              visible={showPasswordConfirm}
+              onToggleVisible={() => setShowPasswordConfirm((value) => !value)}
+              showLabel={t.authShowPassword}
+              hideLabel={t.authHidePassword}
+              required
+              minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
+              validation={validation}
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? t.authPleaseWait : t.authResetPasswordSubmit}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "forgot") {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+        <div className="space-y-5">
+          <p className="text-left text-sm text-muted">{t.authForgotPasswordHint}</p>
+          <form onSubmit={handleForgotRequest} className="space-y-4" noValidate>
+            {isClient ? (
+              <label className="block text-left">
+                <span className="mb-1.5 block text-sm text-muted">
+                  {t.authPhone}
+                </span>
+                <PhoneInput
+                  international
+                  countryCallingCodeEditable={false}
+                  defaultCountry="UA"
+                  countries={[...PHONE_COUNTRIES_ALLOWED]}
+                  addInternationalOption={false}
+                  flags={flags}
+                  limitMaxLength
+                  value={phone}
+                  onChange={(value) =>
+                    setPhone(clampInternationalPhone(value, phoneCountry))
+                  }
+                  onCountryChange={(country) => {
+                    if (!country) return;
+                    setPhoneCountry(country);
+                    setPhone((current) =>
+                      clampInternationalPhone(current, country),
+                    );
+                  }}
+                  className="PhoneInputField"
+                  numberInputProps={{
+                    name: "tel",
+                    autoComplete: "tel",
+                    required: true,
+                    className:
+                      "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                    onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
+                      const inserted =
+                        (event.nativeEvent as InputEvent).data ?? "";
+                      const input = event.currentTarget;
+                      const start =
+                        input.selectionStart ?? input.value.length;
+                      const end = input.selectionEnd ?? input.value.length;
+                      const next = nationalPhoneInsert(
+                        input.value,
+                        start,
+                        end,
+                        inserted,
+                        phoneCountry,
+                      );
+                      if (!next.exceeds) return;
+                      event.preventDefault();
+                      setPhone(next.value);
+                    },
+                  }}
+                />
+              </label>
+            ) : (
+              <Field
+                id="email"
+                label={t.authEmail}
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={setEmail}
+                required
+                maxLength={EMAIL_MAX}
+                validation={validation}
+              />
+            )}
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending ? t.authPleaseWait : t.authForgotSubmit}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className="w-full text-sm text-accent underline-offset-2 transition hover:underline"
+            >
+              {t.authForgotBackToLogin}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -463,7 +735,7 @@ export function MasseurAuthPanel({
             <div className="text-left">
               <button
                 type="button"
-                onClick={() => toast.message(t.authForgotPasswordHint)}
+                onClick={() => setMode("forgot")}
                 className="text-sm text-accent underline-offset-2 transition hover:underline"
               >
                 {t.authForgotPassword}

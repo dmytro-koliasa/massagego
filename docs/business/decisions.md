@@ -62,13 +62,13 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | - (not implemented) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | - (not implemented) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
-| 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | - (not implemented) |
-| 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | - (not implemented) |
+| 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
+| 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | [#11](https://github.com/dmytro-koliasa/massagego/pull/11) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
-| 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | PR 8 (`feat/registration-profile-fields`) |
+| 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | [#12](https://github.com/dmytro-koliasa/massagego/pull/12) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | PR 6 (`feat/thai-massage-hints`) |
 | 2026-11-16 | C-8 | A: remove `preferredDate`, `preferredTime`, `clientEmail`; correct the `clientUserId` comment | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
@@ -96,8 +96,8 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Approved** (2026-11-16) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
-| [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16) |
-| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16) |
+| [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16; implementing PR 9) |
+| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16; implementing PR 9) |
 | [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Approved** (2026-11-16) |
 | [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16) |
 | [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Approved** (2026-11-16) |
@@ -106,7 +106,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 | [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
-| [BR-017](#br-017) | Client city and default city filter | Medium | A: city required at client registration; list defaults to it | **Approved** (2026-11-16) |
+| [BR-017](#br-017) | Client city and default city filter | Medium | A: city required at client registration; list defaults to it | **Implemented** ([#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
 
 ### BR-001
 
@@ -517,26 +517,26 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-019
 
 **Business question:** How does a user recover access to an account (forgotten password) and how does a client sign in once an email exists ([BR-009](#br-009))?
-**Current implementation:** No password reset exists for either role. A client signs in with phone and password; a masseur with email and password or Google.
+**Current implementation:** Password reset via one-time email link (PR 9): client requests by phone, masseur by email; link uses `VerificationToken` with identifier `password-reset:${userId}`; TTL 1 hour; new request invalidates the previous token; email sent only when the user has `passwordHash` and `emailVerified`; request always returns the same success message; after confirm, all `Session` rows for the user are deleted.
 **Why:** A user who forgets a password is locked out. With a verified email ([BR-009](#br-009)) a reset becomes possible.
-**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+**Status: Approved (2026-11-16); implementing in PR 9.** Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
 
-**Decision so far (2026-11-16, not implemented):** **password reset by email link (option A)**, for both roles. The user enters their phone (client) or email (masseur) and receives a one-time link, valid for a limited time, to set a new password; it is sent to the **verified** email ([BR-009](#br-009)). SMS codes and manual reset by support were considered and not chosen (SMS may come later with [BR-023](#br-023)).
+**Decision (2026-11-16, option A):** **password reset by email link**, for both roles. The user enters their phone (client) or email (masseur) and receives a one-time link, valid for a limited time, to set a new password; it is sent to the **verified** email ([BR-009](#br-009)). SMS codes and manual reset by support were considered and not chosen (SMS may come later with [BR-023](#br-023)).
 
 **Client sign-in (2026-11-16, option A):** the client keeps signing in with the **phone number and password only**. The verified email is used for notifications and for password reset, not for sign-in. The masseur signs in as today (email and password, or Google).
 
-**To decide for implementation (not yet groomed):** link lifetime and one-time use; the same response whether or not the account exists (so nobody can learn who is registered); a masseur who signs in only with Google has no password, so a reset does not apply; what happens to open sessions after a reset.
+**Implementation notes (groomed 2026-11-17):** link lifetime **1 hour**, one-time; same success response whether or not an email was sent (enumeration-safe); Google-only / unverified / missing password → no email; open sessions cleared after a successful reset.
 
 ### BR-020
 
 **Business question:** How is the service protected from abuse (brute-force login, mass registration, booking spam)?
-**Current implementation:** No rate limiting on registration, login or booking creation; the strength of the password hash (bcrypt cost 12) is the only protection. There is no phone or SMS verification.
+**Current implementation:** Sliding-window rate limits in PostgreSQL (`RateLimitBucket`, PR 9): sign-in 10 / 15 min per IP and per account; registration 5 / hour per IP; password-reset request 5 / hour per IP and per identifier; booking create/cancel 30 / 15 min per IP and per account. Over limit → HTTP 429 with EN/UK “Too many attempts…” copy. Sign-in IP limit is applied inside Auth.js `authorize` via the request object (best-effort if proxy headers are absent).
 **Why:** Open endpoints can be attacked; the booking limits in [BR-008](#br-008) do not stop automated abuse.
-**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16.
+**Status: Approved (2026-11-16); implementing in PR 9.** Added 2026-11-16.
 
 **Decision (option A):** basic **rate limits per IP and per account** on the sensitive requests: sign-in, registration, password reset ([BR-019](#br-019)), booking creation and cancellation. After the limit is exceeded the request is blocked for a while with a clear message. Considered and not chosen: limits only on sign-in and reset (B), a captcha on top of limits (C; may be added later if real bots appear, it would send data to a provider, XR-1), and doing nothing (D).
 
-**To decide for implementation (not yet groomed):** the exact limits and intervals; where the counters are stored (an in-memory counter does not work across the serverless instances of the hosting platform); the messages and what the user sees when blocked; how limits interact with legitimate shared IPs.
+**Implementation notes (groomed 2026-11-17):** counters stored in Postgres (addresses the rate-limit half of P-5); exact limits as above; shared IPs share the per-IP budget (accepted for v1).
 
 ### BR-021
 

@@ -276,6 +276,7 @@ export function ClientSessionsCalendar() {
 
       const data = (await response.json().catch(() => null)) as {
         error?: string;
+        message?: string;
         masseurPhone?: string | null;
         neighborHint?: {
           type: string;
@@ -284,7 +285,9 @@ export function ClientSessionsCalendar() {
       } | null;
 
       if (!response.ok) {
-        if (data?.error === "CANCEL_CUTOFF_PASSED") {
+        if (response.status === 429 || data?.error === "rate_limited") {
+          toast.error(data?.message || t.authRateLimited.replace("{n}", "1"));
+        } else if (data?.error === "CANCEL_CUTOFF_PASSED") {
           toast.error(
             cutoffPassedMessage(
               data.masseurPhone ?? cancelTarget.masseurPhone,

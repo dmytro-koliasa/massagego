@@ -3,10 +3,16 @@ import { hash } from "bcryptjs";
 import { toCityWriteData } from "@/lib/city";
 import { createAndSendVerificationLink } from "@/lib/email/verification";
 import {
+  rateLimitJsonResponse,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
+import {
   findPortalUserByEmail,
   findPortalUserByPhone,
 } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import {
   clientRegisterSchema,
@@ -32,6 +38,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const portal = resolvePortalInput(body);
     const origin = new URL(request.url).origin;
+    const requestLocale = resolveRequestLocale(
+      request,
+      body && typeof body === "object"
+        ? (body as { preferredLocale?: unknown }).preferredLocale
+        : undefined,
+    );
+
+    const ipLimit = await checkRateLimit(
+      `register:ip:${getClientIp(request)}`,
+      RATE_LIMITS.register.limit,
+      RATE_LIMITS.register.windowMs,
+    );
+    if (!ipLimit.ok) {
+      return rateLimitJsonResponse(ipLimit.retryAfterSec, requestLocale);
+    }
 
     if (portal === "client") {
       const parsed = parseWithSchema(clientRegisterSchema, body);
