@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Nothing is implemented.** This is track 2 of the workflow: each pull request below is **groomed with the product owner before any code is written**, and the order or scope may change.
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Remaining work: deferred product items (e.g. prices, payments, courses, complaints), prerequisites P-1/P-2, and tests.
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -275,7 +275,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 15 - Administration panel
 
-**Status:** implementing on branch `feat/admin-panel` (groomed 2026-11-17).
+**Status:** merged ([#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17).
 
 **Groomed decisions:**
 - Separate portal `admin`; header nav link; not on the home hero.

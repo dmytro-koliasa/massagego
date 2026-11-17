@@ -1,20 +1,21 @@
 # User Roles and Permissions
 
 > **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
-> **Status:** descriptive snapshot of `master` at commit `f29ca32` (2026-11-15). It records the access rules the code **enforces today**, not approved requirements.
+> **Status:** descriptive snapshot refreshed 2026-11-17 after track-2 closeout. It records the access rules the code **enforces today**, not approved requirements.
 > Classification tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)). Decision ids (`BR-xxx`) refer to [decisions.md](decisions.md).
 
 ## 1. Roles
 
-There are two roles. Each is a separate **portal identity**, stored in `User.portal` (`"masseur"` or `"client"`).
+There are three portal identities, stored in `User.portal` (`"masseur"`, `"client"` or `"admin"`).
 
 | Role | Sign-in | Notes |
 |---|---|---|
-| **Client** | Phone number + password | Stored email is synthesised from the phone. Portal `client` |
+| **Client** | Phone number + password | Real email verified for notifications/reset. Portal `client` |
 | **Masseur** | Email + password, or Google | Portal `masseur`. Google is offered only on the masseur portal and only when configured |
+| **Admin** | Email + password | Portal `admin`. Bootstrap from `ADMIN_BOOTSTRAP_*`; no public registration. See [BR-021](decisions.md#br-021) / AR-17 |
 | **Anonymous** | none | Can reach the landing and login pages only |
 
-There is no administrator role, no support role, and no moderation capability. See [BR-010](decisions.md#br-010) for discoverability.
+Complaints / report UI is not built yet (deferred from BR-021). See [BR-010](decisions.md#br-010) for discoverability.
 
 ### 1.1 Identity isolation - Implemented
 
@@ -22,7 +23,7 @@ There is no administrator role, no support role, and no moderation capability. S
 - Each portal has its **own Auth.js instance, base path and cookie names** (`src/auth/portal-config.ts`, `src/auth/create-portal-auth.ts`). A masseur session cookie does not authenticate client endpoints, and vice versa.
 - The session callback rejects a token whose `portal` does not match the instance (`token.portal !== portal`), and the `jwt` callback looks the user up **within the portal** (`prisma.user.findFirst({ where: { id, portal } })`).
 - Every API handler additionally re-checks the role with the database: `requireClientSession` (`src/lib/client-session.server.ts`) or `userHasPortal(userId, "masseur")`.
-- `src/middleware.ts` protects `/masseur/dashboard/**` and `/client`, `/client/**` page routes by reading the matching portal cookie and `token.portal`. API routes do **not** rely on middleware; each performs its own check.
+- `src/proxy.ts` protects `/masseur/dashboard/**`, `/client/**` and `/admin/**` page routes by reading the matching portal cookie and `token.portal`. API routes do **not** rely on the proxy alone; each performs its own check.
 - Google sign-in for a new identity is only accepted when the "register" intent cookie is set; otherwise the user is returned to the portal with `no_portal_access`.
 
 ---
@@ -83,7 +84,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
   - Client-created bookings: `clientUserId` = the logged-in client.
   - Masseur-created walk-ins: `clientUserId = null`. The client contact is only the free-text `clientName` / `clientPhone`.
 - `clientName` and `clientPhone` are **entered per booking**, not read from the client profile. A client may therefore book on behalf of someone else.
-- A client can cancel only bookings where `clientUserId` equals their id. Anything else (missing, someone else's, already cancelled) returns the same `403 forbidden` so ownership cannot be probed.
+- A client can cancel only bookings where `clientUserId` equals their id. Own already-cancelled booking succeeds; missing or someone else's booking returns the same `404 not_found` so ownership cannot be probed (C-7).
 - A masseur can cancel only bookings of their own calendar (`masseurId` = session user).
 - Walk-in bookings cannot be seen or cancelled by any client, because they have no `clientUserId`.
 
@@ -97,7 +98,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | Other people's bookings on a masseur's calendar | n/a | Only "booked" (no name, phone or type) |
 | Client phone number | Yes, for bookings on their calendar | Only their own |
 | Masseur address and city | Own | Yes, for every masseur |
-| Masseur email | Own | **Yes, exposed**: `GET /api/masseurs` selects and returns `email` for every listed masseur (the client UI does not display it). The masseur profile page (`client/masseur/[slug]`) does not select it. See business-rules.md finding C-9 |
+| Masseur email | Own | No (removed from `GET /api/masseurs`; C-9 closed in PR 11) |
 | Client account list | No | No |
 
 Client phone numbers are visible to a masseur only through bookings on their own calendar.
