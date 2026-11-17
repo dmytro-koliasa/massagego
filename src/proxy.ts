@@ -12,14 +12,17 @@ async function readPortalToken(req: NextRequest, portal: "masseur" | "client") {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (isPortalLoginPath(path, "masseur") || isPortalLoginPath(path, "client")) {
     return NextResponse.next();
   }
 
-  if (path.startsWith("/masseur/dashboard")) {
+  if (
+    path.startsWith("/masseur/dashboard") ||
+    path.startsWith("/masseur/notifications")
+  ) {
     const token = await readPortalToken(request, "masseur");
     if (!token?.sub || token.portal !== "masseur") {
       const loginUrl = new URL(portalHomePath("masseur"), request.url);
@@ -47,6 +50,8 @@ export const config = {
     "/masseur/login",
     "/masseur/login/:path*",
     "/masseur/dashboard/:path*",
+    "/masseur/notifications",
+    "/masseur/notifications/:path*",
     "/client",
     "/client/:path*",
   ],

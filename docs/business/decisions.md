@@ -58,7 +58,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | PR 5 (`feat/client-booking-cancel-rules`) |
-| 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | - (not implemented) |
+| 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | PR 12 (`feat/email-notifications`) email + outbox; Telegram in PR 13; event-4 enqueue in PR 14 |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | - (not implemented) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
@@ -92,7 +92,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)); choosing the zone remains for PR 8 |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
-| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Approved** (2026-11-16) |
+| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Approved** (2026-11-16); email **Implemented** in PR 12 |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** (PR 11, `feat/masseur-catalog`) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
@@ -330,9 +330,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 10. **A user who has not connected Telegram** simply receives email; Telegram is optional.
 11. **Timing:** a cancellation notice is sent **at once** when the cancellation happens, so it is delivered well before the cancelled booking is deleted after 7 days.
 
-**Status: Approved (2026-11-16, not implemented).** Notifications are a separate new feature (the owner's note above).
+**Status: Approved (2026-11-16); email channel Implemented in PR 12 (`feat/email-notifications`).** Telegram remains PR 13; account-deletion enqueue for event 4 remains PR 14.
 
-**Open sub-questions for track 2 (not yet groomed):** the email provider and the way to run the retry and background work; how the client email is collected and verified at registration and what happens to existing accounts; the Telegram bot, the link-account flow and how it is disconnected; where the per-event, per-channel settings and the language live in the profile; the exact wording of every message in English and Ukrainian; how "at least one channel stays on" is enforced and explained in the settings; whether an in-app notification list is added later (not decided); reminders before a session and any other events are **not** decided; consent and privacy-policy wording for email and Telegram (XR-1); cost and limits of the chosen providers.
+**PR 12 implementation notes:** Resend provider; Postgres `NotificationPreference` + `NotificationOutbox`; Vercel Cron every 5 minutes with backoff 1→5→15→30 min and 24h max age; separate Notifications pages (email only); critical email locked on until Telegram; short transactional EN/UK copy; walk-ins send nothing; unverified/synthetic emails skipped.
+
+**Open sub-questions remaining:** the Telegram bot, the link-account flow and how it is disconnected (PR 13); production Resend domain/sender setup; whether an in-app notification list is added later (not decided); reminders before a session and any other events are **not** decided; consent and privacy-policy wording for email and Telegram (XR-1).
 
 ### BR-010
 

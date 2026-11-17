@@ -17,7 +17,7 @@
 | Email verified (the existing `emailVerified` field may be used) | both | [BR-009](decisions.md#br-009) |
 | City stored in canonical form (map-service identifier plus the name in the interface language) | client (new), masseur (reconcile) | [BR-017](decisions.md#br-017) |
 | Preferred language (English or Ukrainian) | both | [BR-009](decisions.md#br-009) |
-| Notification settings: per event and per channel on/off, with at least one channel on for critical events | both | [BR-009](decisions.md#br-009) |
+| Notification settings: per event and per channel on/off, with at least one channel on for critical events — **email** in PR 12 (`NotificationPreference`); Telegram channel in PR 13 | both | [BR-009](decisions.md#br-009) |
 | Telegram link (chat identifier and link state) | both | [BR-009](decisions.md#br-009) |
 | "Phone confirmed" mark (set through the Telegram bot) | both | [BR-023](decisions.md#br-023) |
 | Account state for blocking (blocked or not) | both | [BR-021](decisions.md#br-021) |
@@ -42,9 +42,9 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 
 | Item | Purpose | Decision |
 |---|---|---|
-| Notification log or outbox (event, recipient, channel, state, retry count, without unnecessary personal data) | Delivery, retries for up to a day, auditing | [BR-009](decisions.md#br-009) |
+| Notification log or outbox (event, recipient, channel, state, retry count, without unnecessary personal data) | Delivery, retries for up to a day, auditing — **Implemented** in PR 12 as `NotificationOutbox` + `NotificationPreference` | [BR-009](decisions.md#br-009) |
 | Telegram link token | One-time token used to connect an account to the bot | [BR-009](decisions.md#br-009) |
-| Email verification token (the existing `VerificationToken` table may be reused) | Confirm the email address | [BR-009](decisions.md#br-009) |
+| Email verification token (the existing `VerificationToken` table may be reused) | Confirm the email address — reused in PR 8/9 | [BR-009](decisions.md#br-009) |
 | Obligation flag on bookings and separate payment records | Keep bookings with financial or legal obligations out of automatic deletion | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018), later with [BR-015](decisions.md#br-015) |
 
 ## 3. Configuration and constants in code
@@ -69,7 +69,7 @@ The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dm
 |---|---|---|
 | Delete cancelled bookings older than 7 days (without obligations) | at least daily | [BR-011](decisions.md#br-011) |
 | Delete completed bookings older than 3 months (without obligations) | at least daily | [BR-018](decisions.md#br-018) |
-| Retry failed notifications for up to a day | frequent | [BR-009](decisions.md#br-009) |
+| Retry failed notifications for up to a day | every 5 minutes (Vercel Cron `/api/cron/notifications`, PR 12) | [BR-009](decisions.md#br-009) |
 
 ## 5. Changes in behaviour only (no new data)
 

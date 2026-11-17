@@ -465,6 +465,14 @@ export function DashboardView({ profile }: { profile: Profile }) {
 					<h1 className='font-display text-4xl tracking-[-0.03em] text-foreground sm:text-5xl'>
 						{t.masseurPageTitle}
 					</h1>
+					<p>
+						<a
+							href='/masseur/notifications'
+							className='text-sm font-medium text-accent underline-offset-4 hover:underline'
+						>
+							{t.notifNavLink}
+						</a>
+					</p>
 				</div>
 
 				<section className='mt-10 rounded-2xl border border-surface-border bg-surface p-6 sm:p-8'>

@@ -26,6 +26,7 @@ import {
   isMassageTypeValue,
   parseMassageTypes,
 } from "@/lib/massage-types";
+import { notifyBookingCreated } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -356,6 +357,14 @@ export async function POST(request: Request) {
 
       return created;
     });
+
+    for (const booking of bookings) {
+      try {
+        await notifyBookingCreated(booking.id);
+      } catch (notifyError) {
+        console.error("[bookings] notifyBookingCreated", notifyError);
+      }
+    }
 
     return NextResponse.json({ bookings }, { status: 201 });
   } catch (error) {
