@@ -205,7 +205,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Masseur slot details (Implemented):** `GET /api/masseur/availability` attaches `lastCancellation` (reason, reasonText, cancelledAt) per slot — the latest **client** cancellation for that `slotStart` with `cancelledAt` inside the 7-day retention window; masseur cancellations (no reason) are omitted. The masseur calendar slot modal shows a "Last cancellation" line on free and booked hours. Consecutive cancelled hours each carry their own last cancellation. Existing cancelled rows without a reason stay empty in the UI.
 
-**Open sub-questions for track 2 (remaining):** a dashboard list of recent cancellations (not built); default cutoff for existing masseurs and related cutoff/phone/privacy copy items already largely addressed in later PRs — re-check only if product copy still gaps.
+**Recent cancellations list (Implemented on `feat/masseur-recent-cancellations`):** masseur dashboard section lists up to 20 client cancellations from the last 7 days (slot time, client name, reason); read-only, no jump-to-calendar.
+
+**Open sub-questions for track 2 (remaining):** default cutoff for existing masseurs and related cutoff/phone/privacy copy items already largely addressed in later PRs — re-check only if product copy still gaps.
 
 ### BR-005
 
