@@ -1,62 +1,35 @@
 import { NextResponse } from "next/server";
-import { auth as clientAuth } from "@/auth/client";
-import { auth as masseurAuth } from "@/auth/masseur";
+import { requirePortalUser } from "@/lib/notifications/portal-gate";
 import {
   getNotificationPreferences,
   saveNotificationPreferences,
 } from "@/lib/notifications/prefs";
 import type { PrefPatch } from "@/lib/notifications/prefs";
-import { prisma } from "@/lib/prisma";
+import { getTelegramStatus } from "@/lib/telegram/account";
+import {
+  telegramBotUsername,
+  telegramConfigured,
+} from "@/lib/telegram/config";
 import { parseWithSchema } from "@/lib/validation";
 import { notificationPreferencesPatchSchema } from "@/lib/validation/notifications";
-
-async function requirePortalUser(): Promise<
-  | { ok: true; userId: string; portal: "client" | "masseur" }
-  | { ok: false; response: NextResponse }
-> {
-  const [clientSession, masseurSession] = await Promise.all([
-    clientAuth(),
-    masseurAuth(),
-  ]);
-
-  const clientId = clientSession?.user?.id;
-  const masseurId = masseurSession?.user?.id;
-
-  if (clientId) {
-    const user = await prisma.user.findUnique({
-      where: { id: clientId },
-      select: { portal: true },
-    });
-    if (user?.portal === "client") {
-      return { ok: true, userId: clientId, portal: "client" };
-    }
-  }
-
-  if (masseurId) {
-    const user = await prisma.user.findUnique({
-      where: { id: masseurId },
-      select: { portal: true },
-    });
-    if (user?.portal === "masseur") {
-      return { ok: true, userId: masseurId, portal: "masseur" };
-    }
-  }
-
-  return {
-    ok: false,
-    response: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
-  };
-}
 
 export async function GET() {
   const gate = await requirePortalUser();
   if (!gate.ok) return gate.response;
 
-  const preferences = await getNotificationPreferences(
-    gate.userId,
-    gate.portal,
-  );
-  return NextResponse.json({ preferences, portal: gate.portal });
+  const [preferences, telegram] = await Promise.all([
+    getNotificationPreferences(gate.userId, gate.portal),
+    getTelegramStatus(gate.userId),
+  ]);
+  return NextResponse.json({
+    preferences,
+    portal: gate.portal,
+    telegram: {
+      ...telegram,
+      configured: telegramConfigured(),
+      botUsername: telegramBotUsername(),
+    },
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -82,7 +55,10 @@ export async function PATCH(request: Request) {
   );
   if (!result.ok) {
     const status =
-      result.error === "critical_email_required" ? 409 : 400;
+      result.error === "critical_channel_required" ||
+      result.error === "telegram_not_connected"
+        ? 409
+        : 400;
     return NextResponse.json({ error: result.error }, { status });
   }
 

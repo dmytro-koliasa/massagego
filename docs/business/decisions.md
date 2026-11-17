@@ -59,7 +59,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | PR 5 (`feat/client-booking-cancel-rules`) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | PR 12 (`feat/email-notifications`) email + outbox; Telegram in PR 13; event-4 enqueue in PR 14 |
-| 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | - (not implemented) |
+| 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | PR 13 (`feat/telegram-phone-confirm`) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
 | 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
@@ -330,11 +330,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 10. **A user who has not connected Telegram** simply receives email; Telegram is optional.
 11. **Timing:** a cancellation notice is sent **at once** when the cancellation happens, so it is delivered well before the cancelled booking is deleted after 7 days.
 
-**Status: Approved (2026-11-16); email channel Implemented in PR 12 (`feat/email-notifications`).** Telegram remains PR 13; account-deletion enqueue for event 4 remains PR 14.
+**Status: Approved (2026-11-16); email channel Implemented in PR 12 (`feat/email-notifications`); Telegram implementing in PR 13.** Account-deletion enqueue for event 4 remains PR 14.
 
 **PR 12 implementation notes:** Resend provider; Postgres `NotificationPreference` + `NotificationOutbox`; Vercel Cron every 5 minutes with backoff 1→5→15→30 min and 24h max age; separate Notifications pages (email only); critical email locked on until Telegram; short transactional EN/UK copy; walk-ins send nothing; unverified/synthetic emails skipped.
 
-**Open sub-questions remaining:** the Telegram bot, the link-account flow and how it is disconnected (PR 13); production Resend domain/sender setup; whether an in-app notification list is added later (not decided); reminders before a session and any other events are **not** decided; consent and privacy-policy wording for email and Telegram (XR-1).
+**PR 13 implementation notes (groomed 2026-11-17):** Telegram webhook bot; link token 15 min; prefs unlock critical email when Telegram connected; outbox `channel=telegram`; disconnect app + `/disconnect`; privacy/terms pages.
+
+**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); whether an in-app notification list is added later (not decided); reminders before a session and any other events are **not** decided; legal review of privacy/terms (P-2 / XR-1).
 
 ### BR-010
 
@@ -565,11 +567,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** Is the phone number verified (for example by an SMS code) at registration?
 **Current implementation:** Only the format is checked; a client can register with any valid number, including someone else's, and the phone is the client's login. [BR-009](#br-009) verifies the email, not the phone.
 **Why:** The phone is both the login and the number a masseur sees; an unverified phone allows impersonation. SMS costs money ([BR-009](#br-009) discussed SMS).
-**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16.
+**Status: Approved (2026-11-16); implementing in PR 13 (`feat/telegram-phone-confirm`).** Added 2026-11-16.
 
 **Decision (option B):** an **optional confirmation of the phone number through the Telegram bot** of [BR-009](#br-009). The user who connects Telegram can share their contact with the bot (the standard "share my number" button); the bot checks that the contact belongs to the same Telegram account and that the number **matches the phone in the application account**. If so, the account gets a **"phone confirmed" mark**, which the masseur sees next to the client's name in a booking. The confirmation is **not required** to register or to book. Considered and not chosen: no confirmation (A), mandatory Telegram confirmation for everyone (C; it would exclude people without Telegram and contradict BR-009) and SMS codes (D; paid, needs a provider).
 
-**To decide for implementation (not yet groomed):** where the mark is shown and what the masseur sees; what the user is told when the Telegram number differs from the account number; whether masseurs, whose phone is public ([BR-004](#br-004)), can confirm theirs the same way; the privacy wording about Telegram as a processor (XR-1).
+**PR 13 implementation notes (groomed 2026-11-17):** mark in masseur slot details as ✓ + Confirmed/Підтверджено; mismatch refuses with a hint to update the phone in the app; masseurs may confirm the same way (mark UI for masseurs deferred); `/privacy` and `/terms` cover Telegram as a processor pending P-2 legal review; one chat may notify both portal Users when email or phone matches; phone confirmed applies only to the portal that requested share-contact.
 
 
 ---

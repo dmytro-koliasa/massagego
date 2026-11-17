@@ -147,6 +147,16 @@ export function renderNotificationEmail(
   return { subject, text, html: wrapHtml(text) };
 }
 
+/** Plain Telegram body — same facts as email, no HTML. */
+export function renderNotificationTelegram(
+  eventType: NotificationEventType,
+  payload: NotificationPayload,
+  origin: string,
+): { text: string } {
+  const email = renderNotificationEmail(eventType, payload, origin);
+  return { text: `${email.subject}\n\n${email.text}` };
+}
+
 /** Guard for tests: rendered bodies must not contain phone-like digits runs. */
 export function emailBodyLooksPhoneFree(text: string): boolean {
   // Reject E.164-ish or long digit groups that look like phone numbers.

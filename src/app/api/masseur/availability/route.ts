@@ -66,6 +66,9 @@ export async function GET(request: Request) {
         clientName: true,
         clientPhone: true,
         massageType: true,
+        client: {
+          select: { phoneConfirmedAt: true },
+        },
       },
     }),
   ]);
@@ -80,6 +83,7 @@ export async function GET(request: Request) {
           clientName: booking.clientName,
           clientPhone: booking.clientPhone,
           massageType: booking.massageType,
+          clientPhoneConfirmed: Boolean(booking.client?.phoneConfirmedAt),
         },
       ]),
   );
@@ -97,6 +101,7 @@ export async function GET(request: Request) {
           status: booked ? ("booked" as const) : ("available" as const),
           clientName: booked?.clientName ?? null,
           clientPhone: booked?.clientPhone ?? null,
+          clientPhoneConfirmed: booked?.clientPhoneConfirmed ?? false,
           massageType: booked?.massageType ?? null,
           bookingId: booked?.id ?? null,
         },
@@ -115,6 +120,7 @@ export async function GET(request: Request) {
       status: "booked",
       clientName: booked.clientName,
       clientPhone: booked.clientPhone,
+      clientPhoneConfirmed: booked.clientPhoneConfirmed,
       massageType: booked.massageType,
       bookingId: booked.id,
     });

@@ -237,11 +237,23 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 13 - Telegram and phone confirmation
 
+**Status:** implementing on branch `feat/telegram-phone-confirm` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- One bot (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`); webhook `POST /api/telegram/webhook`.
+- Deep link + one-time `VerificationToken` (`telegram-link:${userId}`), TTL **15 min**, new token invalidates previous.
+- Client and masseur are separate `User` rows; one Telegram chat may link both when **email or phone** matches; otherwise refuse.
+- Notifications to every linked User; **phone confirmed** only on the portal that requested share-contact.
+- Masseurs may confirm phone; masseur mark UI deferred; client mark in slot details: ✓ + Confirmed/Підтверджено.
+- Mismatch → refuse + hint to update phone in the app.
+- Disconnect in app (current User) and bot `/disconnect` (all Users with that chat); clears chat + phone confirmed.
+- Notifications UI: Telegram column; critical events need ≥1 channel; email unlocks when Telegram is connected and on.
+- Bot + Telegram event copy uses `preferredLocale`; share-contact prompt after connect and again from the app.
+- Full `/privacy` and `/terms` (EN/UK) with links at Connect and footer/register.
+
 **Scope:** connecting Telegram through the bot (a link from the application), the same events sent through Telegram when connected, disconnecting; the optional phone confirmation through the bot (the contact must belong to the same Telegram account and match the phone in the application) and the "phone confirmed" mark shown to the masseur.
 
 **Acceptance criteria:** a user receives the events in Telegram only after connecting and consenting; a shared contact that is not the user's own, or does not match the account number, is refused; the mark appears only after a successful match; the settings from PR 12 control the Telegram channel.
-
-**To groom first:** the bot flow and texts; what the user sees on a mismatch; whether masseurs can confirm their phone too.
 
 ### PR 14 - Account deletion and data cleanup
 

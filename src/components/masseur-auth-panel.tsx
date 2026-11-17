@@ -754,6 +754,24 @@ export function MasseurAuthPanel({
                 ? t.authSignIn
                 : t.authCreateAccount}
           </button>
+
+          {mode === "register" ? (
+            <p className="text-center text-xs text-muted">
+              <a
+                href="/privacy"
+                className="text-accent underline-offset-2 hover:underline"
+              >
+                {t.telegramPrivacyLink}
+              </a>
+              {" · "}
+              <a
+                href="/terms"
+                className="text-accent underline-offset-2 hover:underline"
+              >
+                {t.telegramTermsLink}
+              </a>
+            </p>
+          ) : null}
         </form>
 
         {!isClient ? (

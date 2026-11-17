@@ -5,6 +5,7 @@ import { Roboto } from 'next/font/google';
 import { AppToaster } from '@/components/app-toaster';
 import { LanguageProvider } from '@/components/language-provider';
 import { AuthSessionProvider } from '@/components/auth-session-provider';
+import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
@@ -66,6 +67,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 						<AuthSessionProvider>
 							<SiteHeader />
 							{children}
+							<SiteFooter />
 							<AppToaster />
 						</AuthSessionProvider>
 					</LanguageProvider>

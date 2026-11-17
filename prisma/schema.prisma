@@ -48,6 +48,13 @@ model User {
   passwordHash   String?
   /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
   portal         String
+  /// Telegram chat id for optional BR-009 notifications (same chat may link client+masseur when email/phone match).
+  telegramChatId String?
+  telegramLinkedAt DateTime?
+  /// Set when the app/bot asks this portal user to share contact for BR-023.
+  telegramAwaitingPhoneConfirm Boolean @default(false)
+  /// Optional phone confirmation via Telegram contact share (BR-023).
+  phoneConfirmedAt DateTime?
   accounts       Account[]
   sessions       Session[]
   masseurBookings Booking[] @relation("MasseurBookings")
@@ -62,6 +69,7 @@ model User {
   @@unique([email, portal])
   @@unique([phone, portal])
   @@index([portal])
+  @@index([telegramChatId])
 }
 
 model Account {
@@ -175,6 +183,7 @@ enum NotificationEventType {
 
 enum NotificationChannel {
   email
+  telegram
 }
 
 enum NotificationOutboxStatus {
@@ -184,14 +193,15 @@ enum NotificationOutboxStatus {
   dead
 }
 
-/// Per-user, per-event email preference (Telegram channel arrives in PR 13).
+/// Per-user, per-event channel preferences (BR-009).
 model NotificationPreference {
-  id           String                @id @default(cuid())
-  userId       String
-  eventType    NotificationEventType
-  emailEnabled Boolean               @default(true)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id              String                @id @default(cuid())
+  userId          String
+  eventType       NotificationEventType
+  emailEnabled    Boolean               @default(true)
+  telegramEnabled Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
