@@ -49,6 +49,8 @@ export function isMasseurListed(
 /** Prisma fragment: complete profile + ever had an availability row. */
 export const listedMasseurWhere: Prisma.UserWhereInput = {
   AND: [
+    { deletedAt: null },
+    { blockedAt: null },
     {
       OR: [
         { AND: [{ nameEn: { not: null } }, { nameEn: { not: "" } }] },

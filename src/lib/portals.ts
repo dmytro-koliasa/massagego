@@ -1,6 +1,8 @@
-export type Portal = "masseur" | "client";
+export type Portal = "masseur" | "client" | "admin";
+export type PublicPortal = "masseur" | "client";
 
-export const PORTALS = ["masseur", "client"] as const;
+export const PORTALS = ["masseur", "client", "admin"] as const;
+export const PUBLIC_PORTALS = ["masseur", "client"] as const;
 
 export const AUTH_PORTAL_COOKIE = "serein-auth-portal";
 export const AUTH_INTENT_COOKIE = "serein-auth-intent";
@@ -8,6 +10,10 @@ export const AUTH_INTENT_COOKIE = "serein-auth-intent";
 export type AuthIntent = "login" | "register";
 
 export function isPortal(value: unknown): value is Portal {
+  return value === "masseur" || value === "client" || value === "admin";
+}
+
+export function isPublicPortal(value: unknown): value is PublicPortal {
   return value === "masseur" || value === "client";
 }
 
@@ -21,7 +27,9 @@ export function portalAuthBasePath(portal: Portal) {
 
 /** Login / auth entry for a portal. */
 export function portalHomePath(portal: Portal) {
-  return portal === "masseur" ? "/masseur/login" : "/client/login";
+  if (portal === "masseur") return "/masseur/login";
+  if (portal === "client") return "/client/login";
+  return "/admin/login";
 }
 
 export function isPortalLoginPath(path: string, portal: Portal) {
@@ -30,5 +38,7 @@ export function isPortalLoginPath(path: string, portal: Portal) {
 }
 
 export function portalDefaultCallback(portal: Portal) {
-  return portal === "masseur" ? "/masseur/dashboard" : "/client";
+  if (portal === "masseur") return "/masseur/dashboard";
+  if (portal === "client") return "/client";
+  return "/admin";
 }

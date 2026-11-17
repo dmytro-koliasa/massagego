@@ -20,7 +20,7 @@
 | Notification settings: per event and per channel on/off, with at least one channel on for critical events — **email** in PR 12 (`NotificationPreference`); Telegram channel in PR 13 | both | [BR-009](decisions.md#br-009) |
 | Telegram link (chat identifier and link state) | both | [BR-009](decisions.md#br-009) |
 | "Phone confirmed" mark (set through the Telegram bot) | both | [BR-023](decisions.md#br-023) |
-| Account state for blocking (blocked or not) | both | [BR-021](decisions.md#br-021) |
+| **Implementing** (PR 15): `blockedAt` (nullable timestamp); blocked users cannot sign in or create bookings; existing bookings stay | both (not admin) | [BR-021](decisions.md#br-021) |
 | Marker for an anonymised (deleted) account, with personal data erased | both | [BR-011](decisions.md#br-011) |
 
 ### `Booking`
@@ -46,6 +46,7 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 | Telegram link token | One-time token used to connect an account to the bot | [BR-009](decisions.md#br-009) |
 | Email verification token (the existing `VerificationToken` table may be reused) | Confirm the email address — reused in PR 8/9 | [BR-009](decisions.md#br-009) |
 | Obligation flag on bookings and separate payment records | Keep bookings with financial or legal obligations out of automatic deletion | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018), later with [BR-015](decisions.md#br-015) |
+| **Implementing** (PR 15): `AdminAuditLog` (actor, action, target user, meta JSON, createdAt) | Administrator action audit trail (XR-1) | [BR-021](decisions.md#br-021) |
 
 ## 3. Configuration and constants in code
 

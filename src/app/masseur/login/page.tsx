@@ -25,10 +25,12 @@ function MasseurLoginContent() {
 
   useEffect(() => {
     const error = searchParams.get("error");
-    if (error === "no_portal_access" || error === "AccessDenied") {
+    if (error === "blocked") {
+      toast.error(t.authAccountBlocked);
+    } else if (error === "no_portal_access" || error === "AccessDenied") {
       toast.error(t.authNoPortalAccess);
     }
-  }, [searchParams, t.authNoPortalAccess]);
+  }, [searchParams, t.authAccountBlocked, t.authNoPortalAccess]);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.id) {

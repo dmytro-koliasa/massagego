@@ -180,9 +180,16 @@ export async function POST(request: Request) {
         portal: true,
         email: true,
         cityPlaceId: true,
+        blockedAt: true,
+        deletedAt: true,
       },
     });
-    if (!account || account.portal !== "client") {
+    if (
+      !account ||
+      account.portal !== "client" ||
+      account.deletedAt ||
+      account.blockedAt
+    ) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
@@ -207,6 +214,8 @@ export async function POST(request: Request) {
       where: {
         id: masseurId,
         portal: "masseur",
+        deletedAt: null,
+        blockedAt: null,
       },
       select: {
         id: true,

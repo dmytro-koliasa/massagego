@@ -91,6 +91,17 @@ export function createPortalAuthConfig(portal: Portal): NextAuthConfig {
           return Response.redirect(loginUrl);
         }
 
+        if (
+          portal === "admin" &&
+          (path === "/admin" || path.startsWith("/admin/")) &&
+          !isPortalLoginPath(path, "admin")
+        ) {
+          if (isLoggedIn) return true;
+          const loginUrl = new URL(portalHomePath("admin"), request.nextUrl);
+          loginUrl.searchParams.set("next", path);
+          return Response.redirect(loginUrl);
+        }
+
         return true;
       },
     },
