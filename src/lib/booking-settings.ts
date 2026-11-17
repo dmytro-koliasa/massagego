@@ -7,10 +7,15 @@ import {
   type BookingLeadHours,
   type CancelCutoffHours,
 } from "@/lib/booking-constants";
+import {
+  resolveReminderHours,
+  type ResolvedReminderHours,
+} from "@/lib/booking-reminder";
 
 export type ResolvedBookingSettings = {
   bookingLeadHours: BookingLeadHours;
   cancelCutoffHours: CancelCutoffHours;
+  reminderHours: ResolvedReminderHours;
 };
 
 export function resolveBookingLeadHours(
@@ -87,6 +92,7 @@ export function applyBookingSettingsUpdate(input: {
 export function resolveBookingSettings(user: {
   bookingLeadHours?: number | null;
   cancelCutoffHours?: number | null;
+  reminderHours?: number | null;
 }): ResolvedBookingSettings {
   const bookingLeadHours = resolveBookingLeadHours(user.bookingLeadHours);
   return {
@@ -95,5 +101,6 @@ export function resolveBookingSettings(user: {
       user.cancelCutoffHours,
       bookingLeadHours,
     ),
+    reminderHours: resolveReminderHours(user.reminderHours),
   };
 }

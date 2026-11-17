@@ -60,6 +60,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | PR 5 (`feat/client-booking-cancel-rules`) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | PR 12 (`feat/email-notifications`) email + outbox; Telegram in PR 13; event-4 enqueue in PR 14 |
+| 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | `feat/booking-reminders` |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | PR 13 (`feat/telegram-phone-confirm`) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints deferred | PR 15 (`feat/admin-panel`) |
@@ -340,7 +341,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **PR 13 implementation notes (groomed 2026-11-17):** Telegram webhook bot; link token 15 min; prefs unlock critical email when Telegram connected; outbox `channel=telegram`; disconnect app + `/disconnect`; privacy/terms pages.
 
-**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); whether an in-app notification list is added later (not decided); reminders before a session and any other events are **not** decided; legal review of privacy/terms (P-2 / XR-1).
+**Reminders (groomed 2026-11-17):** one client reminder event `booking_reminder` (not critical). Masseur sets `reminderHours` to Off or `2|4|12|24` (default 24). Cron via `/api/cron/notifications` claims due bookings with `reminderSentAt`; skip walk-ins and bookings created inside the reminder window. Changing the masseur setting affects not-yet-sent bookings.
+
+**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); whether an in-app notification list is added later (not decided); legal review of privacy/terms (P-2 / XR-1).
 
 ### BR-010
 

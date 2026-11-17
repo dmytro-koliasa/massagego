@@ -41,6 +41,11 @@ export const CANCEL_CUTOFF_HOURS_OPTIONS = [
 export type CancelCutoffHours = (typeof CANCEL_CUTOFF_HOURS_OPTIONS)[number];
 export const DEFAULT_CANCEL_CUTOFF_HOURS: CancelCutoffHours = 24;
 
+/** Per-masseur client reminder offset in hours; null = Off (BR-009). */
+export const REMINDER_HOURS_OPTIONS = [2, 4, 12, 24] as const;
+export type ReminderHours = (typeof REMINDER_HOURS_OPTIONS)[number];
+export const DEFAULT_REMINDER_HOURS: ReminderHours = 24;
+
 export function isBookingLeadHours(value: unknown): value is BookingLeadHours {
   return (
     typeof value === "number" &&
@@ -54,6 +59,13 @@ export function isCancelCutoffHours(
   return (
     typeof value === "number" &&
     (CANCEL_CUTOFF_HOURS_OPTIONS as readonly number[]).includes(value)
+  );
+}
+
+export function isReminderHours(value: unknown): value is ReminderHours {
+  return (
+    typeof value === "number" &&
+    (REMINDER_HOURS_OPTIONS as readonly number[]).includes(value)
   );
 }
 

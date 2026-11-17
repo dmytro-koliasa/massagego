@@ -30,7 +30,11 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: gate.userId },
-    select: { bookingLeadHours: true, cancelCutoffHours: true },
+    select: {
+      bookingLeadHours: true,
+      cancelCutoffHours: true,
+      reminderHours: true,
+    },
   });
 
   if (!user) {
@@ -53,7 +57,11 @@ export async function PATCH(request: Request) {
 
     const current = await prisma.user.findUnique({
       where: { id: gate.userId },
-      select: { bookingLeadHours: true, cancelCutoffHours: true },
+      select: {
+        bookingLeadHours: true,
+        cancelCutoffHours: true,
+        reminderHours: true,
+      },
     });
     if (!current) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -75,8 +83,13 @@ export async function PATCH(request: Request) {
       data: {
         bookingLeadHours: applied.bookingLeadHours,
         cancelCutoffHours: applied.cancelCutoffHours,
+        reminderHours: parsed.data.reminderHours,
       },
-      select: { bookingLeadHours: true, cancelCutoffHours: true },
+      select: {
+        bookingLeadHours: true,
+        cancelCutoffHours: true,
+        reminderHours: true,
+      },
     });
 
     return NextResponse.json({
