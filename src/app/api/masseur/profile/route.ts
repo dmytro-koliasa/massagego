@@ -10,16 +10,12 @@ import {
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
+import {
+  ImageProcessError,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/image-process";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { masseurProfileSchema, parseWithSchema } from "@/lib/validation";
-
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
 
 const profileSelect = {
   id: true,
@@ -201,11 +197,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing_file" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return NextResponse.json({ error: "invalid_type" }, { status: 400 });
-    }
-
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json({ error: "too_large" }, { status: 400 });
     }
 
@@ -214,7 +206,7 @@ export async function POST(request: Request) {
       select: { image: true, preferredLocale: true },
     });
 
-    const imagePath = await storeUpload({
+    const uploaded = await storeUpload({
       folder: "masseurs",
       ownerId: gate.userId,
       file,
@@ -222,7 +214,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.update({
       where: { id: gate.userId },
-      data: { image: imagePath },
+      data: { image: uploaded.url },
       select: profileSelect,
     });
 
@@ -230,7 +222,10 @@ export async function POST(request: Request) {
 
     const locale = current?.preferredLocale === "uk" ? "uk" : "en";
     return NextResponse.json({ user: toProfileResponse(user, locale) });
-  } catch {
+  } catch (error) {
+    if (error instanceof ImageProcessError) {
+      return NextResponse.json({ error: error.code }, { status: 400 });
+    }
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

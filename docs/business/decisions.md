@@ -60,7 +60,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | PR 5 (`feat/client-booking-cancel-rules`) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | - (not implemented) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | - (not implemented) |
-| 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | - (not implemented) |
+| 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
 | 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
@@ -99,7 +99,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16; implementing PR 9) |
 | [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16; implementing PR 9) |
 | [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Approved** (2026-11-16) |
-| [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16) |
+| [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16); implementing in PR 10 |
 | [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Approved** (2026-11-16) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Implemented** ([#11](https://github.com/dmytro-koliasa/massagego/pull/11)) |
@@ -554,11 +554,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** What rules apply to uploaded images (profile photo, gallery)?
 **Current implementation:** Gallery: JPEG or PNG, up to 5 MB, 3 images per masseur; the type comes from the file's declared type and the size from the request, without checking the actual file content; avatars follow similar rules.
 **Why:** Unverified uploads can carry unsafe content; image rules also affect storage cost and privacy ([XR-1](#cross-cutting-requirements)).
-**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16.
+**Status: Approved (2026-11-16); implementing in PR 10.** Added 2026-11-16.
 
 **Decision (option A):** the server **checks the real content of an uploaded image** (not the declared type), **computes the width and height itself**, and **re-saves the image** in a safe format, which also **removes embedded metadata such as GPS location**. The size and dimension limits stay enforced. Considered and not chosen: checking without re-saving (B) and keeping the current behaviour (C).
 
-**To decide for implementation (not yet groomed):** the image library; the allowed formats (keep JPEG and PNG or add WebP); the maximum dimensions; the existing limits (3 gallery images, 5 MB) stay unless changed; whether avatars follow the same pipeline.
+**Implementation notes (groomed 2026-11-17):** library **sharp**; input **JPEG / PNG / WebP** only (reject GIF and others by detected format); output **JPEG ~85**, except **PNG with alpha stays PNG**; strip all metadata after `rotate()` (EXIF orientation); max long side **2000px**, never upscale; keep **5 MB** input and **3** gallery images; same pipeline for gallery and masseur/client avatars; API error codes `invalid_type`, `too_large`, `process_failed`.
 
 ### BR-023
 

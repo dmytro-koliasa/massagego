@@ -6,7 +6,11 @@ import { getCroppedImageBlob } from "@/lib/crop-image";
 import { useLanguage } from "@/components/language-provider";
 import "react-easy-crop/react-easy-crop.css";
 
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 type AspectOption = "free" | "1:1" | "4:3" | "3:4" | "16:9" | "9:16";
@@ -305,7 +309,7 @@ export function GalleryCropModal({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/jpeg,image/png,image/webp"
             multiple={multiple}
             className="hidden"
             onChange={(event) => {
