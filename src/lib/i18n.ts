@@ -384,6 +384,22 @@ export const dictionaries = {
 		phoneConfirmedBadge: 'Confirmed',
 		footerPrivacy: 'Privacy',
 		footerTerms: 'Terms',
+		clientSessionsHistoryHint: 'Sessions from the last 3 months are shown.',
+		deletedUserLabel: 'Deleted user',
+		deleteAccountTitle: 'Delete account',
+		deleteAccountSupport:
+			'This permanently erases your personal data. This cannot be undone.',
+		deleteAccountButton: 'Delete account',
+		deleteAccountConfirmTitle: 'Delete your account?',
+		deleteAccountConfirmMessage:
+			'Your personal data will be erased. If you are a client, future bookings will be cancelled and masseurs will be notified.',
+		deleteAccountConfirmAction: 'Delete',
+		deleteAccountCancel: 'Cancel',
+		deleteAccountSuccess: 'Account deleted.',
+		deleteAccountError: 'Could not delete the account.',
+		deleteAccountMasseurBlocked:
+			'Cancel your future bookings before deleting your account. You have {n} future booking(s).',
+		deleteAccountOpenCalendar: 'Open calendar',
 	},
 	uk: {
 		heroAlt: 'Руки виконують спокійний, зосереджений масаж',
@@ -771,6 +787,22 @@ export const dictionaries = {
 		phoneConfirmedBadge: 'Підтверджено',
 		footerPrivacy: 'Конфіденційність',
 		footerTerms: 'Умови',
+		clientSessionsHistoryHint: 'Показано сеанси за останні 3 місяці.',
+		deletedUserLabel: 'Видалений користувач',
+		deleteAccountTitle: 'Видалити акаунт',
+		deleteAccountSupport:
+			'Це остаточно стирає ваші персональні дані. Дію неможливо скасувати.',
+		deleteAccountButton: 'Видалити акаунт',
+		deleteAccountConfirmTitle: 'Видалити акаунт?',
+		deleteAccountConfirmMessage:
+			'Ваші персональні дані буде стерто. Якщо ви клієнт, майбутні бронювання буде скасовано, а масажистів сповіщено.',
+		deleteAccountConfirmAction: 'Видалити',
+		deleteAccountCancel: 'Скасувати',
+		deleteAccountSuccess: 'Акаунт видалено.',
+		deleteAccountError: 'Не вдалося видалити акаунт.',
+		deleteAccountMasseurBlocked:
+			'Спочатку скасуйте майбутні бронювання, щоб видалити акаунт. У вас є {n} майбутн(іх) бронюван(ня/ь).',
+		deleteAccountOpenCalendar: 'Відкрити календар',
 	},
 } as const;
 

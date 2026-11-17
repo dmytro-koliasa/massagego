@@ -26,20 +26,22 @@ export async function readAuthIntentCookie(
 /** True when this user id belongs to the given portal identity. */
 export async function userHasPortal(userId: string, portal: Portal) {
   const user = await prisma.user.findFirst({
-    where: { id: userId, portal },
+    where: { id: userId, portal, deletedAt: null },
     select: { id: true },
   });
   return Boolean(user);
 }
 
 export async function findPortalUserByEmail(email: string, portal: Portal) {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email_portal: { email, portal } },
   });
+  if (!user || user.deletedAt) return null;
+  return user;
 }
 
 export async function findPortalUserByPhone(phone: string, portal: Portal) {
   return prisma.user.findFirst({
-    where: { phone, portal },
+    where: { phone, portal, deletedAt: null },
   });
 }

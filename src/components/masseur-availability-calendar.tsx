@@ -49,6 +49,7 @@ import {
 	formatWeekTitle,
 	getWeekSlotStarts,
 } from '@/lib/calendar-time';
+import { displayBookingClientName } from '@/lib/deleted-user';
 import {
 	isWithinClientBookingWindow,
 	resolveTimeZone,
@@ -303,14 +304,19 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						locale,
 						timeZone,
 					);
-					const clientName = slot.clientName?.trim() || '—';
+					const clientName = slot.clientName?.trim()
+						? displayBookingClientName(
+								slot.clientName,
+								locale === 'uk' ? 'uk' : 'en',
+							)
+						: '—';
 					const clientPhone = slot.clientPhone?.trim() || '—';
 					const massageType = slot.massageType?.trim()
 						? getMassageTypeLabel(slot.massageType, locale)
 						: '—';
 					const label = booked
 						? slot.clientName
-							? `${t.availabilityBookedSlotLabel}: ${slot.clientName}`
+							? `${t.availabilityBookedSlotLabel}: ${clientName}`
 							: t.availabilityBookedSlotLabel
 						: t.availabilitySlotLabel;
 					const hint = booked
@@ -1032,7 +1038,10 @@ export const MasseurAvailabilityCalendar = forwardRef<
 												{slotAction.clientName?.trim() ? (
 													<p>
 														{t.availabilityBookClientName}:{' '}
-														{slotAction.clientName.trim()}
+														{displayBookingClientName(
+															slotAction.clientName,
+															locale === 'uk' ? 'uk' : 'en',
+														)}
 														{slotAction.clientPhoneConfirmed ? (
 															<span className='ml-2 inline-flex items-center gap-1 text-xs font-medium text-foreground'>
 																<span aria-hidden='true'>✓</span>

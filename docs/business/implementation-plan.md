@@ -29,7 +29,7 @@
 | P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. | the first release to real users |
 | P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`); domain/sender still need production setup. | PR 8 (verification), PR 9, PR 12 |
 | P-4 | Create the Telegram bot and decide how its token is stored. | PR 13 |
-| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed for rate limits (PR 9) and notification retries (PR 12):** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron every 5 minutes on `/api/cron/notifications`. Cleanup job for PR 14 still open. | PR 9, PR 12, PR 14 |
+| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (PR 14). | PR 9, PR 12, PR 14 |
 | P-6 | Decide how the shared test database is provided in continuous integration (there is no CI today). | PR 1 onwards (recommended) |
 
 ## 3. Order and dependencies
@@ -257,11 +257,21 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 14 - Account deletion and data cleanup
 
+**Status:** implementing on branch `feat/account-deletion-cleanup` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- Cron `GET /api/cron/cleanup` daily `0 3 * * *` UTC with `CRON_SECRET`.
+- `Booking.hasRetentionHold` default false (no UI); job skips `true`.
+- History hint EN/UK on client My sessions only.
+- Delete in profile via custom `ConfirmDialog` (no `window.confirm` / type-DELETE).
+- Remaining bookings store `clientName=deleted_user`; UI localises the label.
+- `User.deletedAt` + `deleted:{id}@invalid.local`; clear PII, sessions, Telegram, prefs/outbox, uploads.
+- Client delete cancels future bookings + event 4 notify; masseur blocked with `{n}` + calendar link.
+- Privacy updated; hosting backup scrub deferred to P-2.
+
 **Scope:** self-service account deletion with anonymisation; a client's future bookings are cancelled automatically (reason "client account deleted") and the masseur is notified; a masseur with future bookings cannot delete the account; a scheduled job physically deletes cancelled bookings 7 days after `cancelledAt` and completed bookings 3 months after the session start, never touching bookings with financial or legal obligations; the hint "Sessions from the last 3 months are shown" on the history screens.
 
 **Acceptance criteria:** a booking cancelled more than 7 days ago no longer exists and is returned nowhere; a booking cancelled less than 7 days ago is unchanged; a completed booking older than 3 months is deleted; a deleted client's name and phone are gone from the remaining bookings; the job is idempotent and logs failures; a masseur deletion with future bookings is refused with a clear message.
-
-**To groom first:** the job's schedule (P-5); how the obligation flag will exist before payments do (a placeholder with no data); backups and logs under XR-1; the wording of the deletion and history screens.
 
 ### PR 15 - Administration panel
 

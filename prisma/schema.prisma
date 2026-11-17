@@ -55,6 +55,8 @@ model User {
   telegramAwaitingPhoneConfirm Boolean @default(false)
   /// Optional phone confirmation via Telegram contact share (BR-023).
   phoneConfirmedAt DateTime?
+  /// Set when the account is self-deleted and anonymised (BR-011).
+  deletedAt      DateTime?
   accounts       Account[]
   sessions       Session[]
   masseurBookings Booking[] @relation("MasseurBookings")
@@ -70,6 +72,7 @@ model User {
   @@unique([phone, portal])
   @@index([portal])
   @@index([telegramChatId])
+  @@index([deletedAt])
 }
 
 model Account {
@@ -157,6 +160,8 @@ model Booking {
   cancelReason     CancellationReason?
   /// Free text, only for `cancelReason = other`.
   cancelReasonText String?             @db.VarChar(200)
+  /// When true, cleanup cron must not hard-delete (payments/disputes — BR-011/018).
+  hasRetentionHold Boolean             @default(false)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
@@ -171,6 +176,7 @@ model Booking {
   @@index([clientUserId, slotStart])
   @@index([status, cancelledAt])
   @@index([status, slotStart])
+  @@index([hasRetentionHold])
 }
 
 enum NotificationEventType {

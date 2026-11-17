@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { CityAutocomplete } from '@/components/city-autocomplete';
+import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { useLanguage } from '@/components/language-provider';
 import type { CanonicalCity } from '@/lib/city';
@@ -335,6 +336,7 @@ export function ClientProfileCard() {
 		isRealEmail(profile.email) && !profile.emailVerified;
 
 	return (
+		<>
 		<section className='mt-10 rounded-2xl border border-surface-border bg-surface p-6 sm:p-8'>
 			<div className='mb-6 text-left'>
 				<h2 className='text-xl font-bold tracking-[-0.02em] text-foreground'>
@@ -529,6 +531,8 @@ export function ClientProfileCard() {
 				</div>
 			</div>
 		</section>
+		<DeleteAccountSection portal='client' />
+		</>
 	);
 }
 
