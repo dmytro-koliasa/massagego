@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Remaining work: deferred product items (e.g. prices, payments, courses, complaints), prerequisites P-1/P-2, and tests.
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22). Remaining work: local/ops follow-ups (see P-3 local docs), deferred product items (e.g. prices, payments, courses, complaints), P-1/P-2 before real users, and later Vercel/CI/Telegram when chosen.
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -27,8 +27,8 @@
 |---|---|---|
 | P-1 | Verify the production database: the migration `20261115120000_booking_no_overlap` (needs the `btree_gist` extension), overlapping active bookings, and the production server timezone. Not verified today. | the first deployment to production |
 | P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. | the first release to real users |
-| P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`); domain/sender still need production setup. | PR 8 (verification), PR 9, PR 12 |
-| P-4 | Create the Telegram bot and decide how its token is stored. | PR 13 |
+| P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`). **Local ops:** free-tier Resend + `docs/ops/email-local.md` + `npm run cron:notifications` (no Vercel). **Deferred:** production domain/sender and host cron. | PR 8 (verification), PR 9, PR 12 |
+| P-4 | Create the Telegram bot and decide how its token is stored. **Deferred** until a public URL exists (no paid tunnel/host required during local-only development). | PR 13 |
 | P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (PR 14). | PR 9, PR 12, PR 14 |
 | P-6 | Decide how the shared test database is provided in continuous integration (there is no CI today). | PR 1 onwards (recommended) |
 
