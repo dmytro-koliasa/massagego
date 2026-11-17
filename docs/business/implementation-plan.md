@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22). Remaining work: local/ops follow-ups (see P-3 local docs), deferred product items (e.g. prices, payments, courses, complaints), P-1/P-2 before real users, and later Vercel/CI/Telegram when chosen.
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22); local Resend ops [#23](https://github.com/dmytro-koliasa/massagego/pull/23). Remaining work: deferred product items (e.g. prices, payments, courses, complaints), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/CI/Telegram when chosen.
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -25,8 +25,8 @@
 
 | # | Prerequisite | Needed before |
 |---|---|---|
-| P-1 | Verify the production database: the migration `20261115120000_booking_no_overlap` (needs the `btree_gist` extension), overlapping active bookings, and the production server timezone. Not verified today. | the first deployment to production |
-| P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. | the first release to real users |
+| P-1 | Verify the production database: the migration `20261115120000_booking_no_overlap` (needs the `btree_gist` extension), overlapping active bookings, and the production server timezone. **Local tooling:** `npm run db:verify-constraints` + [pre-release.md](../ops/pre-release.md). **Still a gate:** production `DATABASE_URL` has not been verified (no prod DB in local-only phase). | the first deployment to production |
+| P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. **Checklist:** [pre-release.md](../ops/pre-release.md) (not a substitute for counsel). | the first release to real users |
 | P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`). **Local ops:** free-tier Resend + `docs/ops/email-local.md` + `npm run cron:notifications` (no Vercel). **Deferred:** production domain/sender and host cron. | PR 8 (verification), PR 9, PR 12 |
 | P-4 | Create the Telegram bot and decide how its token is stored. **Deferred** until a public URL exists (no paid tunnel/host required during local-only development). | PR 13 |
 | P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (PR 14). | PR 9, PR 12, PR 14 |
