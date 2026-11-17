@@ -81,6 +81,7 @@ export function ClientSessionsCalendar() {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [sessions, setSessions] = useState<ClientSession[]>([]);
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+  const [isCurrentWeek, setIsCurrentWeek] = useState(false);
   const localZone = browserTimeZone();
   const [loading, setLoading] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
@@ -108,23 +109,16 @@ export function ClientSessionsCalendar() {
   }, []);
 
   const showSlotTipRef = useRef(showSlotTip);
-  showSlotTipRef.current = showSlotTip;
   const hideSlotTipRef = useRef(hideSlotTip);
-  hideSlotTipRef.current = hideSlotTip;
+  useEffect(() => {
+    showSlotTipRef.current = showSlotTip;
+    hideSlotTipRef.current = hideSlotTip;
+  }, [showSlotTip, hideSlotTip]);
 
   const viewTitle = useMemo(() => {
     if (!range) return "";
     return formatWeekTitle(range.from, range.to, locale, localZone);
   }, [range, locale, localZone]);
-
-  const isCurrentWeek = useMemo(() => {
-    if (!range) return false;
-    const now = Date.now();
-    return (
-      now >= new Date(range.from).getTime() &&
-      now < new Date(range.to).getTime()
-    );
-  }, [range]);
 
   const events = useMemo(
     () =>
@@ -197,7 +191,6 @@ export function ClientSessionsCalendar() {
 
   const loadSessions = useCallback(
     async (from: string, to: string) => {
-      setLoading(true);
       try {
         const response = await fetch(
           `/api/bookings?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
@@ -232,7 +225,16 @@ export function ClientSessionsCalendar() {
 
   useEffect(() => {
     if (!range) return;
-    void loadSessions(range.from, range.to);
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      await loadSessions(range.from, range.to);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [range, loadSessions]);
 
   function requestCancel(session: {
@@ -425,11 +427,14 @@ export function ClientSessionsCalendar() {
             info.el.addEventListener("mouseleave", onLeave);
           }}
           datesSet={(arg) => {
-            hideSlotTip();
-            setRange({
-              from: arg.start.toISOString(),
-              to: arg.end.toISOString(),
-            });
+            hideSlotTipRef.current();
+            const from = arg.start.toISOString();
+            const to = arg.end.toISOString();
+            const now = Date.now();
+            setIsCurrentWeek(
+              now >= arg.start.getTime() && now < arg.end.getTime(),
+            );
+            setRange({ from, to });
           }}
           eventClick={(arg) => {
             const props = arg.event.extendedProps;

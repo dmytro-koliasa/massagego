@@ -20,15 +20,6 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
-  // React Compiler lint rules from eslint-config-next; widespread pre-existing
-  // patterns. Kept as warnings so CI stays green; harden in a follow-up PR.
-  {
-    rules: {
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/purity": "warn",
-    },
-  },
 ]);
 
 export default eslintConfig;

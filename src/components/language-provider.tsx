@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { dictionaries, type Dictionary, type Locale } from "@/lib/i18n";
 
@@ -34,6 +33,34 @@ function persistLocale(locale: Locale) {
   document.cookie = `${LOCALE_STORAGE_KEY}=${locale};path=/;max-age=${LOCALE_COOKIE_MAX_AGE};samesite=lax`;
 }
 
+function readStoredLocale(fallback: Locale): Locale {
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  return isLocale(stored) ? stored : fallback;
+}
+
+let currentLocale: Locale = "en";
+let hydrated = false;
+const listeners = new Set<() => void>();
+
+function emit() {
+  for (const listener of listeners) listener();
+}
+
+function hydrateLocale(fallback: Locale) {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  currentLocale = readStoredLocale(fallback);
+  applyLocale(currentLocale);
+  persistLocale(currentLocale);
+}
+
+function writeLocale(locale: Locale) {
+  currentLocale = locale;
+  applyLocale(locale);
+  persistLocale(locale);
+  emit();
+}
+
 export function LanguageProvider({
   children,
   initialLocale = "en",
@@ -41,20 +68,23 @@ export function LanguageProvider({
   children: React.ReactNode;
   initialLocale?: Locale;
 }) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    const preferred = isLocale(stored) ? stored : initialLocale;
-    setLocaleState(preferred);
-    applyLocale(preferred);
-    persistLocale(preferred);
-  }, [initialLocale]);
+  const locale = useSyncExternalStore(
+    (listener) => {
+      hydrateLocale(initialLocale);
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    () => {
+      hydrateLocale(initialLocale);
+      return currentLocale;
+    },
+    () => initialLocale,
+  );
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    applyLocale(next);
-    persistLocale(next);
+    writeLocale(next);
   }, []);
 
   const value = useMemo(

@@ -89,8 +89,36 @@ export function AdminUserDetail({ userId }: { userId: string }) {
   }, [userId, t.adminLoadError]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.adminLoadError);
+          setUser(null);
+          return;
+        }
+        const data = (await response.json()) as { user?: AdminUserDetail };
+        if (cancelled) return;
+        setUser(data.user ?? null);
+      } catch {
+        if (!cancelled) {
+          toast.error(t.adminLoadError);
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, t.adminLoadError]);
 
   async function applyAction() {
     if (!user || !confirm) return;

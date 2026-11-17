@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { getCroppedImageBlob } from "@/lib/crop-image";
 import { useLanguage } from "@/components/language-provider";
@@ -80,9 +80,13 @@ export function GalleryCropModal({
   const isLast = queue.length > 0 && index >= queue.length - 1;
   const aspect = ASPECT_VALUES[aspectOption];
 
-  useEffect(() => {
-    if (open) return;
+  const resetCropView = useCallback(() => {
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  }, []);
 
+  const handleClose = useCallback(() => {
     setQueue((current) => {
       revokeAll(current);
       return [];
@@ -90,27 +94,22 @@ export function GalleryCropModal({
     setIndex(0);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
-    setAspectOption(initialAspect);
     setCroppedAreaPixels(null);
+    setAspectOption(initialAspect);
     setLocalError(null);
     setSaving(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [open, initialAspect]);
+    onClose();
+  }, [initialAspect, onClose]);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !pending && !saving) onClose();
+      if (event.key === "Escape" && !pending && !saving) handleClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose, pending, saving]);
-
-  useEffect(() => {
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    setCroppedAreaPixels(null);
-  }, [index, imageSrc, aspectOption]);
+  }, [open, handleClose, pending, saving]);
 
   if (!open) return null;
 
@@ -162,6 +161,7 @@ export function GalleryCropModal({
       return accepted;
     });
     setIndex(0);
+    resetCropView();
   }
 
   async function handleSave() {
@@ -174,11 +174,12 @@ export function GalleryCropModal({
       if (!ok) return;
 
       if (isLast) {
-        onClose();
+        handleClose();
         return;
       }
 
       setIndex((current) => current + 1);
+      resetCropView();
     } catch {
       setLocalError(t.galleryUploadError);
     } finally {
@@ -201,7 +202,7 @@ export function GalleryCropModal({
       aria-modal="true"
       aria-label={dialogTitle}
       onClick={() => {
-        if (!busy) onClose();
+        if (!busy) handleClose();
       }}
     >
       <div
@@ -269,7 +270,10 @@ export function GalleryCropModal({
                         key={value}
                         type="button"
                         disabled={busy}
-                        onClick={() => setAspectOption(value)}
+                        onClick={() => {
+                          setAspectOption(value);
+                          resetCropView();
+                        }}
                         className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
                           aspectOption === value
                             ? "bg-accent text-white"
@@ -327,7 +331,7 @@ export function GalleryCropModal({
           <button
             type="button"
             disabled={busy}
-            onClick={onClose}
+            onClick={handleClose}
             className="h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-muted transition hover:border-accent/40 hover:text-foreground disabled:opacity-60"
           >
             {t.galleryCropCancel}

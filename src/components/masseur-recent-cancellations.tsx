@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { Preloader } from "@/components/preloader";
@@ -19,32 +19,39 @@ export function MasseurRecentCancellations({ timeZone }: Props) {
   const [loading, setLoading] = useState(true);
   const zone = resolveTimeZone(timeZone);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/masseur/cancellations", {
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        toast.error(t.recentCancellationsLoadError);
-        setRows([]);
-        return;
-      }
-      const data = (await response.json()) as {
-        cancellations?: RecentCancellationDto[];
-      };
-      setRows(data.cancellations ?? []);
-    } catch {
-      toast.error(t.recentCancellationsLoadError);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [t.recentCancellationsLoadError]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/masseur/cancellations", {
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.recentCancellationsLoadError);
+          setRows([]);
+          return;
+        }
+        const data = (await response.json()) as {
+          cancellations?: RecentCancellationDto[];
+        };
+        if (cancelled) return;
+        setRows(data.cancellations ?? []);
+      } catch {
+        if (!cancelled) {
+          toast.error(t.recentCancellationsLoadError);
+          setRows([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t.recentCancellationsLoadError]);
 
   function reasonLabel(row: RecentCancellationDto) {
     const key = `cancelReason_${row.reason}` as keyof typeof t;

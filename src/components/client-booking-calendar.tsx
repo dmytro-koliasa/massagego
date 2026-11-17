@@ -81,9 +81,8 @@ export function ClientBookingCalendar({
 	const calendarRef = useRef<FullCalendar | null>(null);
 	const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
 	const [timeZone, setTimeZone] = useState(DEFAULT_MASSEUR_TIME_ZONE);
-	const timeZoneRef = useRef(timeZone);
-	timeZoneRef.current = timeZone;
 	const [range, setRange] = useState<{ from: string; to: string } | null>(null);
+	const [isCurrentWeek, setIsCurrentWeek] = useState(false);
 	const [bookingWindowEnd, setBookingWindowEnd] = useState<string | null>(null);
 	const [cancelCutoffHours, setCancelCutoffHours] = useState<number>(
 		DEFAULT_CANCEL_CUTOFF_HOURS,
@@ -112,17 +111,21 @@ export function ClientBookingCalendar({
 	}, []);
 
 	const showSlotTipRef = useRef(showSlotTip);
-	showSlotTipRef.current = showSlotTip;
 	const hideSlotTipRef = useRef(hideSlotTip);
-	hideSlotTipRef.current = hideSlotTip;
-
-	const selectedSet = useMemo(() => new Set(selectedStarts), [selectedStarts]);
+	const timeZoneRef = useRef(timeZone);
 	const slotsRef = useRef(slots);
-	slotsRef.current = slots;
 	const selectedStartsRef = useRef(selectedStarts);
-	selectedStartsRef.current = selectedStarts;
+	const selectedSet = useMemo(() => new Set(selectedStarts), [selectedStarts]);
 	const selectedSetRef = useRef(selectedSet);
-	selectedSetRef.current = selectedSet;
+
+	useEffect(() => {
+		showSlotTipRef.current = showSlotTip;
+		hideSlotTipRef.current = hideSlotTip;
+		timeZoneRef.current = timeZone;
+		slotsRef.current = slots;
+		selectedStartsRef.current = selectedStarts;
+		selectedSetRef.current = selectedSet;
+	}, [showSlotTip, hideSlotTip, timeZone, slots, selectedStarts, selectedSet]);
 
 	const sortedSelected = useMemo(
 		() => [...selectedStarts].sort((a, b) => new Date(a).getTime() - new Date(b).getTime()),
@@ -138,12 +141,6 @@ export function ClientBookingCalendar({
 		() => formatCalendarTimeZoneLine(t.calendarTimeZoneLabel, timeZone),
 		[t.calendarTimeZoneLabel, timeZone],
 	);
-
-	const isCurrentWeek = useMemo(() => {
-		if (!range) return false;
-		const now = Date.now();
-		return now >= new Date(range.from).getTime() && now < new Date(range.to).getTime();
-	}, [range]);
 
 	const windowEndMs = useMemo(() => {
 		if (bookingWindowEnd) return new Date(bookingWindowEnd).getTime();
@@ -249,8 +246,7 @@ export function ClientBookingCalendar({
 	);
 
 	const loadSlots = useCallback(
-		async (from: string, to: string) => {
-			setLoading(true);
+		async (from: string, to: string, zone: string) => {
 			try {
 				const response = await fetch(
 					`/api/masseurs/${masseurId}/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
@@ -260,11 +256,11 @@ export function ClientBookingCalendar({
 						error?: string;
 					} | null;
 					if (data?.error === 'BOOKING_WINDOW_EXCEEDED') {
-						const lastDay = clientBookingWindowLastDay(new Date(), timeZoneRef.current);
+						const lastDay = clientBookingWindowLastDay(new Date(), zone);
 						const dateLabel = new Intl.DateTimeFormat(
 							locale === 'uk' ? 'uk-UA' : 'en-GB',
 							{
-								timeZone: timeZoneRef.current,
+								timeZone: zone,
 								day: 'numeric',
 								month: 'short',
 								year: 'numeric',
@@ -302,10 +298,7 @@ export function ClientBookingCalendar({
 					setBookingWindowEnd(data.bookingWindowEnd);
 				} else {
 					setBookingWindowEnd(
-						clientBookingWindowExclusiveEnd(
-							new Date(),
-							timeZoneRef.current,
-						).toISOString(),
+						clientBookingWindowExclusiveEnd(new Date(), zone).toISOString(),
 					);
 				}
 				const cutoff =
@@ -351,24 +344,36 @@ export function ClientBookingCalendar({
 
 	useEffect(() => {
 		if (!range) return;
-		void loadSlots(range.from, range.to);
-	}, [range, loadSlots, refreshKey]);
+		let cancelled = false;
+		(async () => {
+			await Promise.resolve();
+			if (cancelled) return;
+			setLoading(true);
+			await loadSlots(range.from, range.to, timeZone);
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [range, loadSlots, refreshKey, timeZone]);
 
 	// Drop selection only for slots that are visible this week and now booked.
 	// Keep selections from other weeks when navigating.
-	useEffect(() => {
-		if (selectedStarts.length === 0 || slots.length === 0) return;
-
-		const visibleBooked = new Set(
-			slots.filter(slot => slot.status === 'booked').map(slot => slot.start),
-		);
-		if (visibleBooked.size === 0) return;
-
-		const next = selectedStarts.filter(start => !visibleBooked.has(start));
-		if (next.length !== selectedStarts.length) {
-			onChangeSelected(next);
+	const visibleBookedStarts = useMemo(
+		() =>
+			new Set(
+				slots.filter(slot => slot.status === 'booked').map(slot => slot.start),
+			),
+		[slots],
+	);
+	const cleanedSelectedStarts = useMemo(() => {
+		if (selectedStarts.length === 0 || visibleBookedStarts.size === 0) {
+			return selectedStarts;
 		}
-	}, [slots, selectedStarts, onChangeSelected]);
+		return selectedStarts.filter(start => !visibleBookedStarts.has(start));
+	}, [selectedStarts, visibleBookedStarts]);
+	if (cleanedSelectedStarts.length !== selectedStarts.length) {
+		onChangeSelected(cleanedSelectedStarts);
+	}
 
 	function toggleSelected(startIso: string) {
 		const current = selectedStartsRef.current;
@@ -378,25 +383,6 @@ export function ClientBookingCalendar({
 			return;
 		}
 		onChangeSelected([...current, startIso]);
-	}
-
-	function handleSlotInteraction(startIso: string) {
-		const slot = slotsRef.current.find(item => item.start === startIso);
-		if (!slot) {
-			toast.error(t.bookingSlotNotOffered);
-			return;
-		}
-
-		if (slot.status === 'booked') {
-			if (!slot.mine) {
-				toast.error(t.bookingSlotTakenByOther);
-				return;
-			}
-			requestCancelBooking(startIso, slot.bookingId, slot.massageType);
-			return;
-		}
-
-		toggleSelected(slot.start);
 	}
 
 	function requestCancelBooking(
@@ -416,6 +402,25 @@ export function ClientBookingCalendar({
 			return;
 		}
 		setCancelTarget({ startIso, bookingId, massageType });
+	}
+
+	function handleSlotInteraction(startIso: string) {
+		const slot = slotsRef.current.find(item => item.start === startIso);
+		if (!slot) {
+			toast.error(t.bookingSlotNotOffered);
+			return;
+		}
+
+		if (slot.status === 'booked') {
+			if (!slot.mine) {
+				toast.error(t.bookingSlotTakenByOther);
+				return;
+			}
+			requestCancelBooking(startIso, slot.bookingId, slot.massageType);
+			return;
+		}
+
+		toggleSelected(slot.start);
 	}
 
 	function closeCancelDialog() {
@@ -600,18 +605,24 @@ export function ClientBookingCalendar({
 						info.el.addEventListener('mouseleave', onLeave);
 					}}
 					datesSet={arg => {
-						hideSlotTip();
-						setRange({
-							from: arg.start.toISOString(),
-							to: arg.end.toISOString(),
-						});
+						hideSlotTipRef.current();
+						const from = arg.start.toISOString();
+						const to = arg.end.toISOString();
+						const now = Date.now();
+						setIsCurrentWeek(
+							now >= arg.start.getTime() && now < arg.end.getTime(),
+						);
+						setRange({ from, to });
 					}}
 					eventClick={arg => {
 						const props = arg.event.extendedProps;
 						const startIso =
 							typeof props.startIso === 'string'
 								? props.startIso
-								: alignToHourIso(arg.event.start ?? new Date(), timeZoneRef.current);
+								: alignToHourIso(
+										arg.event.start ?? new Date(),
+										timeZoneRef.current,
+									);
 						handleSlotInteraction(startIso);
 					}}
 					eventTextColor='#ffffff'
