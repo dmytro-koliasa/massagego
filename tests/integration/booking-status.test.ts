@@ -3,6 +3,12 @@
  * Uses TEST_DATABASE_URL like booking-concurrency.test.ts; skipped without it.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import "./mock-rate-limit";
+import {
+  completeClientData,
+  completeMasseurData,
+  slotInsideBookingWindow,
+} from "./fixtures";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (TEST_DATABASE_URL) {
@@ -29,7 +35,7 @@ describeDb("booking status and cancellation data (database)", () => {
   let masseurId: string;
 
   const HOUR = 60 * 60 * 1000;
-  const base = new Date("2031-07-15T10:00:00.000Z");
+  const base = slotInsideBookingWindow(14, 10);
 
   function post(url: string, body: unknown) {
     return new Request(`http://test${url}`, {
@@ -61,15 +67,14 @@ describeDb("booking status and cancellation data (database)", () => {
     ({ POST: masseurResolve } = await import("@/app/api/masseur/bookings/resolve/route"));
 
     const masseur = await prisma.user.create({
-      data: { email: "status-masseur@test.local", portal: "masseur" },
+      data: completeMasseurData({ email: "status-masseur@test.local" }),
     });
     const client = await prisma.user.create({
-      data: {
+      data: completeClientData({
         email: "status-client@test.local",
-        portal: "client",
         name: "Status Client",
         phone: "+380501234567",
-      },
+      }),
     });
     masseurId = masseur.id;
     session.masseurId = masseur.id;

@@ -2,6 +2,11 @@
  * Integration test: needs TEST_DATABASE_URL with migrations applied.
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import "./mock-rate-limit";
+import {
+  completeClientData,
+  completeMasseurData,
+} from "./fixtures";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (TEST_DATABASE_URL) {
@@ -47,21 +52,19 @@ describeDb("booking lead time and 120-day window (database)", () => {
     ));
 
     const masseur = await prisma.user.create({
-      data: {
+      data: completeMasseurData({
         email: "lead-window-masseur@test.local",
-        portal: "masseur",
         timezone: "Europe/Kyiv",
         bookingLeadHours: 1,
         cancelCutoffHours: 24,
-      },
+      }),
     });
     const client = await prisma.user.create({
-      data: {
+      data: completeClientData({
         email: "lead-window-client@test.local",
-        portal: "client",
         name: "Lead Client",
         phone: "+380501234567",
-      },
+      }),
     });
     masseurId = masseur.id;
     session.masseurId = masseur.id;

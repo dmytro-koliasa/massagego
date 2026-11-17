@@ -9,6 +9,12 @@
  *   TEST_DATABASE_URL=<.../massage_test> npm test
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import "./mock-rate-limit";
+import {
+  completeClientData,
+  completeMasseurData,
+  slotInsideBookingWindow,
+} from "./fixtures";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (TEST_DATABASE_URL) {
@@ -34,8 +40,8 @@ describeDb("booking conflicts (database)", () => {
   let clientIds: string[];
 
   const HOUR = 60 * 60 * 1000;
-  // Far-future, hour-aligned base so slots are never "expired".
-  const base = new Date("2031-06-10T10:00:00.000Z");
+  // Inside the 120-day client window, hour-aligned so slots are never "expired".
+  const base = slotInsideBookingWindow(14, 10);
   const at = (offsetMs: number) => new Date(base.getTime() + offsetMs);
 
   function clientRequest(starts: Date[]) {
@@ -84,7 +90,7 @@ describeDb("booking conflicts (database)", () => {
     ({ POST: masseurPost } = await import("@/app/api/masseur/bookings/route"));
 
     const masseur = await prisma.user.create({
-      data: { email: "conc-masseur@test.local", portal: "masseur" },
+      data: completeMasseurData({ email: "conc-masseur@test.local" }),
     });
     masseurId = masseur.id;
     session.masseurId = masseur.id;
@@ -92,12 +98,11 @@ describeDb("booking conflicts (database)", () => {
     const clients = await Promise.all(
       Array.from({ length: 2 }, (_, i) =>
         prisma.user.create({
-          data: {
+          data: completeClientData({
             email: `conc-client-${i}@test.local`,
-            portal: "client",
             name: `Conc Client ${i}`,
             phone: `+38050123456${i}`,
-          },
+          }),
         }),
       ),
     );
@@ -131,7 +136,13 @@ describeDb("booking conflicts (database)", () => {
 
     expect(statuses.filter((s) => s === 201)).toHaveLength(1);
     expect(statuses.filter((s) => s === 409)).toHaveLength(11);
-    expect(failures.every((b) => b.error === "slot_taken")).toBe(true);
+    // Same client racing: losers may be masseur `slot_taken` or client overlap.
+    expect(
+      failures.every(
+        (b) =>
+          b.error === "slot_taken" || b.error === "CLIENT_SLOT_OVERLAP",
+      ),
+    ).toBe(true);
     expect(await activeCount()).toBe(1);
   });
 
