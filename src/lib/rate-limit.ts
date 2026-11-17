@@ -6,6 +6,7 @@ export const RATE_LIMITS = {
   passwordReset: { limit: 5, windowMs: 60 * 60 * 1000 },
   bookingCreate: { limit: 30, windowMs: 15 * 60 * 1000 },
   bookingCancel: { limit: 30, windowMs: 15 * 60 * 1000 },
+  complaintCreate: { limit: 5, windowMs: 60 * 60 * 1000 },
 } as const;
 
 export type RateLimitResult =

@@ -15,7 +15,7 @@ There are three portal identities, stored in `User.portal` (`"masseur"`, `"clien
 | **Admin** | Email + password | Portal `admin`. Bootstrap from `ADMIN_BOOTSTRAP_*`; no public registration. See [BR-021](decisions.md#br-021) / AR-17 |
 | **Anonymous** | none | Can reach the landing and login pages only |
 
-Complaints / report UI is not built yet (deferred from BR-021). See [BR-010](decisions.md#br-010) for discoverability.
+Complaints: client and masseur may report each other from a shared booking; admins review at `/admin/complaints` ([BR-021](decisions.md#br-021)). See [BR-010](decisions.md#br-010) for discoverability.
 
 ### 1.1 Identity isolation - Implemented
 

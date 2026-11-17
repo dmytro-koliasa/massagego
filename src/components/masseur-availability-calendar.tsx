@@ -20,6 +20,7 @@ import flags from 'react-phone-number-input/flags';
 import 'react-phone-number-input/style.css';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
+import { ReportUserDialog } from '@/components/report-user-dialog';
 import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
 import {
 	clampInternationalPhone,
@@ -77,6 +78,7 @@ type AvailabilitySlot = {
 	clientPhoneConfirmed?: boolean;
 	massageType?: string | null;
 	bookingId?: string | null;
+	clientUserId?: string | null;
 	lastCancellation?: LastCancellation | null;
 };
 
@@ -210,6 +212,8 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		clientPhone?: string | null;
 		clientPhoneConfirmed?: boolean;
 		massageType?: string | null;
+		bookingId?: string | null;
+		clientUserId?: string | null;
 		lastCancellation?: LastCancellation | null;
 	} | null>(null);
 	const [bookName, setBookName] = useState('');
@@ -218,6 +222,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 	const [bookMassageType, setBookMassageType] = useState('');
 	const [bookPending, setBookPending] = useState(false);
 	const [resolvePending, setResolvePending] = useState(false);
+	const [reportBookingId, setReportBookingId] = useState<string | null>(null);
 
 	const showSlotTip = useCallback((text: string, el: HTMLElement, clientX: number) => {
 		const rect = resolveHoverAnchorRect(el, clientX);
@@ -402,6 +407,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							clientPhoneConfirmed?: boolean;
 							massageType?: string | null;
 							bookingId?: string | null;
+							clientUserId?: string | null;
 							lastCancellation?: LastCancellation | null;
 						}>;
 					};
@@ -419,6 +425,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							clientPhoneConfirmed: Boolean(slot.clientPhoneConfirmed),
 							massageType: slot.massageType ?? null,
 							bookingId: slot.bookingId ?? null,
+							clientUserId: slot.clientUserId ?? null,
 							lastCancellation: slot.lastCancellation ?? null,
 						})),
 					);
@@ -490,6 +497,8 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				clientPhone: slot?.clientPhone ?? null,
 				clientPhoneConfirmed: Boolean(slot?.clientPhoneConfirmed),
 				massageType: slot?.massageType ?? null,
+				bookingId: slot?.bookingId ?? null,
+				clientUserId: slot?.clientUserId ?? null,
 				lastCancellation: slot?.lastCancellation ?? null,
 			});
 		}
@@ -1126,6 +1135,21 @@ export const MasseurAvailabilityCalendar = forwardRef<
 									>
 										{t.availabilityMakeUnavailable}
 									</button>
+									{slotAction.bookingId && slotAction.clientUserId ? (
+										<button
+											type='button'
+											disabled={resolvePending}
+											onClick={() => {
+												const bookingId = slotAction.bookingId;
+												if (!bookingId) return;
+												setSlotAction(null);
+												setReportBookingId(bookingId);
+											}}
+											className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
+										>
+											{t.complaintReportAction}
+										</button>
+									) : null}
 									<button
 										type='button'
 										disabled={resolvePending}
@@ -1284,6 +1308,14 @@ export const MasseurAvailabilityCalendar = forwardRef<
 
 				{!loading && slots.length === 0 ? (
 					<p className='mt-3 text-sm text-muted'>{t.availabilityEmptyWeek}</p>
+				) : null}
+
+				{reportBookingId ? (
+					<ReportUserDialog
+						bookingId={reportBookingId}
+						open
+						onClose={() => setReportBookingId(null)}
+					/>
 				) : null}
 			</section>
 		);
