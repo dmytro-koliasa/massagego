@@ -48,6 +48,7 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 | Obligation flag on bookings and separate payment records | Keep bookings with financial or legal obligations out of automatic deletion | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018), later with [BR-015](decisions.md#br-015) |
 | **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)): `AdminAuditLog` (actor, action, target user, meta JSON, createdAt) | Administrator action audit trail (XR-1) | [BR-021](decisions.md#br-021) |
 | **Implemented** (`feat/complaints`): `Complaint` (reporter, target, optional booking, category, body, status, admin note) | User complaints for admin review | [BR-021](decisions.md#br-021) |
+| **Implemented** (`feat/booking-reminders`): `User.reminderHours`, `Booking.reminderSentAt`, enum value `booking_reminder` | Client session reminders | [BR-009](decisions.md#br-009) |
 | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)): `Booking.hasRetentionHold` (default false; cleanup job skips `true`) | Hold cancelled/completed bookings out of automatic hard delete until payments/legal | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
 
 ## 3. Configuration and constants in code

@@ -29,10 +29,13 @@ import {
 	BOOKING_LEAD_HOURS_OPTIONS,
 	CANCEL_CUTOFF_HOURS_OPTIONS,
 	DEFAULT_MASSEUR_TIME_ZONE,
+	REMINDER_HOURS_OPTIONS,
 	type BookingLeadHours,
 	type CancelCutoffHours,
+	type ReminderHours,
 } from '@/lib/booking-constants';
 import { resolveBookingSettings } from '@/lib/booking-settings';
+import type { ResolvedReminderHours } from '@/lib/booking-reminder';
 import type { CanonicalCity } from '@/lib/city';
 import { cityDisplayName, isCanonicalCity } from '@/lib/city';
 import {
@@ -75,6 +78,7 @@ type Profile = {
 	preferredLocale?: string | null;
 	bookingLeadHours?: number;
 	cancelCutoffHours?: number;
+	reminderHours?: number | null;
 };
 
 function cityFromProfile(profile: Profile): CanonicalCity | null {
@@ -132,6 +136,9 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	);
 	const [cancelCutoffHours, setCancelCutoffHours] = useState<CancelCutoffHours>(
 		initialSettings.cancelCutoffHours,
+	);
+	const [reminderHours, setReminderHours] = useState<ResolvedReminderHours>(
+		initialSettings.reminderHours,
 	);
 	const [bookingRulesPending, setBookingRulesPending] = useState(false);
 	const [nameLocale, setNameLocale] = useState<'en' | 'uk'>('uk');
@@ -343,6 +350,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 				body: JSON.stringify({
 					bookingLeadHours,
 					cancelCutoffHours,
+					reminderHours,
 				}),
 			});
 			const data = (await response.json().catch(() => null)) as {
@@ -351,6 +359,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 				settings?: {
 					bookingLeadHours: BookingLeadHours;
 					cancelCutoffHours: CancelCutoffHours;
+					reminderHours: ResolvedReminderHours;
 				};
 			} | null;
 
@@ -361,6 +370,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 
 			setBookingLeadHours(data.settings.bookingLeadHours);
 			setCancelCutoffHours(data.settings.cancelCutoffHours);
+			setReminderHours(data.settings.reminderHours);
 			if (data.cutoffRaised) {
 				toast.success(
 					t.bookingRulesCutoffRaised.replaceAll(
@@ -916,6 +926,34 @@ export function DashboardView({ profile }: { profile: Profile }) {
 							</select>
 							<span className='mt-1.5 block text-xs text-muted'>
 								{t.cancelCutoffHoursSupport}
+							</span>
+						</label>
+
+						<label className='block text-left sm:col-span-2'>
+							<span className='mb-1.5 block text-sm text-muted'>
+								{t.reminderHoursLabel}
+							</span>
+							<select
+								value={reminderHours === null ? 'off' : String(reminderHours)}
+								onChange={event => {
+									const raw = event.target.value;
+									if (raw === 'off') {
+										setReminderHours(null);
+										return;
+									}
+									setReminderHours(Number(raw) as ReminderHours);
+								}}
+								className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)] sm:max-w-md'
+							>
+								<option value='off'>{t.reminderHoursOff}</option>
+								{REMINDER_HOURS_OPTIONS.map(hours => (
+									<option key={hours} value={hours}>
+										{t.bookingRulesHours.replaceAll('{n}', String(hours))}
+									</option>
+								))}
+							</select>
+							<span className='mt-1.5 block text-xs text-muted'>
+								{t.reminderHoursSupport}
 							</span>
 						</label>
 					</div>

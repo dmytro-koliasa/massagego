@@ -293,6 +293,10 @@ export const dictionaries = {
 		bookingRulesTitle: 'Booking rules',
 		bookingRulesSupport:
 			'These rules apply to client bookings. Existing bookings are not changed.',
+		reminderHoursLabel: 'Client session reminder',
+		reminderHoursOff: 'Off',
+		reminderHoursSupport:
+			'Send the client one reminder this many hours before the session. Off disables reminders.',
 		bookingLeadHoursLabel: 'Minimum booking lead time',
 		bookingLeadHoursSupport:
 			'Clients can only book a slot while it is more than this many hours away.',
@@ -422,6 +426,7 @@ export const dictionaries = {
 		notifEventCancelledClientDeleted:
 			'Booking cancelled because a client deleted their account',
 		notifEventBookingConfirmed: 'Booking confirmation',
+		notifEventBookingReminder: 'Session reminder',
 		notifNavLink: 'Notifications',
 		telegramSectionTitle: 'Telegram',
 		telegramConnected: 'Connected',
@@ -790,6 +795,10 @@ export const dictionaries = {
 		bookingRulesTitle: 'Правила запису',
 		bookingRulesSupport:
 			'Ці правила діють для записів клієнтів. Уже створені бронювання не змінюються.',
+		reminderHoursLabel: 'Нагадування клієнту про сеанс',
+		reminderHoursOff: 'Вимкнено',
+		reminderHoursSupport:
+			'Надіслати клієнту одне нагадування за стільки годин до сеансу. «Вимкнено» вимикає нагадування.',
 		bookingLeadHoursLabel: 'Мінімальний час до запису',
 		bookingLeadHoursSupport:
 			'Клієнт може записатися на слот, лише поки до його початку більше ніж стільки годин.',
@@ -919,6 +928,7 @@ export const dictionaries = {
 		notifEventCancelledClientDeleted:
 			'Бронювання скасовано через видалення акаунта клієнта',
 		notifEventBookingConfirmed: 'Підтвердження бронювання',
+		notifEventBookingReminder: 'Нагадування про сеанс',
 		notifNavLink: 'Сповіщення',
 		telegramSectionTitle: 'Telegram',
 		telegramConnected: 'Підключено',

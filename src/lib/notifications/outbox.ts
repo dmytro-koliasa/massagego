@@ -1,4 +1,8 @@
 import "server-only";
+import {
+  isBookingDueForReminder,
+  resolveReminderHours,
+} from "@/lib/booking-reminder";
 import { sendEmail } from "@/lib/email/sender";
 import { isSyntheticClientEmail } from "@/lib/email/verification";
 import {
@@ -288,7 +292,8 @@ async function enqueueChannels(options: {
 
 export async function processNotificationOutbox(
   limit = 50,
-): Promise<{ processed: number }> {
+): Promise<{ processed: number; remindersEnqueued: number }> {
+  const reminders = await processDueBookingReminders();
   const now = new Date();
   const due = await prisma.notificationOutbox.findMany({
     where: {
@@ -303,7 +308,7 @@ export async function processNotificationOutbox(
   for (const row of due) {
     await deliverOutboxRow(row.id);
   }
-  return { processed: due.length };
+  return { processed: due.length, remindersEnqueued: reminders.enqueued };
 }
 
 type BookingNotifySource = {
@@ -504,4 +509,96 @@ export async function enqueueClientDeletedCancellationNotice(
       appPath: "/masseur/dashboard",
     }),
   });
+}
+
+/** Client session reminder (BR-009); not critical. */
+export async function notifyBookingReminder(bookingId: string): Promise<void> {
+  const booking = await loadBooking(bookingId);
+  if (!booking?.client || !booking.slotStart) return;
+
+  const clientLocale =
+    booking.client.preferredLocale === "uk" ? "uk" : "en";
+
+  await enqueueChannels({
+    recipientUserId: booking.client.id,
+    bookingId: booking.id,
+    eventType: "booking_reminder",
+    payload: buildPayload({
+      booking,
+      recipientLocale: clientLocale,
+      otherPartyName: displayName(booking.masseur, clientLocale),
+      appPath: "/client",
+    }),
+  });
+}
+
+/**
+ * Find due client reminders, claim with reminderSentAt, then enqueue.
+ * Uses the masseur's current reminderHours (null = Off).
+ */
+export async function processDueBookingReminders(
+  now = new Date(),
+  limit = 50,
+): Promise<{ enqueued: number }> {
+  const horizon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const candidates = await prisma.booking.findMany({
+    where: {
+      status: "confirmed",
+      clientUserId: { not: null },
+      reminderSentAt: null,
+      slotStart: { gt: now, lte: horizon },
+    },
+    take: limit,
+    select: {
+      id: true,
+      slotStart: true,
+      createdAt: true,
+      reminderSentAt: true,
+      status: true,
+      clientUserId: true,
+      masseur: { select: { reminderHours: true } },
+    },
+  });
+
+  let enqueued = 0;
+  for (const row of candidates) {
+    if (!row.slotStart || !row.clientUserId) continue;
+    const reminderHours = resolveReminderHours(row.masseur.reminderHours);
+    if (
+      !isBookingDueForReminder({
+        now,
+        slotStart: row.slotStart,
+        createdAt: row.createdAt,
+        reminderHours,
+        reminderSentAt: row.reminderSentAt,
+        status: row.status,
+        clientUserId: row.clientUserId,
+      })
+    ) {
+      continue;
+    }
+
+    const claimed = await prisma.booking.updateMany({
+      where: {
+        id: row.id,
+        reminderSentAt: null,
+        status: "confirmed",
+      },
+      data: { reminderSentAt: now },
+    });
+    if (claimed.count === 0) continue;
+
+    try {
+      await notifyBookingReminder(row.id);
+      enqueued += 1;
+    } catch (error) {
+      await prisma.booking.update({
+        where: { id: row.id },
+        data: { reminderSentAt: null },
+      });
+      console.error("[reminders] enqueue failed", row.id, error);
+    }
+  }
+
+  return { enqueued };
 }

@@ -4,6 +4,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   "booking_cancelled_by_masseur",
   "booking_cancelled_client_deleted",
   "booking_confirmed",
+  "booking_reminder",
 ] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
@@ -27,6 +28,7 @@ export const NOTIFICATION_EVENT_RECIPIENT_PORTAL: Record<
   booking_cancelled_by_masseur: "client",
   booking_cancelled_client_deleted: "masseur",
   booking_confirmed: "client",
+  booking_reminder: "client",
 };
 
 export type NotificationPayload = {

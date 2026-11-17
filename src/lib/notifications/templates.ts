@@ -97,6 +97,16 @@ export function renderNotificationEmail(
         slot,
       );
       break;
+    case "booking_reminder":
+      subject =
+        locale === "uk" ? "Нагадування про сеанс" : "Session reminder";
+      lines.push(
+        locale === "uk"
+          ? `Нагадуємо про ваш сеанс з ${payload.otherPartyName}.`
+          : `Reminder: your session with ${payload.otherPartyName} is coming up.`,
+        slot,
+      );
+      break;
     case "booking_cancelled_by_client":
       subject =
         locale === "uk"

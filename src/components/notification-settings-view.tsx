@@ -30,12 +30,14 @@ const EVENT_LABEL_KEYS: Record<
 	| 'notifEventCancelledByMasseur'
 	| 'notifEventCancelledClientDeleted'
 	| 'notifEventBookingConfirmed'
+	| 'notifEventBookingReminder'
 > = {
 	booking_created: 'notifEventBookingCreated',
 	booking_cancelled_by_client: 'notifEventCancelledByClient',
 	booking_cancelled_by_masseur: 'notifEventCancelledByMasseur',
 	booking_cancelled_client_deleted: 'notifEventCancelledClientDeleted',
 	booking_confirmed: 'notifEventBookingConfirmed',
+	booking_reminder: 'notifEventBookingReminder',
 };
 
 type Props = {

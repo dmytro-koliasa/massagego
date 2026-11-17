@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   BOOKING_LEAD_HOURS_OPTIONS,
   CANCEL_CUTOFF_HOURS_OPTIONS,
+  REMINDER_HOURS_OPTIONS,
 } from "@/lib/booking-constants";
 import { isMassageTypeValue } from "@/lib/massage-types";
 import {
@@ -54,10 +55,23 @@ export const masseurProfileSchema = z.object({
     ),
 });
 
-/** Dedicated save for lead time / cancellation cutoff (BR-002, BR-004). */
+const reminderHoursSchema = z.union([
+  z.null(),
+  z
+    .number()
+    .int()
+    .refine(
+      (value) =>
+        (REMINDER_HOURS_OPTIONS as readonly number[]).includes(value),
+      { message: "invalid_reminder_hours" },
+    ),
+]);
+
+/** Dedicated save for lead time / cancellation cutoff / reminder (BR-002/004/009). */
 export const masseurBookingSettingsSchema = z.object({
   bookingLeadHours: bookingLeadHoursSchema,
   cancelCutoffHours: cancelCutoffHoursSchema,
+  reminderHours: reminderHoursSchema,
 });
 
 export const clientProfileSchema = z.object({

@@ -45,6 +45,7 @@ export default async function MasseurDashboardPage() {
       preferredLocale: true,
       bookingLeadHours: true,
       cancelCutoffHours: true,
+      reminderHours: true,
     },
   });
 
