@@ -36,6 +36,7 @@
     "react-easy-crop": "^6.2.3",
     "react-phone-number-input": "^3.4.18",
     "react-photo-album": "^3.6.1",
+    "sharp": "^0.35.5",
     "sonner": "^2.0.8",
     "yet-another-react-lightbox": "^3.32.2",
     "zod": "^4.6.2"

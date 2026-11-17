@@ -1,21 +1,25 @@
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { del, put } from "@vercel/blob";
+import {
+  assertUploadSize,
+  processUploadImage,
+  type ProcessedUploadImage,
+} from "@/lib/image-process";
 import { isLocalUploadUrl } from "@/lib/upload-url";
 
 export type UploadFolder = "gallery" | "masseurs" | "clients";
+
+export type StoredUpload = {
+  url: string;
+  width: number;
+  height: number;
+};
 
 export {
   isLocalUploadUrl,
   shouldSkipImageOptimization,
 } from "@/lib/upload-url";
-
-function extensionFor(contentType: string) {
-  if (contentType === "image/png") return "png";
-  if (contentType === "image/webp") return "webp";
-  if (contentType === "image/gif") return "gif";
-  return "jpg";
-}
 
 function usesBlobStorage() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
@@ -33,20 +37,18 @@ export function isBlobUploadUrl(url: string | null | undefined) {
   );
 }
 
-export async function storeUpload(options: {
+async function writeProcessedUpload(options: {
   folder: UploadFolder;
   ownerId: string;
-  file: File;
+  processed: ProcessedUploadImage;
 }): Promise<string> {
-  const { folder, ownerId, file } = options;
-  const extension = extensionFor(file.type);
-  const filename = `${ownerId}-${Date.now()}.${extension}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const { folder, ownerId, processed } = options;
+  const filename = `${ownerId}-${Date.now()}.${processed.extension}`;
 
   if (usesBlobStorage()) {
-    const blob = await put(`${folder}/${filename}`, buffer, {
+    const blob = await put(`${folder}/${filename}`, processed.buffer, {
       access: "public",
-      contentType: file.type || "application/octet-stream",
+      contentType: processed.contentType,
       addRandomSuffix: false,
     });
     return blob.url;
@@ -54,8 +56,27 @@ export async function storeUpload(options: {
 
   const dir = localUploadDir(folder);
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), buffer);
+  await writeFile(path.join(dir, filename), processed.buffer);
   return `/uploads/${folder}/${filename}`;
+}
+
+export async function storeUpload(options: {
+  folder: UploadFolder;
+  ownerId: string;
+  file: File;
+}): Promise<StoredUpload> {
+  const { folder, ownerId, file } = options;
+  assertUploadSize(file.size);
+
+  const raw = Buffer.from(await file.arrayBuffer());
+  const processed = await processUploadImage(raw);
+  const url = await writeProcessedUpload({ folder, ownerId, processed });
+
+  return {
+    url,
+    width: processed.width,
+    height: processed.height,
+  };
 }
 
 export async function deleteUpload(url: string | null | undefined) {

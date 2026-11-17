@@ -4,16 +4,12 @@ import { requireClientSession } from "@/lib/client-session.server";
 import { createAndSendVerificationLink } from "@/lib/email/verification";
 import { findPortalUserByEmail } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
+import {
+  ImageProcessError,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/image-process";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { clientProfileSchema, parseWithSchema } from "@/lib/validation";
-
-const MAX_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
 
 const profileSelect = {
   id: true,
@@ -177,11 +173,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing_file" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return NextResponse.json({ error: "invalid_type" }, { status: 400 });
-    }
-
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json({ error: "too_large" }, { status: 400 });
     }
 
@@ -190,7 +182,7 @@ export async function POST(request: Request) {
       select: { image: true },
     });
 
-    const imagePath = await storeUpload({
+    const uploaded = await storeUpload({
       folder: "clients",
       ownerId: client.userId,
       file,
@@ -198,14 +190,17 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.update({
       where: { id: client.userId },
-      data: { image: imagePath },
+      data: { image: uploaded.url },
       select: profileSelect,
     });
 
     await deleteUpload(current?.image);
 
     return NextResponse.json({ user: toProfile(user) });
-  } catch {
+  } catch (error) {
+    if (error instanceof ImageProcessError) {
+      return NextResponse.json({ error: error.code }, { status: 400 });
+    }
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

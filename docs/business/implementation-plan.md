@@ -175,7 +175,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 9 - Password reset and rate limits
 
-**Status:** implementing on branch `feat/password-reset-rate-limits` (groomed 2026-11-17).
+**Status:** merged ([#13](https://github.com/dmytro-koliasa/massagego/pull/13), 2026-11-17).
 
 **Groomed decisions:**
 - Reset link TTL **1 hour**, one-time; a new request invalidates the previous token (`VerificationToken` with identifier `password-reset:${userId}`).
@@ -190,11 +190,18 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 10 - Image upload checks
 
+**Status:** implementing on branch `feat/image-upload-checks` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- Library: **sharp** (already a dependency).
+- Input: **JPEG, PNG, WebP only** (reject GIF and others by real content). Output: **JPEG quality ~85**, except **PNG with alpha → PNG**. Strip all metadata.
+- Max long side **2000px**, never upscale, keep aspect ratio. Keep **5 MB** input limit and **3** gallery images.
+- Same pipeline for gallery and avatars (masseur + client profile photos).
+- `GalleryImage.width` / `height` come from the server process result, not the client.
+
 **Scope:** uploaded images are checked by their real content, measured by the server, and re-saved without metadata (such as GPS); the size and count limits stay.
 
 **Acceptance criteria:** a file with a wrong declared type or non-image content is refused; the stored image has no metadata; the dimensions come from the server.
-
-**To groom first:** the library; the allowed formats; the maximum dimensions; whether avatars use the same pipeline.
 
 ### PR 11 - Masseur catalog
 
