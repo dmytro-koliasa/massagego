@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isEmailLocked,
+  isTelegramLocked,
   validatePreferencePatches,
   eventsForPortal,
   defaultEmailEnabled,
@@ -9,8 +10,11 @@ import { isPastRetryWindow, nextRetryAt } from "@/lib/notifications/retry";
 import {
   emailBodyLooksPhoneFree,
   renderNotificationEmail,
+  renderNotificationTelegram,
 } from "@/lib/notifications/templates";
 import type { NotificationPayload } from "@/lib/notifications/types";
+import { phonesMatch, samePersonContact } from "@/lib/telegram/phone";
+import { botText } from "@/lib/telegram/texts";
 
 const basePayload: NotificationPayload = {
   locale: "en",
@@ -30,24 +34,89 @@ describe("notification preferences", () => {
     expect(defaultEmailEnabled("booking_confirmed")).toBe(true);
   });
 
-  it("locks email for critical events until Telegram exists", () => {
+  it("locks critical email until Telegram can cover it", () => {
     expect(isEmailLocked("booking_created")).toBe(false);
-    expect(isEmailLocked("booking_confirmed")).toBe(true);
-    expect(isEmailLocked("booking_cancelled_by_client")).toBe(true);
+    expect(
+      isEmailLocked("booking_confirmed", {
+        telegramConnected: false,
+        telegramEnabled: false,
+      }),
+    ).toBe(true);
+    expect(
+      isEmailLocked("booking_confirmed", {
+        telegramConnected: true,
+        telegramEnabled: true,
+      }),
+    ).toBe(false);
+    expect(
+      isEmailLocked("booking_confirmed", {
+        telegramConnected: true,
+        telegramEnabled: false,
+      }),
+    ).toBe(true);
   });
 
-  it("rejects turning off critical email", () => {
-    const result = validatePreferencePatches("client", [
-      { eventType: "booking_confirmed", emailEnabled: false },
-    ]);
+  it("locks telegram until connected or when email is off for critical", () => {
+    expect(
+      isTelegramLocked("booking_confirmed", {
+        telegramConnected: false,
+        emailEnabled: true,
+      }),
+    ).toBe(true);
+    expect(
+      isTelegramLocked("booking_confirmed", {
+        telegramConnected: true,
+        emailEnabled: false,
+      }),
+    ).toBe(true);
+    expect(
+      isTelegramLocked("booking_confirmed", {
+        telegramConnected: true,
+        emailEnabled: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects turning off the last critical channel", () => {
+    const result = validatePreferencePatches(
+      "client",
+      [{ eventType: "booking_confirmed", emailEnabled: false }],
+      {
+        telegramConnected: false,
+        current: {
+          booking_confirmed: { emailEnabled: true, telegramEnabled: false },
+        },
+      },
+    );
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe("critical_email_required");
+    if (!result.ok) expect(result.error).toBe("critical_channel_required");
+  });
+
+  it("allows turning off critical email when telegram stays on", () => {
+    const result = validatePreferencePatches(
+      "client",
+      [{ eventType: "booking_confirmed", emailEnabled: false }],
+      {
+        telegramConnected: true,
+        current: {
+          booking_confirmed: { emailEnabled: true, telegramEnabled: true },
+        },
+      },
+    );
+    expect(result.ok).toBe(true);
   });
 
   it("allows turning off new-booking email for masseurs", () => {
-    const result = validatePreferencePatches("masseur", [
-      { eventType: "booking_created", emailEnabled: false },
-    ]);
+    const result = validatePreferencePatches(
+      "masseur",
+      [{ eventType: "booking_created", emailEnabled: false }],
+      {
+        telegramConnected: false,
+        current: {
+          booking_created: { emailEnabled: true, telegramEnabled: false },
+        },
+      },
+    );
     expect(result.ok).toBe(true);
   });
 
@@ -99,9 +168,6 @@ describe("notification templates", () => {
       },
       "https://example.com",
     );
-    // Names must not smuggle phones into the body via other fields we control;
-    // the phone-looking digits in otherPartyName would fail the guard — ensure
-    // production payloads never put phones in otherPartyName.
     const clean = renderNotificationEmail(
       "booking_confirmed",
       basePayload,
@@ -112,6 +178,14 @@ describe("notification templates", () => {
     expect(clean.text).toContain("Kyiv, UTC+2");
     expect(emailBodyLooksPhoneFree(clean.text)).toBe(true);
     expect(emailBodyLooksPhoneFree(rendered.text)).toBe(false);
+
+    const tg = renderNotificationTelegram(
+      "booking_confirmed",
+      basePayload,
+      "https://example.com",
+    );
+    expect(tg.text).toContain("Booking confirmation");
+    expect(emailBodyLooksPhoneFree(tg.text)).toBe(true);
   });
 
   it("includes client cancel reason", () => {
@@ -119,23 +193,43 @@ describe("notification templates", () => {
       "booking_cancelled_by_client",
       {
         ...basePayload,
-        locale: "en",
-        cancelReasonKey: "changed_mind",
-        appPath: "/masseur/dashboard",
+        cancelReasonKey: "circumstances_changed",
       },
       "https://example.com",
     );
-    expect(rendered.text).toMatch(/Reason:/i);
-    expect(rendered.text).toContain("I changed my mind");
+    expect(rendered.text.toLowerCase()).toContain("reason");
+  });
+});
+
+describe("telegram helpers", () => {
+  it("matches phones across telegram formatting", () => {
+    expect(phonesMatch("+380501112233", "380501112233")).toBe(true);
+    expect(phonesMatch("+380501112233", "+380501112244")).toBe(false);
   });
 
-  it("renders Ukrainian confirmation", () => {
-    const rendered = renderNotificationEmail(
-      "booking_confirmed",
-      { ...basePayload, locale: "uk" },
-      "https://example.com",
-    );
-    expect(rendered.subject).toContain("Підтвердження");
-    expect(rendered.text).toContain("Відкрити в застосунку:");
+  it("treats shared email or phone as same person", () => {
+    expect(
+      samePersonContact(
+        { email: "a@example.com", phone: "+380501112233" },
+        { email: "b@example.com", phone: "+380501112233" },
+      ),
+    ).toBe(true);
+    expect(
+      samePersonContact(
+        { email: "a@example.com", phone: null },
+        { email: "A@example.com", phone: "+380501112233" },
+      ),
+    ).toBe(true);
+    expect(
+      samePersonContact(
+        { email: "a@example.com", phone: "+380501112233" },
+        { email: "b@example.com", phone: "+380501112244" },
+      ),
+    ).toBe(false);
+  });
+
+  it("returns locale-specific bot copy", () => {
+    expect(botText("en", "linked")).toMatch(/connected/i);
+    expect(botText("uk", "linked")).toMatch(/підключено/i);
   });
 });

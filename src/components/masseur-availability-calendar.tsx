@@ -67,6 +67,7 @@ type AvailabilitySlot = {
 	status: SlotStatus;
 	clientName?: string | null;
 	clientPhone?: string | null;
+	clientPhoneConfirmed?: boolean;
 	massageType?: string | null;
 	bookingId?: string | null;
 };
@@ -199,6 +200,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		mode: 'choose' | 'book' | 'booked';
 		clientName?: string | null;
 		clientPhone?: string | null;
+		clientPhoneConfirmed?: boolean;
 		massageType?: string | null;
 	} | null>(null);
 	const [bookName, setBookName] = useState('');
@@ -342,6 +344,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							startIso: slot.start,
 							clientName: slot.clientName ?? null,
 							clientPhone: slot.clientPhone ?? null,
+							clientPhoneConfirmed: Boolean(slot.clientPhoneConfirmed),
 							massageType: slot.massageType ?? null,
 							booked,
 							beyondClientWindow,
@@ -382,6 +385,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							status?: SlotStatus;
 							clientName?: string | null;
 							clientPhone?: string | null;
+							clientPhoneConfirmed?: boolean;
 							massageType?: string | null;
 							bookingId?: string | null;
 						}>;
@@ -397,6 +401,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							status: slot.status === 'booked' ? 'booked' : 'available',
 							clientName: slot.clientName ?? null,
 							clientPhone: slot.clientPhone ?? null,
+							clientPhoneConfirmed: Boolean(slot.clientPhoneConfirmed),
 							massageType: slot.massageType ?? null,
 							bookingId: slot.bookingId ?? null,
 						})),
@@ -462,6 +467,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				mode: 'booked',
 				clientName: slot?.clientName ?? null,
 				clientPhone: slot?.clientPhone ?? null,
+				clientPhoneConfirmed: Boolean(slot?.clientPhoneConfirmed),
 				massageType: slot?.massageType ?? null,
 			});
 		}
@@ -1027,6 +1033,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 													<p>
 														{t.availabilityBookClientName}:{' '}
 														{slotAction.clientName.trim()}
+														{slotAction.clientPhoneConfirmed ? (
+															<span className='ml-2 inline-flex items-center gap-1 text-xs font-medium text-foreground'>
+																<span aria-hidden='true'>✓</span>
+																{t.phoneConfirmedBadge}
+															</span>
+														) : null}
 													</p>
 												) : null}
 												{slotAction.massageType?.trim() ? (

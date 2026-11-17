@@ -1,14 +1,21 @@
 import "server-only";
 import { sendEmail } from "@/lib/email/sender";
 import { isSyntheticClientEmail } from "@/lib/email/verification";
-import { isEmailNotificationEnabled } from "@/lib/notifications/prefs";
+import {
+  isEmailNotificationEnabled,
+  isTelegramNotificationEnabled,
+} from "@/lib/notifications/prefs";
 import { isPastRetryWindow, nextRetryAt } from "@/lib/notifications/retry";
-import { renderNotificationEmail } from "@/lib/notifications/templates";
+import {
+  renderNotificationEmail,
+  renderNotificationTelegram,
+} from "@/lib/notifications/templates";
 import type {
   NotificationEventType,
   NotificationPayload,
 } from "@/lib/notifications/types";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramMessage } from "@/lib/telegram/api";
 import { formatTimeZoneOffsetLabel, normalizeTimeZone } from "@/lib/timezone";
 
 function appOrigin(): string {
@@ -39,6 +46,45 @@ function truncateError(message: string): string {
   return message.slice(0, 500);
 }
 
+async function markDead(
+  id: string,
+  attemptCount: number,
+  lastError: string,
+): Promise<void> {
+  await prisma.notificationOutbox.update({
+    where: { id },
+    data: {
+      status: "dead",
+      lastError: truncateError(lastError),
+      attemptCount,
+      nextAttemptAt: null,
+    },
+  });
+}
+
+async function markFailed(
+  id: string,
+  attemptCount: number,
+  createdAt: Date,
+  lastError: string,
+  now: Date,
+): Promise<void> {
+  const retryAt = nextRetryAt(attemptCount, now);
+  if (isPastRetryWindow(createdAt, retryAt)) {
+    await markDead(id, attemptCount, lastError);
+    return;
+  }
+  await prisma.notificationOutbox.update({
+    where: { id },
+    data: {
+      status: "failed",
+      attemptCount,
+      lastError: truncateError(lastError),
+      nextAttemptAt: retryAt,
+    },
+  });
+}
+
 async function deliverOutboxRow(id: string): Promise<void> {
   const row = await prisma.notificationOutbox.findUnique({
     where: { id },
@@ -47,6 +93,7 @@ async function deliverOutboxRow(id: string): Promise<void> {
         select: {
           email: true,
           emailVerified: true,
+          telegramChatId: true,
         },
       },
     },
@@ -56,14 +103,7 @@ async function deliverOutboxRow(id: string): Promise<void> {
 
   const now = new Date();
   if (isPastRetryWindow(row.createdAt, now)) {
-    await prisma.notificationOutbox.update({
-      where: { id },
-      data: {
-        status: "dead",
-        lastError: truncateError("max_retry_age"),
-        nextAttemptAt: null,
-      },
-    });
+    await markDead(id, row.attemptCount, "max_retry_age");
     return;
   }
 
@@ -71,32 +111,51 @@ async function deliverOutboxRow(id: string): Promise<void> {
   try {
     payload = JSON.parse(row.payloadJson) as NotificationPayload;
   } catch {
-    await prisma.notificationOutbox.update({
-      where: { id },
-      data: {
-        status: "dead",
-        lastError: truncateError("invalid_payload"),
-        nextAttemptAt: null,
-      },
+    await markDead(id, row.attemptCount, "invalid_payload");
+    return;
+  }
+
+  if (row.channel === "telegram") {
+    const chatId = row.user.telegramChatId?.trim();
+    if (!chatId) {
+      await markDead(id, row.attemptCount + 1, "telegram_not_linked");
+      return;
+    }
+    const rendered = renderNotificationTelegram(
+      row.eventType as NotificationEventType,
+      payload,
+      appOrigin(),
+    );
+    const result = await sendTelegramMessage({
+      chatId,
+      text: rendered.text,
     });
+    if (result.ok) {
+      await prisma.notificationOutbox.update({
+        where: { id },
+        data: {
+          status: "sent",
+          sentAt: now,
+          attemptCount: row.attemptCount + 1,
+          nextAttemptAt: null,
+          lastError: null,
+        },
+      });
+      return;
+    }
+    await markFailed(
+      id,
+      row.attemptCount + 1,
+      row.createdAt,
+      result.error,
+      now,
+    );
     return;
   }
 
   const email = row.user.email?.trim() ?? "";
-  if (
-    !row.user.emailVerified ||
-    !email ||
-    isSyntheticClientEmail(email)
-  ) {
-    await prisma.notificationOutbox.update({
-      where: { id },
-      data: {
-        status: "dead",
-        lastError: truncateError("recipient_email_unverified"),
-        attemptCount: row.attemptCount + 1,
-        nextAttemptAt: null,
-      },
-    });
+  if (!row.user.emailVerified || !email || isSyntheticClientEmail(email)) {
+    await markDead(id, row.attemptCount + 1, "recipient_email_unverified");
     return;
   }
 
@@ -126,30 +185,13 @@ async function deliverOutboxRow(id: string): Promise<void> {
     return;
   }
 
-  const attemptCount = row.attemptCount + 1;
-  const retryAt = nextRetryAt(attemptCount, now);
-  if (isPastRetryWindow(row.createdAt, retryAt)) {
-    await prisma.notificationOutbox.update({
-      where: { id },
-      data: {
-        status: "dead",
-        attemptCount,
-        lastError: truncateError(result.error),
-        nextAttemptAt: null,
-      },
-    });
-    return;
-  }
-
-  await prisma.notificationOutbox.update({
-    where: { id },
-    data: {
-      status: "failed",
-      attemptCount,
-      lastError: truncateError(result.error),
-      nextAttemptAt: retryAt,
-    },
-  });
+  await markFailed(
+    id,
+    row.attemptCount + 1,
+    row.createdAt,
+    result.error,
+    now,
+  );
 }
 
 export async function enqueueAndSendEmailNotification(options: {
@@ -193,6 +235,55 @@ export async function enqueueAndSendEmailNotification(options: {
 
   await deliverOutboxRow(row.id);
   return { outboxId: row.id };
+}
+
+export async function enqueueAndSendTelegramNotification(options: {
+  recipientUserId: string;
+  bookingId: string;
+  eventType: NotificationEventType;
+  payload: NotificationPayload;
+}): Promise<{ outboxId: string } | { skipped: string }> {
+  const enabled = await isTelegramNotificationEnabled(
+    options.recipientUserId,
+    options.eventType,
+  );
+  if (!enabled) {
+    return { skipped: "pref_disabled" };
+  }
+
+  const recipient = await prisma.user.findUnique({
+    where: { id: options.recipientUserId },
+    select: { telegramChatId: true },
+  });
+  if (!recipient?.telegramChatId) {
+    return { skipped: "telegram_not_linked" };
+  }
+
+  const row = await prisma.notificationOutbox.create({
+    data: {
+      userId: options.recipientUserId,
+      bookingId: options.bookingId,
+      eventType: options.eventType,
+      channel: "telegram",
+      status: "pending",
+      nextAttemptAt: new Date(),
+      payloadJson: JSON.stringify(options.payload),
+    },
+    select: { id: true },
+  });
+
+  await deliverOutboxRow(row.id);
+  return { outboxId: row.id };
+}
+
+async function enqueueChannels(options: {
+  recipientUserId: string;
+  bookingId: string;
+  eventType: NotificationEventType;
+  payload: NotificationPayload;
+}): Promise<void> {
+  await enqueueAndSendEmailNotification(options);
+  await enqueueAndSendTelegramNotification(options);
 }
 
 export async function processNotificationOutbox(
@@ -311,7 +402,7 @@ export async function notifyBookingCreated(bookingId: string): Promise<void> {
   const clientLocale =
     booking.client.preferredLocale === "uk" ? "uk" : "en";
 
-  await enqueueAndSendEmailNotification({
+  await enqueueChannels({
     recipientUserId: booking.masseur.id,
     bookingId: booking.id,
     eventType: "booking_created",
@@ -323,7 +414,7 @@ export async function notifyBookingCreated(bookingId: string): Promise<void> {
     }),
   });
 
-  await enqueueAndSendEmailNotification({
+  await enqueueChannels({
     recipientUserId: booking.client.id,
     bookingId: booking.id,
     eventType: "booking_confirmed",
@@ -346,7 +437,7 @@ export async function notifyClientCancelledBooking(
   const masseurLocale =
     booking.masseur.preferredLocale === "uk" ? "uk" : "en";
 
-  await enqueueAndSendEmailNotification({
+  await enqueueChannels({
     recipientUserId: booking.masseur.id,
     bookingId: booking.id,
     eventType: "booking_cancelled_by_client",
@@ -369,7 +460,7 @@ export async function notifyMasseurCancelledBooking(
   const clientLocale =
     booking.client.preferredLocale === "uk" ? "uk" : "en";
 
-  await enqueueAndSendEmailNotification({
+  await enqueueChannels({
     recipientUserId: booking.client.id,
     bookingId: booking.id,
     eventType: "booking_cancelled_by_masseur",
@@ -399,7 +490,7 @@ export async function enqueueClientDeletedCancellationNotice(
       ? displayName(booking.client, masseurLocale)
       : booking.clientName.trim()) || "Client";
 
-  await enqueueAndSendEmailNotification({
+  await enqueueChannels({
     recipientUserId: booking.masseur.id,
     bookingId: booking.id,
     eventType: "booking_cancelled_client_deleted",
