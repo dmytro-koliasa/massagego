@@ -44,3 +44,45 @@ export function pickLastCancellationsBySlotStart(
 export function lastCancellationSince(now = new Date()): Date {
   return cancelledBookingEligibleBefore(now);
 }
+
+/** Max rows on the masseur dashboard recent-cancellations list. */
+export const RECENT_CANCELLATIONS_LIMIT = 20;
+
+export type RecentCancellationRow = {
+  id: string;
+  slotStart: Date | null;
+  cancelledAt: Date | null;
+  clientName: string;
+  cancelReason: string | null;
+  cancelReasonText: string | null;
+};
+
+export type RecentCancellationDto = {
+  id: string;
+  slotStart: string;
+  cancelledAt: string;
+  clientName: string;
+  reason: string;
+  reasonText: string | null;
+};
+
+/** Map DB rows already filtered to client cancels in the retention window. */
+export function mapRecentCancellations(
+  rows: RecentCancellationRow[],
+  limit = RECENT_CANCELLATIONS_LIMIT,
+): RecentCancellationDto[] {
+  const out: RecentCancellationDto[] = [];
+  for (const row of rows) {
+    if (!row.slotStart || !row.cancelledAt || !row.cancelReason) continue;
+    out.push({
+      id: row.id,
+      slotStart: row.slotStart.toISOString(),
+      cancelledAt: row.cancelledAt.toISOString(),
+      clientName: row.clientName,
+      reason: row.cancelReason,
+      reasonText: row.cancelReasonText,
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
+}

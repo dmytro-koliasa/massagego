@@ -24,6 +24,7 @@ import {
 import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
+import { MasseurRecentCancellations } from '@/components/masseur-recent-cancellations';
 import { CityAutocomplete } from '@/components/city-autocomplete';
 import {
 	BOOKING_LEAD_HOURS_OPTIONS,
@@ -976,6 +977,8 @@ export function DashboardView({ profile }: { profile: Profile }) {
 					ref={availabilityRef}
 					massageTypes={massageTypes}
 				/>
+
+				<MasseurRecentCancellations timeZone={timezone} />
 
 				<DeleteAccountSection portal='masseur' />
 			</div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   lastCancellationSince,
+  mapRecentCancellations,
   pickLastCancellationsBySlotStart,
 } from "@/lib/last-cancellation";
 
@@ -69,5 +70,35 @@ describe("lastCancellationSince", () => {
     expect(lastCancellationSince(now).toISOString()).toBe(
       "2026-11-10T12:00:00.000Z",
     );
+  });
+});
+
+describe("mapRecentCancellations", () => {
+  it("maps and caps rows at the limit", () => {
+    const rows = Array.from({ length: 3 }, (_, index) => ({
+      id: `b${index}`,
+      slotStart: new Date(`2026-11-20T1${index}:00:00.000Z`),
+      cancelledAt: new Date(`2026-11-17T1${index}:00:00.000Z`),
+      clientName: `Client ${index}`,
+      cancelReason: "changed_mind",
+      cancelReasonText: null,
+    }));
+    expect(mapRecentCancellations(rows, 2)).toHaveLength(2);
+    expect(mapRecentCancellations(rows, 2)[0]?.id).toBe("b0");
+  });
+
+  it("skips incomplete rows", () => {
+    expect(
+      mapRecentCancellations([
+        {
+          id: "x",
+          slotStart: null,
+          cancelledAt: new Date("2026-11-17T12:00:00.000Z"),
+          clientName: "A",
+          cancelReason: "other",
+          cancelReasonText: "x",
+        },
+      ]),
+    ).toEqual([]);
   });
 });

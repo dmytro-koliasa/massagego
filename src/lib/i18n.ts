@@ -129,6 +129,12 @@ export const dictionaries = {
 		cancelReason_other: 'Other',
 		cancelReason_client_account_deleted: 'Client deleted their account',
 		availabilityLastCancellation: 'Last cancellation',
+		recentCancellationsTitle: 'Recent cancellations',
+		recentCancellationsSupport:
+			'Client cancellations from the last 7 days (up to 20).',
+		recentCancellationsEmpty: 'No client cancellations in the last 7 days.',
+		recentCancellationsLoadError: 'Could not load recent cancellations.',
+		recentCancellationsCancelledAt: 'Cancelled: {when}',
 		bookingThaiMultiSlotHint:
 			'Thai massage usually needs more than one consecutive hour. Consider selecting neighbouring slots.',
 		bookingThaiCancelNeighborHint:
@@ -630,6 +636,12 @@ export const dictionaries = {
 		cancelReason_other: 'Інше',
 		cancelReason_client_account_deleted: 'Клієнт видалив обліковий запис',
 		availabilityLastCancellation: 'Останнє скасування',
+		recentCancellationsTitle: 'Недавні скасування',
+		recentCancellationsSupport:
+			'Скасування клієнтами за останні 7 днів (до 20).',
+		recentCancellationsEmpty: 'За останні 7 днів скасувань клієнтами немає.',
+		recentCancellationsLoadError: 'Не вдалося завантажити недавні скасування.',
+		recentCancellationsCancelledAt: 'Скасовано: {when}',
 		bookingThaiMultiSlotHint:
 			'Для тайського масажу зазвичай потрібно більше однієї години підряд. Оберіть сусідні слоти.',
 		bookingThaiCancelNeighborHint:
