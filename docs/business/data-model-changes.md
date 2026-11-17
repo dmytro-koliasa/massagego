@@ -76,7 +76,7 @@ The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dm
 - Lead time check for client bookings, window check for clients, and the removal of the 60-minute grace in the client booking API ([BR-002](decisions.md#br-002), [BR-003](decisions.md#br-003)).
 - Cancellation cutoff check and the mandatory reason for client cancellations ([BR-004](decisions.md#br-004)).
 - Server rejection of availability changes in the past and outside the working window ([BR-007](decisions.md#br-007)).
-- Masseur list: visibility rule, card label, ordering, default city, and removal of the masseur email from the response ([BR-010](decisions.md#br-010), [BR-017](decisions.md#br-017)).
+- Masseur list: visibility rule, card label, ordering, default city, and removal of the masseur email from the response ([BR-010](decisions.md#br-010), [BR-017](decisions.md#br-017)) — **Implemented** in PR 11 (`feat/masseur-catalog`).
 - No overlapping bookings per client, limit of 30, name and phone from the account ([BR-008](decisions.md#br-008)).
 - Account deletion with anonymisation, automatic cancellation for clients, refusal for masseurs with future bookings ([BR-011](decisions.md#br-011)).
 - Thai massage toast hints in the booking and cancellation screens ([BR-014](decisions.md#br-014)).

@@ -52,15 +52,18 @@ type ClientBookingProfile = {
 
 export function MasseurBookingView({
   masseur,
+  listed = true,
   clientProfile,
 }: {
   masseur: MasseurProfile;
+  listed?: boolean;
   clientProfile?: ClientBookingProfile;
 }) {
   const { t, locale } = useLanguage();
   const accountName = clientProfile?.name?.trim() || "";
   const accountPhone = clientProfile?.phone?.trim() || "";
   const profileComplete = Boolean(accountName && accountPhone);
+  const bookingEnabled = listed && profileComplete;
   const [massageType, setMassageType] = useState("");
   const [selectedSlotStarts, setSelectedSlotStarts] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -111,6 +114,10 @@ export function MasseurBookingView({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!listed) {
+      toast.error(t.masseurProfileNotReady);
+      return;
+    }
     if (!profileComplete) {
       toast.error(t.bookingProfileIncomplete);
       return;
@@ -169,6 +176,8 @@ export function MasseurBookingView({
           toast.error(t.bookingMissingFields);
         } else if (data.error === "CLIENT_PROFILE_INCOMPLETE") {
           toast.error(t.bookingProfileIncomplete);
+        } else if (data.error === "MASSEUR_NOT_READY") {
+          toast.error(t.masseurProfileNotReady);
         } else if (data.error === "invalid_massage_type") {
           toast.error(t.bookingMassageTypeRequired);
         } else if (data.error === "unauthorized" || data.error === "forbidden") {
@@ -276,128 +285,138 @@ export function MasseurBookingView({
           <MasseurGallery initialImages={masseur.galleryImages} />
         ) : null}
 
-        <section className="mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6">
-          <div className="mb-4 text-left">
-            <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">
-              {t.bookingSelectSlot}
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              {t.bookingSelectSlotSupport}
-            </p>
-          </div>
-
-          <ClientBookingCalendar
-            masseurId={masseur.id}
-            selectedStarts={selectedSlotStarts}
-            onChangeSelected={handleSelectedSlotsChange}
-            refreshKey={calendarRefreshKey}
-            onRulesLoaded={(rules) =>
-              setCancelCutoffHours(rules.cancelCutoffHours)
-            }
-          />
-        </section>
-
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          autoComplete="on"
-          className="mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6"
-        >
-          <div className="mb-4 text-left">
-            <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">
-              {t.bookingTitle}
-            </h2>
-            <p className="mt-1 text-sm text-muted">{t.bookingSupport}</p>
-          </div>
-
-          <div className="space-y-4">
-              {hasMassageTypes ? (
-                <label className="block text-left">
-                  <span className="mb-1.5 block text-sm text-muted">
-                    {t.bookingMassageType}
-                  </span>
-                  <select
-                    required
-                    value={massageType}
-                    onChange={(event) =>
-                      handleMassageTypeChange(event.target.value)
-                    }
-                    className="h-12 w-full text-foreground"
-                  >
-                    <option value="">{t.bookingMassageTypePlaceholder}</option>
-                    {masseur.massageTypes.map((id) => (
-                      <option key={id} value={id}>
-                        {getMassageTypeLabel(id, locale)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-left">
-                  <span className="mb-1.5 block text-sm text-muted">
-                    {t.bookingClientName}
-                  </span>
-                  <input
-                    type="text"
-                    name="name"
-                    value={accountName}
-                    readOnly
-                    className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
-                  />
-                </label>
-
-                <label className="block text-left">
-                  <span className="mb-1.5 block text-sm text-muted">
-                    {t.bookingClientPhone}
-                  </span>
-                  <input
-                    type="tel"
-                    name="tel"
-                    value={accountPhone}
-                    readOnly
-                    className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
-                  />
-                </label>
+        {!listed ? (
+          <section className="mt-8 rounded-2xl border border-dashed border-surface-border bg-surface p-6 sm:p-8">
+            <p className="text-base text-muted">{t.masseurProfileNotReady}</p>
+          </section>
+        ) : (
+          <>
+            <section className="mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6">
+              <div className="mb-4 text-left">
+                <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">
+                  {t.bookingSelectSlot}
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  {t.bookingSelectSlotSupport}
+                </p>
               </div>
 
-              {!profileComplete ? (
-                <p className="text-sm text-accent">{t.bookingProfileIncomplete}</p>
-              ) : null}
+              <ClientBookingCalendar
+                masseurId={masseur.id}
+                selectedStarts={selectedSlotStarts}
+                onChangeSelected={handleSelectedSlotsChange}
+                refreshKey={calendarRefreshKey}
+                onRulesLoaded={(rules) =>
+                  setCancelCutoffHours(rules.cancelCutoffHours)
+                }
+              />
+            </section>
 
-              <label className="block text-left">
-                <span className="mb-1.5 block text-sm text-muted">
-                  {t.bookingNote}
-                </span>
-                <textarea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  rows={4}
-                  maxLength={NOTE_MAX}
-                  placeholder={t.bookingNotePlaceholder}
-                  className="w-full resize-y rounded-lg border border-surface-border bg-background/70 px-4 py-3 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
-                />
-              </label>
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              autoComplete="on"
+              className="mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6"
+            >
+              <div className="mb-4 text-left">
+                <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">
+                  {t.bookingTitle}
+                </h2>
+                <p className="mt-1 text-sm text-muted">{t.bookingSupport}</p>
+              </div>
 
-              {showNonCancellableNotice ? (
-                <p className="text-sm text-accent">
-                  {t.bookingCancelNonCancellableNotice.replaceAll(
-                    "{n}",
-                    String(cancelCutoffHours),
-                  )}
-                </p>
-              ) : null}
+              <div className="space-y-4">
+                {hasMassageTypes ? (
+                  <label className="block text-left">
+                    <span className="mb-1.5 block text-sm text-muted">
+                      {t.bookingMassageType}
+                    </span>
+                    <select
+                      required
+                      value={massageType}
+                      onChange={(event) =>
+                        handleMassageTypeChange(event.target.value)
+                      }
+                      className="h-12 w-full text-foreground"
+                    >
+                      <option value="">{t.bookingMassageTypePlaceholder}</option>
+                      {masseur.massageTypes.map((id) => (
+                        <option key={id} value={id}>
+                          {getMassageTypeLabel(id, locale)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
 
-              <button
-                type="submit"
-                disabled={pending || !profileComplete}
-                className="h-12 rounded-lg bg-accent px-6 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-              >
-                {pending ? t.authPleaseWait : t.bookingSubmit}
-              </button>
-          </div>
-        </form>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block text-left">
+                    <span className="mb-1.5 block text-sm text-muted">
+                      {t.bookingClientName}
+                    </span>
+                    <input
+                      type="text"
+                      name="name"
+                      value={accountName}
+                      readOnly
+                      className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
+                    />
+                  </label>
+
+                  <label className="block text-left">
+                    <span className="mb-1.5 block text-sm text-muted">
+                      {t.bookingClientPhone}
+                    </span>
+                    <input
+                      type="tel"
+                      name="tel"
+                      value={accountPhone}
+                      readOnly
+                      className="h-12 w-full rounded-lg border border-surface-border bg-background/50 px-4 text-foreground outline-none"
+                    />
+                  </label>
+                </div>
+
+                {!profileComplete ? (
+                  <p className="text-sm text-accent">
+                    {t.bookingProfileIncomplete}
+                  </p>
+                ) : null}
+
+                <label className="block text-left">
+                  <span className="mb-1.5 block text-sm text-muted">
+                    {t.bookingNote}
+                  </span>
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={4}
+                    maxLength={NOTE_MAX}
+                    placeholder={t.bookingNotePlaceholder}
+                    className="w-full resize-y rounded-lg border border-surface-border bg-background/70 px-4 py-3 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+                  />
+                </label>
+
+                {showNonCancellableNotice ? (
+                  <p className="text-sm text-accent">
+                    {t.bookingCancelNonCancellableNotice.replaceAll(
+                      "{n}",
+                      String(cancelCutoffHours),
+                    )}
+                  </p>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={pending || !bookingEnabled}
+                  className="h-12 rounded-lg bg-accent px-6 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {pending ? t.authPleaseWait : t.bookingSubmit}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </main>
   );

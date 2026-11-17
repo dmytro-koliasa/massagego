@@ -15,12 +15,14 @@ export type MasseurCard = {
 	slug: string | null;
 	nameEn: string | null;
 	nameUk: string | null;
-	email: string;
 	image: string | null;
 	descriptionEn: string | null;
 	descriptionUk: string | null;
 	city: string | null;
 	createdAt: string;
+	nearestFreeAt: string | null;
+	hasFreeTime: boolean;
+	availabilityLabel: string;
 };
 
 type ViewMode = 'grid' | 'table';
@@ -31,6 +33,8 @@ type LocalizedMasseur = {
 	name: string;
 	description: string;
 	image: string | null;
+	hasFreeTime: boolean;
+	availabilityLabel: string;
 };
 
 const MASSEURS_PAGE_SIZE = 9;
@@ -145,6 +149,8 @@ export function ClientMasseursView() {
 					name,
 					description,
 					image: masseur.image,
+					hasFreeTime: masseur.hasFreeTime,
+					availabilityLabel: masseur.availabilityLabel,
 				};
 			}),
 		[masseurs, locale, t.masseurFallbackName],
@@ -270,9 +276,20 @@ export function ClientMasseursView() {
 									>
 										<div className='flex items-center gap-4'>
 											<Avatar name={masseur.name} image={masseur.image} />
-											<h3 className='min-w-0 truncate font-display text-xl tracking-[-0.02em] text-foreground'>
-												{masseur.name}
-											</h3>
+											<div className='min-w-0 flex-1'>
+												<h3 className='truncate font-display text-xl tracking-[-0.02em] text-foreground'>
+													{masseur.name}
+												</h3>
+												<p
+													className={`mt-1 text-left text-sm font-medium ${
+														masseur.hasFreeTime
+															? 'text-[color:var(--accent)]'
+															: 'text-red-700'
+													}`}
+												>
+													{masseur.availabilityLabel}
+												</p>
+											</div>
 										</div>
 										{masseur.description ? (
 											<p className='mt-5 text-left text-sm leading-relaxed text-muted'>
@@ -293,6 +310,9 @@ export function ClientMasseursView() {
 										</th>
 										<th className='px-4 py-3 text-xs font-medium uppercase tracking-[0.08em] text-muted'>
 											{t.profileName}
+										</th>
+										<th className='px-4 py-3 text-xs font-medium uppercase tracking-[0.08em] text-muted'>
+											{t.masseursAvailabilityColumn}
 										</th>
 										<th className='px-4 py-3 text-xs font-medium uppercase tracking-[0.08em] text-muted'>
 											{t.profileDescription}
@@ -320,6 +340,15 @@ export function ClientMasseursView() {
 												>
 													{masseur.name}
 												</Link>
+											</td>
+											<td
+												className={`px-4 py-3 text-sm font-medium ${
+													masseur.hasFreeTime
+														? 'text-[color:var(--accent)]'
+														: 'text-red-700'
+												}`}
+											>
+												{masseur.availabilityLabel}
 											</td>
 											<td className='max-w-xl px-4 py-3 text-sm leading-relaxed text-muted'>
 												<Link

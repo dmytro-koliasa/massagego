@@ -5,6 +5,7 @@ import {
   resolveBookingSettings,
 } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
+import { isMasseurListed } from "@/lib/masseur-catalog";
 import {
   clientBookingWindowExclusiveEnd,
   isClientBookableSlot,
@@ -44,15 +45,27 @@ export async function GET(request: Request, context: RouteContext) {
       },
       select: {
         id: true,
+        nameEn: true,
+        nameUk: true,
+        cityPlaceId: true,
+        address: true,
         timezone: true,
         bookingLeadHours: true,
         cancelCutoffHours: true,
         phone: true,
+        _count: { select: { availabilitySlots: true } },
       },
     });
 
     if (!masseur) {
       return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
+    }
+
+    if (!isMasseurListed(masseur)) {
+      return NextResponse.json(
+        { error: "MASSEUR_NOT_READY" },
+        { status: 409 },
+      );
     }
 
     const timezone = resolveTimeZone(masseur.timezone);

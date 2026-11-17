@@ -15,6 +15,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
+import { isMasseurListed } from "@/lib/masseur-catalog";
 import {
   alignToHour,
   isOutsideClientLeadTime,
@@ -208,14 +209,27 @@ export async function POST(request: Request) {
       },
       select: {
         id: true,
+        nameEn: true,
+        nameUk: true,
+        cityPlaceId: true,
+        address: true,
+        phone: true,
         massageTypes: true,
         timezone: true,
         bookingLeadHours: true,
+        _count: { select: { availabilitySlots: true } },
       },
     });
 
     if (!masseur) {
       return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
+    }
+
+    if (!isMasseurListed(masseur)) {
+      return NextResponse.json(
+        { error: "MASSEUR_NOT_READY" },
+        { status: 409 },
+      );
     }
 
     const timeZone = resolveTimeZone(masseur.timezone);

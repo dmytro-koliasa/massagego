@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth/client";
+import { isMasseurListed } from "@/lib/masseur-catalog";
 import { portalHomePath } from "@/lib/portals";
 import { userHasPortal } from "@/lib/portals.server";
 import { parseMassageTypes } from "@/lib/massage-types";
@@ -21,7 +22,9 @@ const masseurSelect = {
   descriptionUk: true,
   massageTypes: true,
   city: true,
+  cityPlaceId: true,
   address: true,
+  phone: true,
   galleryImages: {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: {
@@ -31,6 +34,7 @@ const masseurSelect = {
       height: true,
     },
   },
+  _count: { select: { availabilitySlots: true } },
 } satisfies Prisma.UserSelect;
 
 export default async function MasseurBookingPage({ params }: PageProps) {
@@ -66,7 +70,15 @@ export default async function MasseurBookingPage({ params }: PageProps) {
     redirect(`/client/masseur/${masseur.slug}`);
   }
 
-  const { galleryImages, ...profile } = masseur;
+  const { galleryImages, _count, cityPlaceId, phone, ...profile } = masseur;
+  const listed = isMasseurListed({
+    nameEn: masseur.nameEn,
+    nameUk: masseur.nameUk,
+    cityPlaceId,
+    address: masseur.address,
+    phone,
+    _count,
+  });
 
   const clientUser = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -85,6 +97,7 @@ export default async function MasseurBookingPage({ params }: PageProps) {
         massageTypes: parseMassageTypes(profile.massageTypes),
         galleryImages,
       }}
+      listed={listed}
       clientProfile={{
         name: clientUser?.name ?? null,
         nameEn: clientUser?.nameEn ?? null,
