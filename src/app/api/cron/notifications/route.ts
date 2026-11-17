@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeCron } from "@/lib/cron-auth";
 import { processNotificationOutbox } from "@/lib/notifications/outbox";
-
-function authorizeCron(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) {
-    // Local/dev without secret: allow only outside production.
-    return process.env.NODE_ENV !== "production";
-  }
-  const header = request.headers.get("authorization");
-  return header === `Bearer ${secret}`;
-}
 
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {

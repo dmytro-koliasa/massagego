@@ -19,9 +19,9 @@ export async function requirePortalUser(): Promise<
   if (clientId) {
     const user = await prisma.user.findUnique({
       where: { id: clientId },
-      select: { portal: true },
+      select: { portal: true, deletedAt: true },
     });
-    if (user?.portal === "client") {
+    if (user?.portal === "client" && !user.deletedAt) {
       return { ok: true, userId: clientId, portal: "client" };
     }
   }
@@ -29,9 +29,9 @@ export async function requirePortalUser(): Promise<
   if (masseurId) {
     const user = await prisma.user.findUnique({
       where: { id: masseurId },
-      select: { portal: true },
+      select: { portal: true, deletedAt: true },
     });
-    if (user?.portal === "masseur") {
+    if (user?.portal === "masseur" && !user.deletedAt) {
       return { ok: true, userId: masseurId, portal: "masseur" };
     }
   }

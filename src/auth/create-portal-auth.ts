@@ -98,14 +98,15 @@ function createPortalPrismaAdapter(portal: Portal): Adapter {
       const user = await prisma.user.findUnique({
         where: { email_portal: { email, portal } },
       });
-      return user ? toAdapterUser(user) : null;
+      if (!user || user.deletedAt) return null;
+      return toAdapterUser(user);
     },
     getUserByAccount: async ({ provider, providerAccountId }) => {
       const account = await prisma.account.findFirst({
         where: {
           provider,
           providerAccountId,
-          user: { portal },
+          user: { portal, deletedAt: null },
         },
         include: { user: true },
       });
@@ -273,7 +274,7 @@ export function createPortalAuth(portal: Portal) {
         }
 
         const existing = await prisma.user.findFirst({
-          where: { id: token.sub, portal },
+          where: { id: token.sub, portal, deletedAt: null },
           select: {
             id: true,
             name: true,

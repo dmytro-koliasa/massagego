@@ -39,11 +39,11 @@ const copy = {
       },
       {
         h: '7. Retention',
-        p: 'Cancelled bookings are removed after about 7 days; completed session history is kept for about 3 months, subject to future financial or legal holds. Account deletion and fuller retention rules are being implemented separately and will be described here when available.',
+        p: 'Cancelled bookings without a retention hold are hard-deleted about 7 days after cancellation. Completed bookings without a hold are hard-deleted about 3 months after the session start. Self-service account deletion anonymises your profile (name, phone, email, photos, address, descriptions), ends sessions and Telegram linking, and cancels a client’s future bookings with notice to masseurs. Copies in hosting backups may remain until those backups expire; that retention is reviewed under our legal process (P-2) and is not purged by the application job.',
       },
       {
         h: '8. Your choices',
-        p: 'You can update profile data, notification preferences, disconnect Telegram, and request support for access or erasure where applicable under GDPR or other laws that may apply. Formal legal review of retention and rights wording is planned before production use with real users.',
+        p: 'You can update profile data, notification preferences, disconnect Telegram, delete your account in the profile, and request support for access or erasure where applicable under GDPR or other laws that may apply. Formal legal review of retention and rights wording is planned before production use with real users.',
       },
       {
         h: '9. Security',
@@ -88,11 +88,11 @@ const copy = {
       },
       {
         h: '7. Зберігання',
-        p: 'Скасовані бронювання видаляються приблизно через 7 днів; історія завершених сеансів зберігається близько 3 місяців, з урахуванням майбутніх фінансових чи юридичних обмежень. Видалення акаунта й повні правила зберігання впроваджуються окремо й будуть описані тут.',
+        p: 'Скасовані бронювання без hold видаляються приблизно через 7 днів після скасування. Завершені бронювання без hold — приблизно через 3 місяці після початку сеансу. Самостійне видалення акаунта анонімізує профіль (ім’я, телефон, email, фото, адресу, описи), завершує сесії й Telegram і скасовує майбутні бронювання клієнта з повідомленням масажистам. Копії в резервних копіях хостингу можуть лишатися до закінчення їхнього строку; це розглядається в юридичному процесі (P-2) і не чиститься job застосунку.',
       },
       {
         h: '8. Ваші можливості',
-        p: 'Ви можете оновлювати профіль, налаштування сповіщень, від’єднувати Telegram і звертатися щодо доступу чи видалення даних, якщо це передбачено GDPR чи іншими застосовними законами. Юридичний огляд формулювань заплановано до роботи з реальними користувачами.',
+        p: 'Ви можете оновлювати профіль, налаштування сповіщень, від’єднувати Telegram, видалити акаунт у профілі та звертатися щодо доступу чи видалення даних, якщо це передбачено GDPR чи іншими застосовними законами. Юридичний огляд формулювань заплановано до роботи з реальними користувачами.',
       },
       {
         h: '9. Безпека',

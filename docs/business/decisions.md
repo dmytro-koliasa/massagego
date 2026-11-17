@@ -64,8 +64,8 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
 | 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
-| 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
-| 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
+| 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | PR 14 (`feat/account-deletion-cleanup`) |
+| 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | PR 14 (`feat/account-deletion-cleanup`) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | [#11](https://github.com/dmytro-koliasa/massagego/pull/11) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | [#12](https://github.com/dmytro-koliasa/massagego/pull/12) |
@@ -366,7 +366,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** UI (delete account), API, DB (soft-delete fields / anonymisation job), existing rows unaffected.
 
-**Decision (Approved 2026-11-16, not implemented):**
+**Decision (Approved 2026-11-16); implementing in PR 14 (`feat/account-deletion-cleanup`).**
 
 *Account deletion (question 1, option B).* A user deletes their own account in the application. Personal data is erased or anonymised (name, phone, email, photo, address, description). Bookings that remain are kept for the other party's history, with the deleted person's name and phone replaced by "deleted user" and no phone number. The phone number becomes free for a new registration.
 

@@ -21,6 +21,7 @@ import {
 	MasseurAvailabilityCalendar,
 	type AvailabilityCalendarHandle,
 } from '@/components/masseur-availability-calendar';
+import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
 import { CityAutocomplete } from '@/components/city-autocomplete';
@@ -937,6 +938,8 @@ export function DashboardView({ profile }: { profile: Profile }) {
 					ref={availabilityRef}
 					massageTypes={massageTypes}
 				/>
+
+				<DeleteAccountSection portal='masseur' />
 			</div>
 
 			<div className='fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-background/90 py-3 backdrop-blur-md'>
