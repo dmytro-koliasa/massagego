@@ -1,3 +1,4 @@
+import "server-only";
 import { find } from "geo-tz";
 import { DEFAULT_MASSEUR_TIME_ZONE } from "@/lib/booking-constants";
 import { isValidIanaTimeZone } from "@/lib/timezone";
