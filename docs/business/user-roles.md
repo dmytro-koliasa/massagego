@@ -123,5 +123,5 @@ Client phone numbers are visible to a masseur only through bookings on their own
 | Masseur email returned to every client by `GET /api/masseurs` although not displayed | **Needs Decision** - see C-9 in [decisions.md](decisions.md#code-inconsistencies) |
 | Which masseurs are visible to clients | **Implemented** - [BR-010](decisions.md#br-010) (complete profile + availability history; see AR-9) |
 | Who may cancel, and when | **Needs Decision** - [BR-004](decisions.md#br-004) |
-| Notifying the counterpart of changes | **Needs Decision** - [BR-009](decisions.md#br-009) |
+| Notifying the counterpart of changes | **Implemented** (email, PR 12) - [BR-009](decisions.md#br-009); Telegram in PR 13 |
 | Account deletion and retention | **Needs Decision** - [BR-011](decisions.md#br-011) |

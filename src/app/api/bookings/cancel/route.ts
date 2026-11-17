@@ -11,6 +11,7 @@ import {
 } from "@/lib/http/rate-limit-response";
 import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
+import { notifyClientCancelledBooking } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -197,6 +198,12 @@ export async function POST(request: Request) {
           neighborHint = { type: "thai_neighbor" };
         }
       }
+    }
+
+    try {
+      await notifyClientCancelledBooking(booking.id);
+    } catch (notifyError) {
+      console.error("[bookings/cancel] notifyClientCancelledBooking", notifyError);
     }
 
     return NextResponse.json({

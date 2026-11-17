@@ -340,6 +340,26 @@ export const dictionaries = {
 		validationPatternMismatch: 'Please match the requested format.',
 		validationBadInput: 'Please enter a valid value.',
 		validationGeneric: 'Please correct this field.',
+		notifPageTitle: 'Notifications',
+		notifPageSupport:
+			'Choose which booking emails you want. Telegram will arrive in a later update.',
+		notifBack: 'Back',
+		notifLoading: 'Loading notification settings…',
+		notifLoadError: 'Could not load notification settings.',
+		notifSaveError: 'Could not save notification settings.',
+		notifSaveSuccess: 'Notification settings saved.',
+		notifChannelEmail: 'Email',
+		notifEmailLockedHint:
+			'Email stays on for this event until another channel (Telegram) is available.',
+		notifCriticalEmailRequired:
+			'This email notice cannot be turned off yet.',
+		notifEventBookingCreated: 'New booking (to you as masseur)',
+		notifEventCancelledByClient: 'Client cancelled a booking',
+		notifEventCancelledByMasseur: 'Masseur cancelled your booking',
+		notifEventCancelledClientDeleted:
+			'Booking cancelled because a client deleted their account',
+		notifEventBookingConfirmed: 'Booking confirmation',
+		notifNavLink: 'Notifications',
 	},
 	uk: {
 		heroAlt: 'Руки виконують спокійний, зосереджений масаж',
@@ -683,6 +703,26 @@ export const dictionaries = {
 		validationPatternMismatch: 'Будь ласка, дотримуйтеся потрібного формату.',
 		validationBadInput: 'Будь ласка, введіть коректне значення.',
 		validationGeneric: 'Будь ласка, виправте це поле.',
+		notifPageTitle: 'Сповіщення',
+		notifPageSupport:
+			'Оберіть, які листи про бронювання отримувати. Telegram з’явиться пізніше.',
+		notifBack: 'Назад',
+		notifLoading: 'Завантаження налаштувань сповіщень…',
+		notifLoadError: 'Не вдалося завантажити налаштування сповіщень.',
+		notifSaveError: 'Не вдалося зберегти налаштування сповіщень.',
+		notifSaveSuccess: 'Налаштування сповіщень збережено.',
+		notifChannelEmail: 'Email',
+		notifEmailLockedHint:
+			'Email для цієї події залишається увімкненим, доки не з’явиться інший канал (Telegram).',
+		notifCriticalEmailRequired:
+			'Це email-сповіщення поки не можна вимкнути.',
+		notifEventBookingCreated: 'Нове бронювання (вам як масажисту)',
+		notifEventCancelledByClient: 'Клієнт скасував бронювання',
+		notifEventCancelledByMasseur: 'Масажист скасував ваше бронювання',
+		notifEventCancelledClientDeleted:
+			'Бронювання скасовано через видалення акаунта клієнта',
+		notifEventBookingConfirmed: 'Підтвердження бронювання',
+		notifNavLink: 'Сповіщення',
 	},
 } as const;
 

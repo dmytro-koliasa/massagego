@@ -3,6 +3,7 @@ import { auth } from "@/auth/masseur";
 import { SLOT_MS } from "@/lib/booking-constants";
 import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
+import { notifyMasseurCancelledBooking } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingResolveSchema,
@@ -45,14 +46,14 @@ export async function POST(request: Request) {
     const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
     const keepAvailable = parsed.data.availability === "available";
 
-    await prisma.$transaction(async (tx) => {
+    const cancelledBookingId = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findFirst({
         where: {
           masseurId: gate.userId,
           slotStart,
           status: { not: "cancelled" },
         },
-        select: { id: true },
+        select: { id: true, clientUserId: true },
       });
 
       if (!booking) {
@@ -91,7 +92,20 @@ export async function POST(request: Request) {
           },
         });
       }
+
+      return booking.clientUserId ? booking.id : null;
     });
+
+    if (cancelledBookingId) {
+      try {
+        await notifyMasseurCancelledBooking(cancelledBookingId);
+      } catch (notifyError) {
+        console.error(
+          "[masseur/bookings/resolve] notifyMasseurCancelledBooking",
+          notifyError,
+        );
+      }
+    }
 
     return NextResponse.json({
       ok: true,

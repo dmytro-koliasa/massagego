@@ -171,6 +171,14 @@ export function ClientMasseursView() {
 					<h1 className='font-display text-4xl tracking-[-0.03em] text-foreground sm:text-5xl'>
 						{t.clientPageTitle}
 					</h1>
+					<p>
+						<Link
+							href='/client/notifications'
+							className='text-sm font-medium text-accent underline-offset-4 hover:underline'
+						>
+							{t.notifNavLink}
+						</Link>
+					</p>
 				</div>
 
 				<ClientProfileCard />

@@ -27,9 +27,9 @@
 |---|---|---|
 | P-1 | Verify the production database: the migration `20261115120000_booking_no_overlap` (needs the `btree_gist` extension), overlapping active bookings, and the production server timezone. Not verified today. | the first deployment to production |
 | P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. | the first release to real users |
-| P-3 | Choose the email provider and set up sending (domain, sender, templates). | PR 8 (verification), PR 9, PR 12 |
+| P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`); domain/sender still need production setup. | PR 8 (verification), PR 9, PR 12 |
 | P-4 | Create the Telegram bot and decide how its token is stored. | PR 13 |
-| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Partially addressed (PR 9):** rate-limit counters live in PostgreSQL (`RateLimitBucket`). Scheduled jobs for PR 12/14 still open. | PR 9, PR 12, PR 14 |
+| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed for rate limits (PR 9) and notification retries (PR 12):** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron every 5 minutes on `/api/cron/notifications`. Cleanup job for PR 14 still open. | PR 9, PR 12, PR 14 |
 | P-6 | Decide how the shared test database is provided in continuous integration (there is no CI today). | PR 1 onwards (recommended) |
 
 ## 3. Order and dependencies
@@ -47,7 +47,7 @@
 | 8 | Registration and profile fields | BR-017, BR-009 (fields), BR-004 (phone) | 7 |
 | 9 | Password reset and rate limits | BR-019, BR-020 | 8 |
 | 10 | Image upload checks | BR-022 | none |
-| 11 | Masseur catalog | BR-010, BR-017, C-9 | 2, 4, 8 |
+| 11 | Masseur catalog ([#16](https://github.com/dmytro-koliasa/massagego/pull/16)) | BR-010, BR-017, C-9 | 2, 4, 8 |
 | 12 | Email notifications | BR-009 | 1, 2, 8 |
 | 13 | Telegram and phone confirmation | BR-009, BR-023 | 12 |
 | 14 | Account deletion and data cleanup | BR-011, BR-018 | 1, 12 |
@@ -205,7 +205,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 11 - Masseur catalog
 
-**Status:** implementing on branch `feat/masseur-catalog` (groomed 2026-11-17).
+**Status:** merged ([#16](https://github.com/dmytro-koliasa/massagego/pull/16), 2026-11-17).
 
 **Groomed decisions:**
 - Listed only if complete profile (`nameEn` or `nameUk`, `cityPlaceId`, `address`, `phone` non-empty) **and** at least one `AvailabilitySlot` row ever; legacy `city` alone is not enough.
@@ -220,11 +220,20 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 12 - Email notifications
 
+**Status:** implementing on branch `feat/email-notifications` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- Provider: **Resend** (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`); local default remains `log`.
+- Retries: **Vercel Cron** every **5 minutes** → `/api/cron/notifications` with `Authorization: Bearer CRON_SECRET`; Postgres `NotificationOutbox`; backoff **1 → 5 → 15 → 30** minutes; max age **24 h** then `dead`.
+- Settings: separate **Notifications** page (client + masseur); **email toggles only** in this PR (Telegram column in PR 13).
+- Until Telegram: email for critical events (2–4 + confirmation 5) **cannot be turned off**; event 1 (new booking → masseur) may be off.
+- Copy: short transactional subject + 3–5 lines plain + simple HTML; no phones; masseur TZ label; `preferredLocale`.
+- Delivery: **always create an outbox row**, then attempt send immediately; cron retries `pending`/`failed`.
+- Event 4: type + template + settings + `enqueueClientDeletedCancellationNotice` exported; **enqueue call site in PR 14**.
+
 **Scope:** sending by email for the five events (new booking, client cancellation with the reason, masseur cancellation, automatic cancellation on client deletion, booking confirmation), in the recipient's language, with times in the masseur's timezone and no phone numbers; per-event, per-channel settings with at least one channel kept on for cancellations and confirmations; a send log and automatic retries for up to a day; the events stay visible in the application as long as the booking exists.
 
 **Acceptance criteria:** each event sends one message to the right person; a failed send is retried and logged; a user cannot switch off the last channel of a critical event; a message is sent only to a verified address; nothing is sent for a masseur walk-in booking.
-
-**To groom first:** the provider and the background mechanism (prerequisites P-3, P-5); the texts; the settings screen.
 
 ### PR 13 - Telegram and phone confirmation
 

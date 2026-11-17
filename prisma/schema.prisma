@@ -54,6 +54,8 @@ model User {
   clientBookings  Booking[] @relation("ClientBookings")
   availabilitySlots AvailabilitySlot[]
   galleryImages  GalleryImage[]
+  notificationPreferences NotificationPreference[]
+  notificationOutbox      NotificationOutbox[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -152,6 +154,7 @@ model Booking {
 
   masseur User  @relation("MasseurBookings", fields: [masseurId], references: [id], onDelete: Cascade)
   client  User? @relation("ClientBookings", fields: [clientUserId], references: [id], onDelete: SetNull)
+  notificationOutbox NotificationOutbox[]
 
   @@index([masseurId])
   @@index([masseurId, slotStart])
@@ -160,6 +163,65 @@ model Booking {
   @@index([clientUserId, slotStart])
   @@index([status, cancelledAt])
   @@index([status, slotStart])
+}
+
+enum NotificationEventType {
+  booking_created
+  booking_cancelled_by_client
+  booking_cancelled_by_masseur
+  booking_cancelled_client_deleted
+  booking_confirmed
+}
+
+enum NotificationChannel {
+  email
+}
+
+enum NotificationOutboxStatus {
+  pending
+  sent
+  failed
+  dead
+}
+
+/// Per-user, per-event email preference (Telegram channel arrives in PR 13).
+model NotificationPreference {
+  id           String                @id @default(cuid())
+  userId       String
+  eventType    NotificationEventType
+  emailEnabled Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
+  @@index([userId])
+}
+
+/// Delivery log + retry queue for BR-009 (XR-1: no phones in payload).
+model NotificationOutbox {
+  id            String                    @id @default(cuid())
+  userId        String
+  bookingId     String?
+  eventType     NotificationEventType
+  channel       NotificationChannel       @default(email)
+  status        NotificationOutboxStatus  @default(pending)
+  attemptCount  Int                       @default(0)
+  nextAttemptAt DateTime?
+  lastError     String?                   @db.VarChar(500)
+  /// Minimal render snapshot (names, slot ISO, massage type, reason, locale, path).
+  payloadJson   String
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  sentAt        DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+  @@index([userId, createdAt])
+  @@index([bookingId])
 }
 
 model AvailabilitySlot {
