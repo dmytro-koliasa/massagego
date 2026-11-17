@@ -7,6 +7,8 @@ export type CanonicalCity = {
   nameUk: string;
   lat?: number | null;
   lon?: number | null;
+  /** Suggested IANA zone from server geocode (optional). */
+  timeZone?: string | null;
 };
 
 export type CityFields = {
