@@ -15,6 +15,7 @@ type CitySuggestion = {
   nameUk: string;
   lat: number | null;
   lon: number | null;
+  timeZone?: string | null;
 };
 
 type CityAutocompleteProps = {
@@ -129,6 +130,7 @@ export function CityAutocomplete({
       nameUk: item.nameUk || item.label,
       lat: item.lat,
       lon: item.lon,
+      timeZone: item.timeZone ?? null,
     });
     setSuggestions([]);
     setOpen(false);

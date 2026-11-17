@@ -39,10 +39,7 @@ import {
 	nationalPhoneInsert,
 } from '@/lib/phone';
 import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
-import {
-	deviceTimeZone,
-	suggestTimezone,
-} from '@/lib/timezone-suggest';
+import { deviceTimeZone } from '@/lib/timezone';
 import {
 	ADDRESS_MAX,
 	DESCRIPTION_MAX,
@@ -151,12 +148,12 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	function applyCitySelection(next: CanonicalCity | null) {
 		setSelectedCity(next);
 		if (!next) return;
+		const suggested = next.timeZone?.trim();
 		if (
-			typeof next.lat === 'number' &&
-			typeof next.lon === 'number' &&
+			suggested &&
 			(!timezone.trim() || timezone === DEFAULT_MASSEUR_TIME_ZONE)
 		) {
-			setTimezone(suggestTimezone(next.lat, next.lon));
+			setTimezone(suggested);
 		}
 	}
 

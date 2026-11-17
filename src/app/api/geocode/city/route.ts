@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
+import { suggestTimezone } from "@/lib/timezone-suggest";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
@@ -64,6 +65,8 @@ export async function GET(request: Request) {
         const lat = item.lat ? Number(item.lat) : null;
         const lon = item.lon ? Number(item.lon) : null;
         const countryCode = (item.address?.country_code ?? "").toUpperCase();
+        const safeLat = Number.isFinite(lat) ? lat : null;
+        const safeLon = Number.isFinite(lon) ? lon : null;
         return {
           id: String(item.place_id),
           placeId: String(item.place_id),
@@ -72,8 +75,9 @@ export async function GET(request: Request) {
           detail: item.display_name,
           nameEn: lang === "en" ? label : label,
           nameUk: lang === "uk" ? label : label,
-          lat: Number.isFinite(lat) ? lat : null,
-          lon: Number.isFinite(lon) ? lon : null,
+          lat: safeLat,
+          lon: safeLon,
+          timeZone: suggestTimezone(safeLat, safeLon),
         };
       })
       .filter((item) => item.countryCode.length === 2);

@@ -3,7 +3,7 @@ import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { isMassageTypeValue } from "@/lib/massage-types";
 import { isPortal } from "@/lib/portals";
-import { isValidIanaTimeZone } from "@/lib/timezone-suggest";
+import { isValidIanaTimeZone } from "@/lib/timezone";
 
 export const NAME_MAX = 80;
 export const EMAIL_MAX = 254;

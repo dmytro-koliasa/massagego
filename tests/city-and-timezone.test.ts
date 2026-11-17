@@ -8,8 +8,8 @@ import {
 import {
   isValidIanaTimeZone,
   normalizeTimeZone,
-  suggestTimezone,
-} from "@/lib/timezone-suggest";
+} from "@/lib/timezone";
+import { suggestTimezone } from "@/lib/timezone-suggest";
 
 describe("canonical city helpers", () => {
   const kyivInput = {
@@ -56,14 +56,14 @@ describe("canonical city helpers", () => {
   });
 });
 
-describe("timezone suggest", () => {
-  it("validates IANA zones", () => {
+describe("timezone helpers", () => {
+  it("validates IANA zones without geo-tz", () => {
     expect(isValidIanaTimeZone("Europe/Kyiv")).toBe(true);
     expect(isValidIanaTimeZone("Not/AZone")).toBe(false);
     expect(normalizeTimeZone("garbage")).toBe("Europe/Kyiv");
   });
 
-  it("suggests a zone near Kyiv", () => {
+  it("suggests a zone near Kyiv on the server", () => {
     const zone = suggestTimezone(50.45, 30.52);
     expect(zone).toMatch(/^Europe\//);
   });
