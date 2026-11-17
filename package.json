@@ -18,7 +18,8 @@
     "db:migrate:test": "node scripts/db-migrate-test.mjs",
     "db:test:prepare": "node scripts/db-test-prepare.mjs",
     "db:studio": "prisma studio",
-    "db:up": "docker compose up -d db"
+    "db:up": "docker compose up -d db",
+    "cron:notifications": "node scripts/cron-notifications.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
