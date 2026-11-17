@@ -79,8 +79,6 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
 Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow env only.
 
-`eslint` currently treats React Compiler rules `react-hooks/set-state-in-effect`, `react-hooks/refs`, and `react-hooks/purity` as **warnings** (pre-existing patterns). CI fails on lint **errors** only; a follow-up can harden those rules back to errors.
-
 ## E2E (Playwright)
 
 - Config: `playwright.config.ts`

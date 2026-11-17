@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { Preloader } from "@/components/preloader";
@@ -22,28 +22,35 @@ export function AdminAuditPanel() {
   const [entries, setEntries] = useState<AuditEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/admin/audit", { cache: "no-store" });
-      if (!response.ok) {
-        toast.error(t.adminLoadError);
-        setEntries([]);
-        return;
-      }
-      const data = (await response.json()) as { entries?: AuditEntry[] };
-      setEntries(data.entries ?? []);
-    } catch {
-      toast.error(t.adminLoadError);
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [t.adminLoadError]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/admin/audit", { cache: "no-store" });
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.adminLoadError);
+          setEntries([]);
+          return;
+        }
+        const data = (await response.json()) as { entries?: AuditEntry[] };
+        if (cancelled) return;
+        setEntries(data.entries ?? []);
+      } catch {
+        if (!cancelled) {
+          toast.error(t.adminLoadError);
+          setEntries([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t.adminLoadError]);
 
   return (
     <div className="space-y-4">

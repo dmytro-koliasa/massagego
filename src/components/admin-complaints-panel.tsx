@@ -87,8 +87,43 @@ export function AdminComplaintsPanel() {
   }, [filter, t.adminLoadError]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/complaints?filter=${encodeURIComponent(filter)}`,
+          { cache: "no-store" },
+        );
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.adminLoadError);
+          setRows([]);
+          return;
+        }
+        const data = (await response.json()) as { complaints?: ComplaintRow[] };
+        if (cancelled) return;
+        const list = data.complaints ?? [];
+        setRows(list);
+        setNotes(
+          Object.fromEntries(
+            list.map((row) => [row.id, row.adminNote ?? ""]),
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          toast.error(t.adminLoadError);
+          setRows([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, t.adminLoadError]);
 
   function categoryLabel(value: string) {
     if (value === "no_show") return t.complaintCategoryNoShow;
@@ -145,7 +180,10 @@ export function AdminComplaintsPanel() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setFilter(item.id)}
+              onClick={() => {
+                setFilter(item.id);
+                setLoading(true);
+              }}
               className={`rounded-lg px-3 py-1.5 text-sm transition ${
                 filter === item.id
                   ? "bg-accent text-white"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MasonryPhotoAlbum } from "react-photo-album";
 import Lightbox from "yet-another-react-lightbox";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ export function MasseurGallery({
   editable = false,
 }: MasseurGalleryProps) {
   const { t } = useLanguage();
-  const [images, setImages] = useState<GalleryPhoto[]>(initialImages);
+  const [loadedImages, setLoadedImages] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(
     editable && initialImages.length === 0,
   );
@@ -38,33 +38,35 @@ export function MasseurGallery({
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
 
-  const loadImages = useCallback(async () => {
+  const images = editable ? loadedImages : initialImages;
+  const setImages = setLoadedImages;
+
+  useEffect(() => {
     if (!editable) return;
-    setLoading(true);
-    try {
-      const response = await fetch("/api/masseur/gallery");
-      if (!response.ok) {
-        toast.error(t.galleryLoadError);
-        return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/masseur/gallery");
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.galleryLoadError);
+          return;
+        }
+        const data = (await response.json()) as { images: GalleryPhoto[] };
+        if (cancelled) return;
+        setLoadedImages(data.images);
+      } catch {
+        if (!cancelled) toast.error(t.galleryLoadError);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      const data = (await response.json()) as { images: GalleryPhoto[] };
-      setImages(data.images);
-    } catch {
-      toast.error(t.galleryLoadError);
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [editable, t.galleryLoadError]);
-
-  useEffect(() => {
-    if (!editable) return;
-    void loadImages();
-  }, [editable, loadImages]);
-
-  useEffect(() => {
-    if (editable) return;
-    setImages(initialImages);
-  }, [editable, initialImages]);
 
   const photos = useMemo(
     () =>

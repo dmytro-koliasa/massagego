@@ -70,13 +70,26 @@ export function ClientMasseursView() {
 	const [cityFilter, setCityFilter] = useState(CITY_FILTER_DEFAULT);
 	const [page, setPage] = useState(1);
 
+	function beginLoad() {
+		setLoading(true);
+		setError(false);
+	}
+
+	if (
+		cityFilter !== 'all' &&
+		cityFilter !== CITY_FILTER_DEFAULT &&
+		cities.length > 0 &&
+		!cities.some(city => city.value === cityFilter)
+	) {
+		setCityFilter('all');
+		setPage(1);
+		beginLoad();
+	}
+
 	useEffect(() => {
 		let cancelled = false;
 
-		async function load() {
-			setLoading(true);
-			setError(false);
-
+		(async () => {
 			try {
 				const params = new URLSearchParams({
 					page: String(page),
@@ -115,25 +128,12 @@ export function ClientMasseursView() {
 			} finally {
 				if (!cancelled) setLoading(false);
 			}
-		}
+		})();
 
-		void load();
 		return () => {
 			cancelled = true;
 		};
 	}, [page, cityFilter, t.masseursLoadError]);
-
-	useEffect(() => {
-		if (
-			cityFilter !== 'all' &&
-			cityFilter !== CITY_FILTER_DEFAULT &&
-			cities.length > 0 &&
-			!cities.some(city => city.value === cityFilter)
-		) {
-			setCityFilter('all');
-			setPage(1);
-		}
-	}, [cities, cityFilter]);
 
 	const localizedMasseurs: LocalizedMasseur[] = useMemo(
 		() =>
@@ -202,6 +202,7 @@ export function ClientMasseursView() {
 									onChange={event => {
 										setCityFilter(event.target.value);
 										setPage(1);
+										beginLoad();
 									}}
 									aria-label={t.masseursCityFilterLabel}
 									className='h-12 min-w-[12rem] text-foreground'
@@ -267,6 +268,7 @@ export function ClientMasseursView() {
 									onClick={() => {
 										setCityFilter('all');
 										setPage(1);
+										beginLoad();
 									}}
 									className='mt-4 h-11 rounded-lg border border-surface-border px-5 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent'
 								>
@@ -381,7 +383,10 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page <= 1}
-								onClick={() => setPage(1)}
+								onClick={() => {
+									setPage(1);
+									beginLoad();
+								}}
 								aria-label={t.masseursPaginationFirst}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -390,7 +395,10 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page <= 1}
-								onClick={() => setPage(current => Math.max(1, current - 1))}
+								onClick={() => {
+									setPage(current => Math.max(1, current - 1));
+									beginLoad();
+								}}
 								aria-label={t.masseursPaginationPrev}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -405,7 +413,10 @@ export function ClientMasseursView() {
 										type='button'
 										disabled={loading}
 										aria-current={active ? 'page' : undefined}
-										onClick={() => setPage(pageNumber)}
+										onClick={() => {
+											setPage(pageNumber);
+											beginLoad();
+										}}
 										className={`flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-medium tracking-[0.04em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
 											active
 												? 'border-accent bg-accent text-white'
@@ -420,7 +431,10 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page >= totalPages}
-								onClick={() => setPage(current => Math.min(totalPages, current + 1))}
+								onClick={() => {
+									setPage(current => Math.min(totalPages, current + 1));
+									beginLoad();
+								}}
 								aria-label={t.masseursPaginationNext}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -429,7 +443,10 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page >= totalPages}
-								onClick={() => setPage(totalPages)}
+								onClick={() => {
+									setPage(totalPages);
+									beginLoad();
+								}}
 								aria-label={t.masseursPaginationLast}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>

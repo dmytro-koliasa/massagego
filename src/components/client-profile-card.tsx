@@ -87,21 +87,24 @@ export function ClientProfileCard() {
 		setImage(data.image);
 	}
 
+	const isAuthed = status === 'authenticated' && Boolean(session?.user);
+
+	if (!isAuthed && (loading || profile !== null)) {
+		setLoading(false);
+		setProfile(null);
+	}
+
 	useEffect(() => {
-		if (status !== 'authenticated' || !session?.user) {
-			setLoading(false);
-			setProfile(null);
-			return;
-		}
+		if (!isAuthed) return;
 
 		let cancelled = false;
 
-		async function load() {
-			setLoading(true);
+		(async () => {
 			try {
 				const response = await fetch('/api/client/profile', { cache: 'no-store' });
+				if (cancelled) return;
 				if (!response.ok) {
-					if (!cancelled) setProfile(null);
+					setProfile(null);
 					return;
 				}
 				const data = (await response.json()) as { user: ClientProfile };
@@ -112,13 +115,12 @@ export function ClientProfileCard() {
 			} finally {
 				if (!cancelled) setLoading(false);
 			}
-		}
+		})();
 
-		void load();
 		return () => {
 			cancelled = true;
 		};
-	}, [status, session?.user?.id]);
+	}, [isAuthed, session?.user?.id]);
 
 	async function saveName() {
 		if (!profile) return;

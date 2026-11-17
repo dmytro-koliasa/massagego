@@ -59,23 +59,20 @@ export function CityAutocomplete({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
+  const query = value.trim();
+  const queryTooShort = query.length < CITY_QUERY_MIN;
+  const shownSuggestions = queryTooShort ? [] : suggestions;
+  const shownOpen = queryTooShort ? false : open;
+  const shownSearched = queryTooShort ? false : searched;
+  const shownLoading = queryTooShort ? false : loading;
+
   useEffect(() => {
     if (skipFetchRef.current) {
       skipFetchRef.current = false;
-      setSuggestions([]);
-      setOpen(false);
-      setSearched(false);
       return;
     }
 
-    const query = value.trim();
-    if (query.length < CITY_QUERY_MIN) {
-      setSuggestions([]);
-      setOpen(false);
-      setLoading(false);
-      setSearched(false);
-      return;
-    }
+    if (queryTooShort) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
@@ -118,7 +115,7 @@ export function CityAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [value, lang]);
+  }, [query, queryTooShort, lang]);
 
   function pickSuggestion(item: CitySuggestion) {
     skipFetchRef.current = true;
@@ -152,7 +149,7 @@ export function CityAutocomplete({
         type="text"
         required={required}
         role="combobox"
-        aria-expanded={open && suggestions.length > 0}
+        aria-expanded={shownOpen && shownSuggestions.length > 0}
         aria-controls={listId}
         aria-autocomplete="list"
         autoComplete="off"
@@ -162,25 +159,26 @@ export function CityAutocomplete({
           onSelectCity?.(null);
         }}
         onFocus={() => {
-          if (suggestions.length > 0 || searched) setOpen(true);
+          if (shownSuggestions.length > 0 || shownSearched) setOpen(true);
         }}
         placeholder={placeholder}
         maxLength={CITY_MAX}
         className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
 
-      {open && (suggestions.length > 0 || loading || searched) ? (
+      {shownOpen &&
+      (shownSuggestions.length > 0 || shownLoading || shownSearched) ? (
         <ul
           id={listId}
           role="listbox"
           className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-surface-border bg-surface py-1 shadow-lg"
         >
-          {loading && suggestions.length === 0 ? (
+          {shownLoading && shownSuggestions.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">…</li>
-          ) : suggestions.length === 0 ? (
+          ) : shownSuggestions.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">{t.citySearchEmpty}</li>
           ) : (
-            suggestions.map((item) => (
+            shownSuggestions.map((item) => (
               <li key={item.id} role="option">
                 <button
                   type="button"

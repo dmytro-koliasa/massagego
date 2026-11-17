@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { Preloader } from "@/components/preloader";
@@ -42,31 +42,38 @@ export function AdminUsersPanel() {
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/admin/users?filter=${encodeURIComponent(filter)}`,
-        { cache: "no-store" },
-      );
-      if (!response.ok) {
-        toast.error(t.adminLoadError);
-        setUsers([]);
-        return;
-      }
-      const data = (await response.json()) as { users?: AdminUserRow[] };
-      setUsers(data.users ?? []);
-    } catch {
-      toast.error(t.adminLoadError);
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter, t.adminLoadError]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/users?filter=${encodeURIComponent(filter)}`,
+          { cache: "no-store" },
+        );
+        if (cancelled) return;
+        if (!response.ok) {
+          toast.error(t.adminLoadError);
+          setUsers([]);
+          return;
+        }
+        const data = (await response.json()) as { users?: AdminUserRow[] };
+        if (cancelled) return;
+        setUsers(data.users ?? []);
+      } catch {
+        if (!cancelled) {
+          toast.error(t.adminLoadError);
+          setUsers([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, t.adminLoadError]);
 
   const filters: { id: Filter; label: string }[] = [
     { id: "all", label: t.adminFilterAll },
@@ -98,7 +105,10 @@ export function AdminUsersPanel() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setFilter(item.id)}
+              onClick={() => {
+                setFilter(item.id);
+                setLoading(true);
+              }}
               className={`h-9 rounded-[var(--radius-control)] px-3 text-sm transition ${
                 filter === item.id
                   ? "bg-accent text-white"
