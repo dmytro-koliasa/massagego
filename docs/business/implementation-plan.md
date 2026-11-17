@@ -275,11 +275,21 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 15 - Administration panel
 
-**Scope:** a minimal panel for an administrator: the list of users, blocking and unblocking, and complaints; a protected administrator sign-in; an audit log of administrator actions.
+**Status:** implementing on branch `feat/admin-panel` (groomed 2026-11-17).
 
-**Acceptance criteria:** only an administrator can open the panel; a blocked user cannot sign in or be booked; every administrator action is logged; the data an administrator can see is limited to what is needed.
+**Groomed decisions:**
+- Separate portal `admin`; header nav link; not on the home hero.
+- Bootstrap one admin from `ADMIN_BOOTSTRAP_EMAIL` + `ADMIN_BOOTSTRAP_PASSWORD` (no verify / 2FA).
+- Complaints deferred entirely (no stub UI).
+- Block → logout / no login; future bookings remain; no new bookings to/from blocked users; catalog hides blocked masseurs.
+- Admin sees full profile read-only; block only client/masseur; filters Active / Blocked / Deleted.
+- `User.blockedAt` + `AdminAuditLog` + `/admin/audit` UI.
+- Excluded countries stay in code ([BR-013](decisions.md#br-013)).
+- Blocked sign-in message: account blocked + contact support.
 
-**To groom first:** how an administrator is created and protected; where complaints come from (a "report" action for users is not decided and must be groomed with this item); what happens to a blocked user's future bookings; whether the excluded-country list becomes editable.
+**Scope:** a minimal panel for an administrator: the list of users, blocking and unblocking; a protected administrator sign-in; an audit log of administrator actions. Complaints are out of scope for this PR.
+
+**Acceptance criteria:** only an administrator can open the panel; a blocked user cannot sign in or be booked; every administrator action is logged; the data an administrator can see is limited to what is needed for moderation.
 
 ## 5. Risks and notes
 

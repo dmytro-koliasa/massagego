@@ -53,6 +53,25 @@ function rateLimitedMessage(
   return t.authRateLimited.replace("{n}", String(minutes));
 }
 
+function signInErrorMessage(
+  code: string | undefined | null,
+  t: {
+    authRateLimited: string;
+    authAccountBlocked: string;
+    authInvalidCredentials: string;
+    authInvalidPhoneCredentials: string;
+    authGenericError: string;
+  },
+  kind: "email" | "phone" | "generic",
+) {
+  if (code === "blocked") return t.authAccountBlocked;
+  const limited = rateLimitedMessage(code, t);
+  if (limited) return limited;
+  if (kind === "phone") return t.authInvalidPhoneCredentials;
+  if (kind === "email") return t.authInvalidCredentials;
+  return t.authGenericError;
+}
+
 type AuthPanelProps = {
   portal?: Portal;
   /** @deprecated Use `portal` */
@@ -219,8 +238,7 @@ export function MasseurAuthPanel({
           });
 
           if (result?.error) {
-            const limited = rateLimitedMessage(result.code, t);
-            toast.error(limited || t.authInvalidPhoneCredentials);
+            toast.error(signInErrorMessage(result.code, t, "phone"));
             return;
           }
         }
@@ -278,10 +296,12 @@ export function MasseurAuthPanel({
       });
 
       if (result?.error) {
-        const limited = rateLimitedMessage(result.code, t);
         toast.error(
-          limited ||
-            (mode === "login" ? t.authInvalidCredentials : t.authGenericError),
+          signInErrorMessage(
+            result.code,
+            t,
+            mode === "login" ? "email" : "generic",
+          ),
         );
         return;
       }

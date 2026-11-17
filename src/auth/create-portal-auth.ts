@@ -27,6 +27,10 @@ class RateLimitedSignIn extends CredentialsSignin {
   }
 }
 
+class AccountBlockedSignIn extends CredentialsSignin {
+  code = "blocked";
+}
+
 async function enforceSignInRateLimits(
   request: Request | undefined,
   accountKey: string,
@@ -176,6 +180,9 @@ export function createPortalAuth(portal: Portal) {
             if (!user?.passwordHash) {
               return null;
             }
+            if (user.blockedAt) {
+              throw new AccountBlockedSignIn();
+            }
 
             const valid = await compare(password, user.passwordHash);
             if (!valid) {
@@ -191,6 +198,7 @@ export function createPortalAuth(portal: Portal) {
             };
           }
 
+          // Masseur + admin: email + password.
           const parsed = loginSchema.safeParse({
             email: credentials?.email,
             password: credentials?.password,
@@ -200,12 +208,18 @@ export function createPortalAuth(portal: Portal) {
           }
 
           const { email, password } = parsed.data;
-          await enforceSignInRateLimits(request, `masseur:${email}`);
+          await enforceSignInRateLimits(
+            request,
+            `${portal}:${email}`,
+          );
 
           const user = await findPortalUserByEmail(email, portal);
 
           if (!user?.passwordHash) {
             return null;
+          }
+          if (user.blockedAt) {
+            throw new AccountBlockedSignIn();
           }
 
           const valid = await compare(password, user.passwordHash);
@@ -239,12 +253,15 @@ export function createPortalAuth(portal: Portal) {
           ? await findPortalUserByEmail(email, portal)
           : user.id
             ? await prisma.user.findFirst({
-                where: { id: user.id, portal },
-                select: { id: true },
+                where: { id: user.id, portal, deletedAt: null },
+                select: { id: true, blockedAt: true },
               })
             : null;
 
         if (dbUser) {
+          if (dbUser.blockedAt) {
+            return `${portalHomePath(portal)}?error=blocked`;
+          }
           return true;
         }
 
@@ -274,7 +291,12 @@ export function createPortalAuth(portal: Portal) {
         }
 
         const existing = await prisma.user.findFirst({
-          where: { id: token.sub, portal, deletedAt: null },
+          where: {
+            id: token.sub,
+            portal,
+            deletedAt: null,
+            blockedAt: null,
+          },
           select: {
             id: true,
             name: true,

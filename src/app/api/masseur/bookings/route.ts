@@ -57,7 +57,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_slot" }, { status: 400 });
     }
     const masseur = await prisma.user.findFirst({
-      where: { id: gate.userId, portal: "masseur" },
+      where: {
+        id: gate.userId,
+        portal: "masseur",
+        deletedAt: null,
+        blockedAt: null,
+      },
       select: { id: true, massageTypes: true, timezone: true },
     });
     if (!masseur) {

@@ -42,6 +42,8 @@ export async function GET(request: Request, context: RouteContext) {
       where: {
         id,
         portal: "masseur",
+        deletedAt: null,
+        blockedAt: null,
       },
       select: {
         id: true,

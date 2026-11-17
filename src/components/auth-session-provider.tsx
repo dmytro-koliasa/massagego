@@ -6,6 +6,7 @@ import { portalAuthBasePath, type Portal } from "@/lib/portals";
 
 function resolvePortal(pathname: string | null): Portal {
   if (pathname?.startsWith("/client")) return "client";
+  if (pathname?.startsWith("/admin")) return "admin";
   return "masseur";
 }
 

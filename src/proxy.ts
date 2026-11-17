@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { createPortalCookies } from "@/auth/portal-config";
-import { isPortalLoginPath, portalHomePath } from "@/lib/portals";
+import {
+  isPortalLoginPath,
+  portalHomePath,
+  type Portal,
+} from "@/lib/portals";
 
-async function readPortalToken(req: NextRequest, portal: "masseur" | "client") {
+async function readPortalToken(req: NextRequest, portal: Portal) {
   return getToken({
     req,
     secret: process.env.AUTH_SECRET,
@@ -15,7 +19,11 @@ async function readPortalToken(req: NextRequest, portal: "masseur" | "client") {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  if (isPortalLoginPath(path, "masseur") || isPortalLoginPath(path, "client")) {
+  if (
+    isPortalLoginPath(path, "masseur") ||
+    isPortalLoginPath(path, "client") ||
+    isPortalLoginPath(path, "admin")
+  ) {
     return NextResponse.next();
   }
 
@@ -42,6 +50,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    const token = await readPortalToken(request, "admin");
+    if (!token?.sub || token.portal !== "admin") {
+      const loginUrl = new URL(portalHomePath("admin"), request.url);
+      loginUrl.searchParams.set("next", path);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
@@ -54,5 +72,7 @@ export const config = {
     "/masseur/notifications/:path*",
     "/client",
     "/client/:path*",
+    "/admin",
+    "/admin/:path*",
   ],
 };

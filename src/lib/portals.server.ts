@@ -23,10 +23,15 @@ export async function readAuthIntentCookie(
   return isAuthIntent(value) ? value : fallback;
 }
 
-/** True when this user id belongs to the given portal identity. */
+/** True when this user id belongs to the given portal identity and is active. */
 export async function userHasPortal(userId: string, portal: Portal) {
   const user = await prisma.user.findFirst({
-    where: { id: userId, portal, deletedAt: null },
+    where: {
+      id: userId,
+      portal,
+      deletedAt: null,
+      blockedAt: null,
+    },
     select: { id: true },
   });
   return Boolean(user);

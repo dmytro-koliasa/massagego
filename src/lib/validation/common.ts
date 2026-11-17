@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { isMassageTypeValue } from "@/lib/massage-types";
-import { isPortal } from "@/lib/portals";
+import { isPublicPortal } from "@/lib/portals";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 
 export const NAME_MAX = 80;
@@ -213,7 +213,7 @@ export function resolvePortalInput(body: {
   portal?: unknown;
   role?: unknown;
 }) {
-  if (isPortal(body.portal)) return body.portal;
-  if (isPortal(body.role)) return body.role;
+  if (isPublicPortal(body.portal)) return body.portal;
+  if (isPublicPortal(body.role)) return body.role;
   return "masseur" as const;
 }

@@ -57,6 +57,8 @@ model User {
   phoneConfirmedAt DateTime?
   /// Set when the account is self-deleted and anonymised (BR-011).
   deletedAt      DateTime?
+  /// Set when an administrator blocks the account (BR-021).
+  blockedAt      DateTime?
   accounts       Account[]
   sessions       Session[]
   masseurBookings Booking[] @relation("MasseurBookings")
@@ -65,6 +67,7 @@ model User {
   galleryImages  GalleryImage[]
   notificationPreferences NotificationPreference[]
   notificationOutbox      NotificationOutbox[]
+  adminAuditLogsAsActor AdminAuditLog[] @relation("AdminAuditActor")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -73,6 +76,23 @@ model User {
   @@index([portal])
   @@index([telegramChatId])
   @@index([deletedAt])
+  @@index([blockedAt])
+}
+
+/// Administrator action log (BR-021 / XR-1).
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String
+  action       String
+  targetUserId String?
+  metaJson     String?
+  createdAt    DateTime @default(now())
+
+  actor User @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([actorUserId])
+  @@index([targetUserId])
 }
 
 model Account {

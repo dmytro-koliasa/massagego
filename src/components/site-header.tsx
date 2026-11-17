@@ -15,6 +15,7 @@ import { shouldSkipImageOptimization } from "@/lib/upload-url";
 
 function resolvePortal(pathname: string | null): Portal {
   if (pathname?.startsWith("/client")) return "client";
+  if (pathname?.startsWith("/admin")) return "admin";
   return "masseur";
 }
 
@@ -70,12 +71,18 @@ export function SiteHeader() {
 
   const signOutTarget = pathname.startsWith("/client")
     ? portalHomePath("client")
-    : pathname.startsWith("/masseur")
-      ? portalHomePath("masseur")
-      : "/";
+    : pathname.startsWith("/admin")
+      ? portalHomePath("admin")
+      : pathname.startsWith("/masseur")
+        ? portalHomePath("masseur")
+        : "/";
 
   const portalLabel =
-    portal === "client" ? t.headerPortalClient : t.headerPortalMasseur;
+    portal === "client"
+      ? t.headerPortalClient
+      : portal === "admin"
+        ? t.headerPortalAdmin
+        : t.headerPortalMasseur;
   const localizedName =
     (locale === "uk" ? session?.user?.nameUk : session?.user?.nameEn)?.trim() ||
     (locale === "uk" ? session?.user?.nameEn : session?.user?.nameUk)?.trim() ||
@@ -126,6 +133,12 @@ export function SiteHeader() {
                 href="/client/login"
                 label={t.clientTitle}
                 active={pathname.startsWith("/client")}
+                onDark={isHome}
+              />
+              <HeaderNavLink
+                href="/admin/login"
+                label={t.adminTitle}
+                active={pathname.startsWith("/admin")}
                 onDark={isHome}
               />
             </nav>

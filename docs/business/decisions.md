@@ -61,7 +61,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | PR 12 (`feat/email-notifications`) email + outbox; Telegram in PR 13; event-4 enqueue in PR 14 |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | PR 13 (`feat/telegram-phone-confirm`) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
-| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock, view complaints | - (not implemented) |
+| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints deferred | PR 15 (`feat/admin-panel`) |
 | 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | PR 14 (`feat/account-deletion-cleanup`) |
@@ -98,7 +98,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
 | [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16; implementing PR 9) |
 | [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16; implementing PR 9) |
-| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Approved** (2026-11-16) |
+| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Approved** (2026-11-16); implementing in PR 15 |
 | [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16); implementing in PR 10 |
 | [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Approved** (2026-11-16) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
@@ -545,11 +545,11 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** Is there an administrator or support role, and what can it do (view, block or delete accounts, handle complaints, edit the country blocklist)?
 **Current implementation:** No administrator, support or moderation role exists; all changes are made in the database or code.
 **Why:** Account deletion ([BR-011](#br-011)), complaints and abuse ([BR-020](#br-020)) need someone to act.
-**Status: Approved (2026-11-16, not implemented).** Added 2026-11-16.
+**Status: Approved (2026-11-16); implementing in PR 15 (`feat/admin-panel`).** Added 2026-11-16.
 
 **Decision (option B):** a **minimal administration panel** with a list of users, **blocking and unblocking** accounts, and a view of complaints. Considered and not chosen: no admin role with everything done by hand (A), and an external database tool without our own panel (C).
 
-**To decide for implementation (not yet groomed):** who holds the administrator role and how it is created and protected (a separate sign-in, a stronger check such as a second factor); **where complaints come from**, because no complaint mechanism exists today (a "report" action for users is not decided and should be groomed with this item); what a blocked user sees and what happens to their future bookings; which personal data an administrator may see and an **audit log of administrator actions** (XR-1); whether the excluded-country list ([BR-013](#br-013)) stays in code or becomes editable here.
+**PR 15 implementation notes (groomed 2026-11-17):** separate portal `admin` with header link (not on the home hero); one super-admin from `ADMIN_BOOTSTRAP_EMAIL` + `ADMIN_BOOTSTRAP_PASSWORD` (no email verify / 2FA in this PR); complaints **out of this PR**; block signs the user out and refuses new login/bookings while existing future bookings stay; admin sees a full read-only profile; `AdminAuditLog` with UI at `/admin/audit`; excluded countries stay in code; blocked users see an explicit blocked message asking them to contact support; block only `client` / `masseur` (never admin); list filters Active / Blocked / Deleted.
 
 ### BR-022
 
