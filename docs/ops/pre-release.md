@@ -60,4 +60,4 @@ Cross-cutting requirement: [XR-1](../business/decisions.md#cross-cutting-require
 ## Related local ops
 
 - Email without Vercel: [email-local.md](email-local.md)
-- Tests: [testing.md](../testing.md)
+- Tests + CI (P-6): [testing.md](../testing.md)

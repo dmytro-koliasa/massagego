@@ -195,6 +195,7 @@ describeDb("booking lead time and 120-day window (database)", () => {
           body: JSON.stringify({
             bookingLeadHours: 4,
             cancelCutoffHours: 2,
+            reminderHours: 24,
           }),
         }),
       ),
@@ -205,6 +206,7 @@ describeDb("booking lead time and 120-day window (database)", () => {
     expect(body.settings).toEqual({
       bookingLeadHours: 4,
       cancelCutoffHours: 4,
+      reminderHours: 24,
     });
   });
 
@@ -220,6 +222,7 @@ describeDb("booking lead time and 120-day window (database)", () => {
           body: JSON.stringify({
             bookingLeadHours: 2,
             cancelCutoffHours: 1,
+            reminderHours: 24,
           }),
         }),
       ),
