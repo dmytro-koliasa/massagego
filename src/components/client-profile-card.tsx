@@ -4,10 +4,14 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { CityAutocomplete } from '@/components/city-autocomplete';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { useLanguage } from '@/components/language-provider';
+import type { CanonicalCity } from '@/lib/city';
+import { isCanonicalCity } from '@/lib/city';
+import type { Locale } from '@/lib/i18n';
 import { shouldSkipImageOptimization } from '@/lib/upload-url';
-import { clientProfileSchema, NAME_MAX } from '@/lib/validation';
+import { clientProfileSchema, EMAIL_MAX, NAME_MAX } from '@/lib/validation';
 
 type ClientProfile = {
 	id: string;
@@ -15,21 +19,72 @@ type ClientProfile = {
 	nameEn: string | null;
 	nameUk: string | null;
 	email: string;
+	emailVerified: boolean;
 	image: string | null;
+	city: string | null;
+	cityPlaceId: string | null;
+	cityCountryCode: string | null;
+	cityNameEn: string | null;
+	cityNameUk: string | null;
+	cityLat: number | null;
+	cityLon: number | null;
+	cityLabel?: string | null;
+	preferredLocale: string;
+	profileComplete: boolean;
 };
 
+function isRealEmail(email: string | null | undefined) {
+	const value = email?.trim().toLowerCase() ?? '';
+	return Boolean(value) && !value.endsWith('@client.local');
+}
+
+function cityFromProfile(profile: ClientProfile): CanonicalCity | null {
+	const candidate = {
+		placeId: profile.cityPlaceId ?? '',
+		countryCode: profile.cityCountryCode ?? '',
+		nameEn: profile.cityNameEn ?? profile.city ?? '',
+		nameUk: profile.cityNameUk ?? profile.city ?? '',
+		lat: profile.cityLat,
+		lon: profile.cityLon,
+	};
+	return isCanonicalCity(candidate) ? candidate : null;
+}
+
 export function ClientProfileCard() {
-	const { t } = useLanguage();
+	const { t, locale, setLocale } = useLanguage();
 	const { data: session, status, update: updateSession } = useSession();
 	const [profile, setProfile] = useState<ClientProfile | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [nameEn, setNameEn] = useState('');
 	const [nameUk, setNameUk] = useState('');
+	const [email, setEmail] = useState('');
+	const [cityLabel, setCityLabel] = useState('');
+	const [city, setCity] = useState<CanonicalCity | null>(null);
+	const [preferredLocale, setPreferredLocale] = useState<Locale>('uk');
 	const [image, setImage] = useState<string | null>(null);
 	const [nameLocale, setNameLocale] = useState<'en' | 'uk'>('uk');
 	const [pending, setPending] = useState(false);
+	const [completePending, setCompletePending] = useState(false);
+	const [resendPending, setResendPending] = useState(false);
 	const [photoPending, setPhotoPending] = useState(false);
 	const [photoModalOpen, setPhotoModalOpen] = useState(false);
+
+	function applyProfile(data: ClientProfile) {
+		const fallbackName = data.name?.trim() || '';
+		const nextNameEn = data.nameEn?.trim() || fallbackName;
+		const nextNameUk = data.nameUk?.trim() || fallbackName;
+		setProfile(data);
+		setNameEn(nextNameEn);
+		setNameUk(nextNameUk);
+		setNameLocale(
+			data.nameUk?.trim() ? 'uk' : data.nameEn?.trim() ? 'en' : 'uk',
+		);
+		setEmail(isRealEmail(data.email) ? data.email : '');
+		setCityLabel(data.cityLabel?.trim() || data.city?.trim() || '');
+		setCity(cityFromProfile(data));
+		setPreferredLocale(data.preferredLocale === 'uk' ? 'uk' : 'en');
+		setImage(data.image);
+	}
 
 	useEffect(() => {
 		if (status !== 'authenticated' || !session?.user) {
@@ -50,20 +105,7 @@ export function ClientProfileCard() {
 				}
 				const data = (await response.json()) as { user: ClientProfile };
 				if (cancelled) return;
-				const fallbackName = data.user.name?.trim() || '';
-				const nextNameEn = data.user.nameEn?.trim() || fallbackName;
-				const nextNameUk = data.user.nameUk?.trim() || fallbackName;
-				setProfile(data.user);
-				setNameEn(nextNameEn);
-				setNameUk(nextNameUk);
-				setNameLocale(
-					data.user.nameUk?.trim()
-						? 'uk'
-						: data.user.nameEn?.trim()
-							? 'en'
-							: 'uk',
-				);
-				setImage(data.user.image);
+				applyProfile(data.user);
 			} catch {
 				if (!cancelled) setProfile(null);
 			} finally {
@@ -80,7 +122,11 @@ export function ClientProfileCard() {
 	async function saveName() {
 		if (!profile) return;
 
-		const parsed = clientProfileSchema.safeParse({ nameEn, nameUk });
+		const parsed = clientProfileSchema.safeParse({
+			nameEn,
+			nameUk,
+			preferredLocale,
+		});
 		if (!parsed.success) {
 			toast.error(t.profileSaveError);
 			return;
@@ -100,15 +146,102 @@ export function ClientProfileCard() {
 			}
 
 			const data = (await response.json()) as { user: ClientProfile };
-			setProfile(data.user);
-			setNameEn(data.user.nameEn ?? '');
-			setNameUk(data.user.nameUk ?? '');
+			applyProfile(data.user);
 			toast.success(t.profileSaved);
 			await updateSession();
 		} catch {
 			toast.error(t.profileSaveError);
 		} finally {
 			setPending(false);
+		}
+	}
+
+	async function saveProfileComplete() {
+		if (!profile) return;
+
+		const parsed = clientProfileSchema.safeParse({
+			nameEn,
+			nameUk,
+			email: email.trim() || undefined,
+			city: city ?? undefined,
+			preferredLocale,
+		});
+		if (!parsed.success || !parsed.data.email || !parsed.data.city) {
+			toast.error(t.profileSaveError);
+			return;
+		}
+
+		setCompletePending(true);
+		try {
+			const response = await fetch('/api/client/profile', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(parsed.data),
+			});
+
+			if (!response.ok) {
+				const data = (await response.json().catch(() => null)) as {
+					error?: string;
+				} | null;
+				toast.error(
+					data?.error === 'email_taken' ? t.authEmailTaken : t.profileSaveError,
+				);
+				return;
+			}
+
+			const data = (await response.json()) as { user: ClientProfile };
+			const emailChanged =
+				!isRealEmail(profile.email) ||
+				email.trim().toLowerCase() !== profile.email.toLowerCase();
+			applyProfile(data.user);
+			toast.success(emailChanged ? t.authVerifyEmailSent : t.profileSaved);
+			await updateSession();
+		} catch {
+			toast.error(t.profileSaveError);
+		} finally {
+			setCompletePending(false);
+		}
+	}
+
+	async function savePreferredLocale(next: Locale) {
+		setPreferredLocale(next);
+		setLocale(next);
+
+		if (!profile) return;
+
+		try {
+			const response = await fetch('/api/client/profile', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ preferredLocale: next }),
+			});
+			if (!response.ok) {
+				toast.error(t.profileSaveError);
+				return;
+			}
+			const data = (await response.json()) as { user: ClientProfile };
+			applyProfile(data.user);
+			await updateSession();
+		} catch {
+			toast.error(t.profileSaveError);
+		}
+	}
+
+	async function resendVerification() {
+		setResendPending(true);
+		try {
+			const response = await fetch('/api/auth/verify-email/resend', {
+				method: 'POST',
+			});
+			if (!response.ok) {
+				toast.error(t.profileSaveError);
+				return;
+			}
+			toast.success(t.authVerifyEmailSent);
+		} catch {
+			toast.error(t.profileSaveError);
+		} finally {
+			setResendPending(false);
 		}
 	}
 
@@ -136,8 +269,7 @@ export function ClientProfileCard() {
 			}
 
 			const data = (await response.json()) as { user: ClientProfile };
-			setProfile(data.user);
-			setImage(data.user.image);
+			applyProfile(data.user);
 			toast.success(t.profilePhotoUpdated);
 			await updateSession();
 			return true;
@@ -162,8 +294,7 @@ export function ClientProfileCard() {
 			}
 
 			const data = (await response.json()) as { user: ClientProfile };
-			setProfile(data.user);
-			setImage(data.user.image);
+			applyProfile(data.user);
 			toast.success(t.profilePhotoRemoved);
 			await updateSession();
 		} catch {
@@ -200,6 +331,8 @@ export function ClientProfileCard() {
 		.slice(0, 2)
 		.map(part => part[0]?.toUpperCase())
 		.join('');
+	const showEmailUnverified =
+		isRealEmail(profile.email) && !profile.emailVerified;
 
 	return (
 		<section className='mt-10 rounded-2xl border border-surface-border bg-surface p-6 sm:p-8'>
@@ -208,6 +341,62 @@ export function ClientProfileCard() {
 					{t.profileGeneralTitle}
 				</h2>
 			</div>
+
+			{!profile.profileComplete ? (
+				<div className='mb-6 rounded-xl border border-accent/30 bg-accent-soft/40 p-4 text-left sm:p-5'>
+					<h3 className='text-base font-semibold text-foreground'>
+						{t.profileCompleteTitle}
+					</h3>
+					<p className='mt-1 text-sm text-muted'>{t.profileCompleteSupport}</p>
+					<div className='mt-4 grid gap-4 sm:grid-cols-2'>
+						<label className='block text-left sm:col-span-2'>
+							<span className='mb-1.5 block text-sm text-muted'>{t.authEmail}</span>
+							<input
+								type='email'
+								value={email}
+								onChange={event => setEmail(event.target.value)}
+								maxLength={EMAIL_MAX}
+								required
+								className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+							/>
+							<span className='mt-1.5 block text-xs text-muted'>{t.authEmailHint}</span>
+						</label>
+						<div className='sm:col-span-2'>
+							<CityAutocomplete
+								value={cityLabel}
+								onChange={setCityLabel}
+								onSelectCity={setCity}
+								label={t.profileCity}
+								placeholder={t.profileCityPlaceholder}
+								lang={locale === 'en' ? 'en' : 'uk'}
+								required
+							/>
+						</div>
+					</div>
+					<button
+						type='button'
+						disabled={completePending}
+						onClick={() => void saveProfileComplete()}
+						className='mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+					>
+						{completePending ? t.authPleaseWait : t.profileCompleteSave}
+					</button>
+				</div>
+			) : null}
+
+			{showEmailUnverified ? (
+				<div className='mb-6 flex flex-col gap-3 rounded-xl border border-surface-border bg-background/50 p-4 text-left sm:flex-row sm:items-center sm:justify-between'>
+					<p className='text-sm text-muted'>{t.profileEmailUnverified}</p>
+					<button
+						type='button'
+						disabled={resendPending}
+						onClick={() => void resendVerification()}
+						className='h-10 shrink-0 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent disabled:opacity-60'
+					>
+						{resendPending ? t.authPleaseWait : t.profileResendVerification}
+					</button>
+				</div>
+			) : null}
 
 			<div className='grid gap-8 sm:grid-cols-[220px_1fr]'>
 				<div className='mx-auto flex w-full max-w-[220px] flex-col gap-4 sm:mx-0'>
@@ -303,7 +492,31 @@ export function ClientProfileCard() {
 						/>
 					</div>
 
-					<p className='text-sm text-muted'>{profile.email}</p>
+					{profile.profileComplete ? (
+						<p className='text-sm text-muted'>{profile.email}</p>
+					) : null}
+
+					{profile.profileComplete && profile.cityLabel ? (
+						<p className='text-sm text-muted'>
+							{t.profileCity}: {profile.cityLabel}
+						</p>
+					) : null}
+
+					<label className='block text-left'>
+						<span className='mb-1.5 block text-sm text-muted'>
+							{t.profilePreferredLanguage}
+						</span>
+						<select
+							value={preferredLocale}
+							onChange={event =>
+								void savePreferredLocale(event.target.value === 'uk' ? 'uk' : 'en')
+							}
+							className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+						>
+							<option value='uk'>{t.ukrainian}</option>
+							<option value='en'>{t.english}</option>
+						</select>
+					</label>
 
 					<button
 						type='button'

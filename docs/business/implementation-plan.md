@@ -148,7 +148,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 7 - Shared excluded-country list
 
-**Status:** implementing on branch `feat/excluded-country-list` (groomed 2026-11-17).
+**Status:** merged ([#11](https://github.com/dmytro-koliasa/massagego/pull/11), 2026-11-17).
 
 **Groomed decisions:** UN M49 Africa (+ dependent territories, Egypt) + `RU` + `BY`; +7 via libphonenumber (`KZ` ok, `RU` reject); phone copy `This country code is not supported.` / `Цей код країни не підтримується.`; city empty `No cities found.` / `Міст не знайдено.`; no legacy data migration.
 
@@ -162,14 +162,16 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 8 - Registration and profile fields
 
+**Status:** implementing on branch `feat/registration-profile-fields` (groomed 2026-11-17).
+
+**Groomed decisions:** canonical city = Nominatim `placeId` + `countryCode` + EN/UK names (legacy `city` kept, no backfill); email verify = one-time link, TTL 24h, resend 60s / max 5 per hour, log adapter until P-3; single-screen client register; `preferredLocale` stored and syncs UI; masseur phone required + public notice; timezone editable with geo-tz suggestion from city + device mismatch warning; incomplete clients: banner, browse ok, booking blocked; empty city list = message + show all.
+
 **Scope:** at client registration, a required city (canonical form) and a required real email, with verification by a link or a code; the preferred language stored in the account (set at registration, editable); the masseur phone becomes required and public with a notice on the form; the masseur timezone field is editable in the profile (from PR 2; whether to propose it from the city, finding X-2, is groomed here); existing clients without a city or email are asked to complete them without blocking sign-in.
 
 **Acceptance criteria:**
 - A client cannot finish registration without a city and an email; email notifications are not sent to an unverified address.
 - The same city is stored once regardless of the interface language used when choosing it.
 - A masseur profile cannot be saved without a phone; the notice that the phone is public is shown.
-
-**To groom first:** the canonical city representation and how existing masseur cities are reconciled; the verification flow and its limits; the form layout (finding X-3).
 
 ### PR 9 - Password reset and rate limits
 

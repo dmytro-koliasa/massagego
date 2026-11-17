@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
-import { userHasPortal } from "@/lib/portals.server";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
-const USER_AGENT = "SereinMassageApp/1.0 (masseur-city-lookup; local-dev)";
+const USER_AGENT = "SereinMassageApp/1.0 (city-lookup; local-dev)";
 const FETCH_LIMIT = 20;
 const RESULT_LIMIT = 6;
 
@@ -13,8 +11,8 @@ type NominatimResult = {
   place_id: number;
   name?: string;
   display_name: string;
-  type?: string;
-  class?: string;
+  lat?: string;
+  lon?: string;
   address?: {
     country_code?: string;
   };
@@ -27,16 +25,6 @@ function shortLabel(item: NominatimResult) {
 }
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() ?? "";
   const lang = searchParams.get("lang") === "en" ? "en" : "uk";
@@ -71,11 +59,24 @@ export async function GET(request: Request) {
     const results = data
       .filter((item) => !isExcludedCountryCode(item.address?.country_code))
       .slice(0, RESULT_LIMIT)
-      .map((item) => ({
-        id: String(item.place_id),
-        label: shortLabel(item),
-        detail: item.display_name,
-      }));
+      .map((item) => {
+        const label = shortLabel(item);
+        const lat = item.lat ? Number(item.lat) : null;
+        const lon = item.lon ? Number(item.lon) : null;
+        const countryCode = (item.address?.country_code ?? "").toUpperCase();
+        return {
+          id: String(item.place_id),
+          placeId: String(item.place_id),
+          countryCode,
+          label,
+          detail: item.display_name,
+          nameEn: lang === "en" ? label : label,
+          nameUk: lang === "uk" ? label : label,
+          lat: Number.isFinite(lat) ? lat : null,
+          lon: Number.isFinite(lon) ? lon : null,
+        };
+      })
+      .filter((item) => item.countryCode.length === 2);
 
     return NextResponse.json({ results });
   } catch {

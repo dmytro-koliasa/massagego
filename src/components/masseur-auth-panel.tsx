@@ -9,7 +9,9 @@ import PhoneInput, {
 } from "react-phone-number-input/max";
 import flags from "react-phone-number-input/flags";
 import "react-phone-number-input/style.css";
+import { CityAutocomplete } from "@/components/city-autocomplete";
 import { useLanguage } from "@/components/language-provider";
+import type { CanonicalCity } from "@/lib/city";
 import {
   AUTH_INTENT_COOKIE,
   AUTH_PORTAL_COOKIE,
@@ -61,7 +63,7 @@ export function MasseurAuthPanel({
       ? "/masseur/dashboard"
       : "/client");
 
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const validation = createNativeValidationHandlers(t);
   const [mode, setMode] = useState<AuthMode>(
@@ -69,6 +71,8 @@ export function MasseurAuthPanel({
   );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [cityLabel, setCityLabel] = useState("");
+  const [city, setCity] = useState<CanonicalCity | null>(null);
   const [phone, setPhone] = useState<string | undefined>();
   const [phoneCountry, setPhoneCountry] = useState<Country>("UA");
   const [password, setPassword] = useState("");
@@ -114,8 +118,11 @@ export function MasseurAuthPanel({
           const parsed = clientRegisterSchema.safeParse({
             name,
             phone: phone ?? "",
+            email,
+            city,
             password,
             passwordConfirm,
+            preferredLocale: locale,
             portal: "client",
             role: "client",
           });
@@ -130,8 +137,11 @@ export function MasseurAuthPanel({
             body: JSON.stringify({
               name: parsed.data.name,
               phone: parsed.data.phone,
+              email: parsed.data.email,
+              city: parsed.data.city,
               password: parsed.data.password,
               passwordConfirm: parsed.data.passwordConfirm,
+              preferredLocale: parsed.data.preferredLocale ?? locale,
               portal: "client",
               role: "client",
             }),
@@ -144,6 +154,8 @@ export function MasseurAuthPanel({
             toast.error(mapRegisterError(data.error, t));
             return;
           }
+
+          toast.success(t.authVerifyEmailSent);
 
           const result = await signIn("credentials", {
             phone: parsed.data.phone,
@@ -192,6 +204,7 @@ export function MasseurAuthPanel({
           email,
           password,
           passwordConfirm,
+          preferredLocale: locale,
           portal: resolvedPortal,
           role: resolvedPortal,
         });
@@ -305,57 +318,95 @@ export function MasseurAuthPanel({
           ) : null}
 
           {isClient ? (
-            <label className="block text-left">
-              <span className="mb-1.5 block text-sm text-muted">
-                {t.authPhone}
-              </span>
-              <PhoneInput
-                international
-                countryCallingCodeEditable={false}
-                defaultCountry="UA"
-                countries={[...PHONE_COUNTRIES_ALLOWED]}
-                addInternationalOption={false}
-                flags={flags}
-                limitMaxLength
-                value={phone}
-                onChange={(value) =>
-                  setPhone(clampInternationalPhone(value, phoneCountry))
-                }
-                onCountryChange={(country) => {
-                  if (!country) return;
-                  setPhoneCountry(country);
-                  setPhone((current) =>
-                    clampInternationalPhone(current, country),
-                  );
-                }}
-                className="PhoneInputField"
-                numberInputProps={{
-                  name: "tel",
-                  autoComplete: "tel",
-                  required: true,
-                  className:
-                    "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
-                  onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
-                    const inserted =
-                      (event.nativeEvent as InputEvent).data ?? "";
-                    const input = event.currentTarget;
-                    const start =
-                      input.selectionStart ?? input.value.length;
-                    const end = input.selectionEnd ?? input.value.length;
-                    const next = nationalPhoneInsert(
-                      input.value,
-                      start,
-                      end,
-                      inserted,
-                      phoneCountry,
+            <>
+              <label className="block text-left">
+                <span className="mb-1.5 block text-sm text-muted">
+                  {t.authPhone}
+                </span>
+                <PhoneInput
+                  international
+                  countryCallingCodeEditable={false}
+                  defaultCountry="UA"
+                  countries={[...PHONE_COUNTRIES_ALLOWED]}
+                  addInternationalOption={false}
+                  flags={flags}
+                  limitMaxLength
+                  value={phone}
+                  onChange={(value) =>
+                    setPhone(clampInternationalPhone(value, phoneCountry))
+                  }
+                  onCountryChange={(country) => {
+                    if (!country) return;
+                    setPhoneCountry(country);
+                    setPhone((current) =>
+                      clampInternationalPhone(current, country),
                     );
-                    if (!next.exceeds) return;
-                    event.preventDefault();
-                    setPhone(next.value);
-                  },
-                }}
-              />
-            </label>
+                  }}
+                  className="PhoneInputField"
+                  numberInputProps={{
+                    name: "tel",
+                    autoComplete: "tel",
+                    required: true,
+                    className:
+                      "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                    onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
+                      const inserted =
+                        (event.nativeEvent as InputEvent).data ?? "";
+                      const input = event.currentTarget;
+                      const start =
+                        input.selectionStart ?? input.value.length;
+                      const end = input.selectionEnd ?? input.value.length;
+                      const next = nationalPhoneInsert(
+                        input.value,
+                        start,
+                        end,
+                        inserted,
+                        phoneCountry,
+                      );
+                      if (!next.exceeds) return;
+                      event.preventDefault();
+                      setPhone(next.value);
+                    },
+                  }}
+                />
+              </label>
+
+              {mode === "register" ? (
+                <>
+                  <label className="block text-left">
+                    <span className="mb-1.5 block text-sm text-muted">
+                      {t.authEmail}
+                    </span>
+                    <input
+                      id="client-email"
+                      name="email"
+                      type="email"
+                      value={email}
+                      autoComplete="email"
+                      required
+                      maxLength={EMAIL_MAX}
+                      onInvalid={validation.onInvalid}
+                      onInput={validation.onInput}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="h-12 w-full rounded-[var(--radius-control)] border border-surface-border bg-background px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+                    />
+                    <span className="mt-1.5 block text-xs text-muted">
+                      {t.authEmailHint}
+                    </span>
+                  </label>
+
+                  <CityAutocomplete
+                    value={cityLabel}
+                    onChange={setCityLabel}
+                    onSelectCity={setCity}
+                    label={t.profileCity}
+                    placeholder={t.profileCityPlaceholder}
+                    lang={locale === "en" ? "en" : "uk"}
+                    required
+                  />
+                </>
+              ) : null}
+            </>
           ) : (
             <Field
               id="email"

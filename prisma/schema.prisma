@@ -16,22 +16,35 @@ model User {
   slug           String?   @unique
   email          String
   emailVerified  DateTime?
-  /// E.164 phone for client credentials auth (optional for masseurs / Google).
+  /// E.164 phone for client credentials auth; required and public for masseurs (BR-004).
   phone          String?
   image          String?
   descriptionEn  String?
   descriptionUk  String?
   massageTypes   String    @default("[]")
+  /// Legacy free-text city; kept for rows without canonical place data.
   city           String?
+  /// Nominatim place_id (canonical city key for clients and masseurs).
+  cityPlaceId    String?
+  cityCountryCode String?
+  cityNameEn     String?
+  cityNameUk     String?
+  cityLat        Float?
+  cityLon        Float?
   address        String?
   /// IANA time zone of a masseur (slots, working hours and "today" are
   /// evaluated in it). Unused for clients. Keep the default in sync with
   /// DEFAULT_MASSEUR_TIME_ZONE in src/lib/booking-constants.ts.
   timezone       String    @default("Europe/Kyiv")
+  /// UI + notification language (`en` | `uk`).
+  preferredLocale String   @default("en")
   /// Client booking lead time in hours (1/2/3/4). Masseur-only (BR-002).
   bookingLeadHours   Int       @default(1)
   /// Client cancellation cutoff in hours; never below bookingLeadHours (BR-004).
   cancelCutoffHours  Int       @default(24)
+  emailVerifyLastSentAt      DateTime?
+  emailVerifySendWindowStart DateTime?
+  emailVerifySendCount       Int       @default(0)
   passwordHash   String?
   /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
   portal         String

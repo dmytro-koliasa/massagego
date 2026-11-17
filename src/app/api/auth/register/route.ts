@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
+import { toCityWriteData } from "@/lib/city";
+import { createAndSendVerificationLink } from "@/lib/email/verification";
 import {
   findPortalUserByEmail,
   findPortalUserByPhone,
 } from "@/lib/portals.server";
-import { clientEmailFromPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import {
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const portal = resolvePortalInput(body);
+    const origin = new URL(request.url).origin;
 
     if (portal === "client") {
       const parsed = parseWithSchema(clientRegisterSchema, body);
@@ -37,19 +39,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: parsed.error }, { status: 400 });
       }
 
-      const { name, phone, password } = parsed.data;
+      const { name, phone, email, city, password, preferredLocale } =
+        parsed.data;
+      const locale = preferredLocale === "uk" ? "uk" : "en";
+
       const existing = await findPortalUserByPhone(phone, "client");
       if (existing) {
         return NextResponse.json({ error: "phone_taken" }, { status: 409 });
       }
 
-      const email = clientEmailFromPhone(phone);
       const emailTaken = await findPortalUserByEmail(email, "client");
       if (emailTaken) {
-        return NextResponse.json({ error: "phone_taken" }, { status: 409 });
+        return NextResponse.json({ error: "email_taken" }, { status: 409 });
       }
 
       const passwordHash = await hash(password, 12);
+      const cityData = toCityWriteData(city, locale);
       const user = await prisma.user.create({
         data: {
           name,
@@ -57,6 +62,8 @@ export async function POST(request: Request) {
           phone,
           passwordHash,
           portal: "client",
+          preferredLocale: locale,
+          ...cityData,
         },
         select: {
           id: true,
@@ -65,7 +72,15 @@ export async function POST(request: Request) {
           name: true,
           portal: true,
           slug: true,
+          preferredLocale: true,
         },
+      });
+
+      await createAndSendVerificationLink({
+        userId: user.id,
+        email,
+        origin,
+        locale,
       });
 
       return NextResponse.json({ user }, { status: 201 });
@@ -76,7 +91,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, preferredLocale } = parsed.data;
+    const locale = preferredLocale === "uk" ? "uk" : "en";
 
     const existing = await findPortalUserByEmail(email, portal);
     if (existing) {
@@ -96,8 +112,16 @@ export async function POST(request: Request) {
         passwordHash,
         portal,
         slug,
+        preferredLocale: locale,
       },
-      select: { id: true, email: true, name: true, portal: true, slug: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        portal: true,
+        slug: true,
+        preferredLocale: true,
+      },
     });
 
     return NextResponse.json({ user }, { status: 201 });
@@ -105,7 +129,7 @@ export async function POST(request: Request) {
     console.error("[auth/register]", error);
     const code = prismaErrorCode(error);
     if (code === "P2002") {
-      return NextResponse.json({ error: "phone_taken" }, { status: 409 });
+      return NextResponse.json({ error: "email_taken" }, { status: 409 });
     }
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }

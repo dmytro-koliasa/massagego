@@ -147,7 +147,13 @@ export async function POST(request: Request) {
 
     const account = await prisma.user.findUnique({
       where: { id: client.userId },
-      select: { name: true, phone: true, portal: true },
+      select: {
+        name: true,
+        phone: true,
+        portal: true,
+        email: true,
+        cityPlaceId: true,
+      },
     });
     if (!account || account.portal !== "client") {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -155,7 +161,15 @@ export async function POST(request: Request) {
 
     const clientName = account.name?.trim() || "";
     const clientPhone = account.phone?.trim() || "";
-    if (!clientName || !clientPhone) {
+    const hasRealEmail =
+      Boolean(account.email?.trim()) &&
+      !account.email.toLowerCase().endsWith("@client.local");
+    if (
+      !clientName ||
+      !clientPhone ||
+      !account.cityPlaceId?.trim() ||
+      !hasRealEmail
+    ) {
       return NextResponse.json(
         { error: "CLIENT_PROFILE_INCOMPLETE" },
         { status: 400 },
