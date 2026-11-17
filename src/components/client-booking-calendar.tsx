@@ -13,6 +13,7 @@ import {
 	thaiNeighborCutoffMessage,
 } from '@/components/cancel-booking-dialog';
 import { useLanguage } from '@/components/language-provider';
+import { showPersistentThaiHint } from '@/lib/thai-hints';
 import {
 	CALENDAR_SLOT_DURATION,
 	CALENDAR_SLOT_MAX_TIME,
@@ -466,12 +467,14 @@ export function ClientBookingCalendar({
 
 			toast.success(t.bookingCancelSuccess);
 			if (data?.neighborHint?.type === 'thai_cutoff') {
-				toast.message(
+				showPersistentThaiHint(
 					thaiNeighborCutoffMessage(
 						data.neighborHint.masseurPhone ?? masseurPhone,
 						t,
 					),
 				);
+			} else if (data?.neighborHint?.type === 'thai_neighbor') {
+				showPersistentThaiHint(t.bookingThaiCancelNeighborHint);
 			}
 			setCancelTarget(null);
 			if (range) {
