@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
+import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { userHasPortal } from "@/lib/portals.server";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = "SereinMassageApp/1.0 (masseur-city-lookup; local-dev)";
+const FETCH_LIMIT = 20;
+const RESULT_LIMIT = 6;
 
 type NominatimResult = {
   place_id: number;
@@ -12,6 +15,9 @@ type NominatimResult = {
   display_name: string;
   type?: string;
   class?: string;
+  address?: {
+    country_code?: string;
+  };
 };
 
 function shortLabel(item: NominatimResult) {
@@ -43,7 +49,8 @@ export async function GET(request: Request) {
   url.searchParams.set("q", q);
   url.searchParams.set("format", "json");
   url.searchParams.set("featureType", "settlement");
-  url.searchParams.set("limit", "6");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("limit", String(FETCH_LIMIT));
 
   try {
     const response = await fetch(url, {
@@ -61,11 +68,14 @@ export async function GET(request: Request) {
     }
 
     const data = (await response.json()) as NominatimResult[];
-    const results = data.map((item) => ({
-      id: String(item.place_id),
-      label: shortLabel(item),
-      detail: item.display_name,
-    }));
+    const results = data
+      .filter((item) => !isExcludedCountryCode(item.address?.country_code))
+      .slice(0, RESULT_LIMIT)
+      .map((item) => ({
+        id: String(item.place_id),
+        label: shortLabel(item),
+        detail: item.display_name,
+      }));
 
     return NextResponse.json({ results });
   } catch {

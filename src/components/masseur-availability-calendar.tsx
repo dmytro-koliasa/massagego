@@ -20,7 +20,7 @@ import flags from 'react-phone-number-input/flags';
 import 'react-phone-number-input/style.css';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
-import { PHONE_COUNTRIES_EU_UA } from '@/lib/phone-countries';
+import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
 import {
 	clampInternationalPhone,
 	nationalPhoneInsert,
@@ -568,7 +568,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			});
 			if (!parsed.success) {
 				const code = zodErrorCode(parsed.error);
-				if (code === 'invalid_phone') {
+				if (code === 'phone_country_excluded') {
+					toast.error(t.bookingPhoneCountryExcluded);
+				} else if (code === 'invalid_phone') {
 					toast.error(t.bookingInvalidPhone);
 				} else if (code === 'invalid_massage_type' || massageTypes.length > 0 && !bookMassageType) {
 					toast.error(t.bookingMassageTypeRequired);
@@ -595,6 +597,8 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						toast.error(t.availabilityOutOfHours);
 					} else if (data.error === 'slot_unavailable') {
 						toast.error(t.availabilityBookSlotPast);
+					} else if (data.error === 'phone_country_excluded') {
+						toast.error(t.bookingPhoneCountryExcluded);
 					} else if (data.error === 'invalid_phone') {
 						toast.error(t.bookingInvalidPhone);
 					} else if (data.error === 'invalid_massage_type') {
@@ -1148,7 +1152,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 											international
 											countryCallingCodeEditable={false}
 											defaultCountry='UA'
-											countries={[...PHONE_COUNTRIES_EU_UA]}
+											countries={[...PHONE_COUNTRIES_ALLOWED]}
 											addInternationalOption={false}
 											flags={flags}
 											limitMaxLength

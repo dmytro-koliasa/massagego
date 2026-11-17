@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 import { isPortal } from "@/lib/portals";
-import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
+import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { isMassageTypeValue } from "@/lib/massage-types";
 
 export const NAME_MAX = 80;
@@ -53,17 +53,31 @@ export const passwordSchema = z
 
 export const portalSchema = z.enum(["masseur", "client"]);
 
-export function isAllowedBookingPhone(value: string) {
-  if (!isValidPhoneNumber(value)) return false;
-  try {
-    const parsed = parsePhoneNumber(value);
-    const country = parsed.country;
-    return Boolean(
-      country && (PHONE_COUNTRIES_EU_UA as readonly string[]).includes(country),
-    );
-  } catch {
-    return false;
+export type PhoneCheckResult =
+  | { ok: true }
+  | { ok: false; error: "invalid_phone" | "phone_country_excluded" };
+
+/** Valid E.164 except excluded countries (BR-013). RU rejected, KZ allowed via libphonenumber. */
+export function checkBookingPhone(value: string): PhoneCheckResult {
+  if (!isValidPhoneNumber(value)) {
+    return { ok: false, error: "invalid_phone" };
   }
+  try {
+    const country = parsePhoneNumber(value).country;
+    if (!country) {
+      return { ok: false, error: "invalid_phone" };
+    }
+    if (isExcludedCountryCode(country)) {
+      return { ok: false, error: "phone_country_excluded" };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "invalid_phone" };
+  }
+}
+
+export function isAllowedBookingPhone(value: string) {
+  return checkBookingPhone(value).ok;
 }
 
 export const phoneSchema = z
@@ -71,7 +85,12 @@ export const phoneSchema = z
   .trim()
   .min(1)
   .max(PHONE_MAX)
-  .refine(isAllowedBookingPhone, { message: "invalid_phone" })
+  .superRefine((value, ctx) => {
+    const result = checkBookingPhone(value);
+    if (!result.ok) {
+      ctx.addIssue({ code: "custom", message: result.error });
+    }
+  })
   .transform((value) => parsePhoneNumber(value).format("E.164"));
 
 export const massageTypeSchema = z
@@ -86,6 +105,9 @@ export function zodErrorCode(error: z.ZodError): string {
     const path = issue.path.join(".");
     if (issue.message === "CANCEL_REASON_REQUIRED") {
       return "CANCEL_REASON_REQUIRED";
+    }
+    if (issue.message === "phone_country_excluded") {
+      return "phone_country_excluded";
     }
     if (
       issue.message === "invalid_phone" ||

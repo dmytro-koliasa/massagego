@@ -87,6 +87,7 @@ export const dictionaries = {
 		bookingClientNameRequired: 'Please enter your name.',
 		bookingMassageTypeRequired: 'Please choose a massage type.',
 		bookingInvalidPhone: 'Enter a valid phone number.',
+		bookingPhoneCountryExcluded: 'This country code is not supported.',
 		bookingSelectSlot: 'Choose time slots',
 		bookingSelectSlotSupport:
 			'Available hours are highlighted. You can select several slots. Selection stays when you change weeks — click again to deselect. Click your own booked slot to cancel it.',
@@ -140,7 +141,9 @@ export const dictionaries = {
 		authEmailTaken: 'An account with this email already exists.',
 		authPhoneTaken: 'An account with this phone number already exists.',
 		authInvalidPhone: 'Enter a valid phone number for your country.',
+		authPhoneCountryExcluded: 'This country code is not supported.',
 		authPasswordMismatch: 'Passwords do not match.',
+		citySearchEmpty: 'No cities found.',
 		authAccountCreatedSignIn:
 			'Account created. Please sign in with your phone and password.',
 		authWeakPassword:
@@ -399,6 +402,7 @@ export const dictionaries = {
 		bookingClientNameRequired: 'Будь ласка, вкажіть ваше ім’я.',
 		bookingMassageTypeRequired: 'Будь ласка, оберіть вид масажу.',
 		bookingInvalidPhone: 'Введіть коректний номер телефону.',
+		bookingPhoneCountryExcluded: 'Цей код країни не підтримується.',
 		bookingSelectSlot: 'Оберіть час',
 		bookingSelectSlotSupport:
 			'Доступні години підсвічені. Можна обрати кілька слотів. При зміні тижня вибір зберігається — повторний клік знімає позначку. Клік по своєму заброньованому слоту скасовує бронювання.',
@@ -452,7 +456,9 @@ export const dictionaries = {
 		authEmailTaken: 'Акаунт з таким email уже існує.',
 		authPhoneTaken: 'Акаунт з таким номером телефону уже існує.',
 		authInvalidPhone: 'Введіть коректний номер телефону для вашої країни.',
+		authPhoneCountryExcluded: 'Цей код країни не підтримується.',
 		authPasswordMismatch: 'Паролі не збігаються.',
+		citySearchEmpty: 'Міст не знайдено.',
 		authAccountCreatedSignIn:
 			'Акаунт створено. Увійдіть за телефоном і паролем.',
 		authWeakPassword:

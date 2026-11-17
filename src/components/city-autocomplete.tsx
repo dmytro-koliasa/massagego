@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 type CitySuggestion = {
@@ -28,12 +29,14 @@ export function CityAutocomplete({
   lang,
   required = false,
 }: CityAutocompleteProps) {
+  const { t } = useLanguage();
   const listId = useId();
   const wrapRef = useRef<HTMLLabelElement>(null);
   const skipFetchRef = useRef(false);
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -51,6 +54,7 @@ export function CityAutocomplete({
       skipFetchRef.current = false;
       setSuggestions([]);
       setOpen(false);
+      setSearched(false);
       return;
     }
 
@@ -59,12 +63,14 @@ export function CityAutocomplete({
       setSuggestions([]);
       setOpen(false);
       setLoading(false);
+      setSearched(false);
       return;
     }
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       setLoading(true);
+      setSearched(false);
       void fetch(
         `/api/geocode/city?q=${encodeURIComponent(query)}&lang=${lang}`,
         { signal: controller.signal },
@@ -72,12 +78,15 @@ export function CityAutocomplete({
         .then(async (response) => {
           if (!response.ok) {
             setSuggestions([]);
+            setSearched(true);
+            setOpen(true);
             return;
           }
           const data = (await response.json()) as {
             results?: CitySuggestion[];
           };
           setSuggestions(data.results ?? []);
+          setSearched(true);
           setOpen(true);
         })
         .catch((error: unknown) => {
@@ -85,6 +94,8 @@ export function CityAutocomplete({
             return;
           }
           setSuggestions([]);
+          setSearched(true);
+          setOpen(true);
         })
         .finally(() => {
           if (!controller.signal.aborted) {
@@ -135,7 +146,7 @@ export function CityAutocomplete({
         className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
 
-      {open && (suggestions.length > 0 || loading) ? (
+      {open && (suggestions.length > 0 || loading || searched) ? (
         <ul
           id={listId}
           role="listbox"
@@ -143,6 +154,8 @@ export function CityAutocomplete({
         >
           {loading && suggestions.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">…</li>
+          ) : suggestions.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-muted">{t.citySearchEmpty}</li>
           ) : (
             suggestions.map((item) => (
               <li key={item.id} role="option">

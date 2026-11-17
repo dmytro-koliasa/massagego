@@ -66,7 +66,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | - (not implemented) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
-| 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | - (not implemented) |
+| 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | PR 7 (`feat/excluded-country-list`) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
@@ -427,12 +427,12 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-013
 
 **Business question:** Which countries' phone numbers are accepted?
-**Current implementation:** EU countries and Ukraine only (`PHONE_COUNTRIES_EU_UA`), for both clients and walk-ins.
+**Current implementation:** shared blocklist `EXCLUDED_COUNTRY_CODES` (UN M49 Africa + `RU` + `BY`); phone picker uses `PHONE_COUNTRIES_ALLOWED`; city geocode filters by the same list.
 **Options:** **A.** Keep and document. **B.** Allow all valid numbers.
 **Recommendation: A** if the launch market is EU + UA; revisit with expansion.
 **Impact:** none for A; B changes the phone picker and validation only.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option B with exclusions.**
+**Decision (Approved 2026-11-16):** **Option B with exclusions.**
 
 1. **Accepted phone numbers:** any valid international phone number, **except** numbers from (a) **all African countries**, (b) **Russia**, (c) **Belarus**. All other countries are allowed. The stored format stays E.164.
 2. **Where it applies:** everywhere a phone is entered: client registration and login, the masseur's profile phone ([BR-004](#br-004)) and the masseur's walk-in bookings.
@@ -441,7 +441,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 5. **One shared blocklist:** the excluded countries are defined **once**, as a single list of country codes in the code base, used by **both** the phone validation and the city search, so that the two can never disagree. Changing the list is a code change (there is no administration screen for it).
 6. **Scope of the rule:** it restricts phone numbers and the cities that can be chosen; it does not detect where a person actually is.
 
-**Open sub-questions for track 2 (not yet groomed):** the message shown when a city search finds nothing because of the exclusion; the exact list of excluded countries and territories (which definition of "Africa" to use, how to treat dependent territories and countries spanning two continents, e.g. Egypt); the shared dialling code +7 of Russia and Kazakhstan, so that Kazakhstan numbers stay allowed and Russian ones are rejected; the error message shown for an excluded number; whether existing accounts or bookings with such numbers exist (none expected, as only EU and Ukraine numbers were accepted before).
+**Implementation (PR 7, groomed 2026-11-17):**
+- **List:** UN M49 Africa (region 002), including dependent territories (e.g. `RE`, `YT`, `EH`, `IO`, `SH`, `TF`) and Egypt; plus `RU` and `BY`. Kazakhstan (`KZ`) is not excluded.
+- **+7:** country resolved with `libphonenumber-js` (`RU` rejected, `KZ` accepted).
+- **Phone error:** `phone_country_excluded` → EN `This country code is not supported.` / UK `Цей код країни не підтримується.` (same copy for auth and walk-in). Malformed numbers keep `invalid_phone`.
+- **City search empty:** generic `No cities found.` / `Міст не знайдено.` (no mention of the blocklist).
+- **Existing data:** no migration or forced phone change; enforcement on new input only (test DB; none expected from the prior EU+UA allowlist).
+- **Catalog city filter:** masseur `city` is still a free-text label without a country code, so the list API cannot country-filter stored values yet; exclusion is enforced at Nominatim city search. Canonical city + country (PR 8 / [BR-017](#br-017)) can tighten the catalog filter later.
 
 ### BR-014
 

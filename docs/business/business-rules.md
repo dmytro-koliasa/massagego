@@ -79,7 +79,7 @@ The two endpoints follow **different rules** (see the comparison table below). T
 Source: `src/lib/validation/booking.ts`, `src/lib/validation/common.ts`.
 
 - `clientName`: required, trimmed, max 80 characters (`NAME_MAX`).
-- `clientPhone`: required, must be a valid number **from an EU country or Ukraine** (`isAllowedBookingPhone`, `PHONE_COUNTRIES_EU_UA`); stored as E.164.
+- `clientPhone`: required, must be a valid international number **except** excluded countries (`checkBookingPhone`, `EXCLUDED_COUNTRY_CODES` / [BR-013](decisions.md#br-013)); stored as E.164.
 - `note`: optional, max 200 characters (`NOTE_MAX`).
 - `massageType`: see section 2.5.
 - Each requested start time is **aligned down to the hour** (`alignToHour`, `setMinutes(0,0,0)`); duplicates in one request collapse into one.
