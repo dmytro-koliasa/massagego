@@ -61,6 +61,12 @@ export type AvailabilityCalendarHandle = {
 
 type SlotStatus = 'available' | 'booked';
 
+type LastCancellation = {
+	reason: string;
+	reasonText: string | null;
+	cancelledAt: string;
+};
+
 type AvailabilitySlot = {
 	id: string;
 	start: string;
@@ -71,6 +77,7 @@ type AvailabilitySlot = {
 	clientPhoneConfirmed?: boolean;
 	massageType?: string | null;
 	bookingId?: string | null;
+	lastCancellation?: LastCancellation | null;
 };
 
 /** Slot can no longer be edited once its start time has begun (e.g. 8:01 for 8:00–9:00). */
@@ -203,6 +210,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		clientPhone?: string | null;
 		clientPhoneConfirmed?: boolean;
 		massageType?: string | null;
+		lastCancellation?: LastCancellation | null;
 	} | null>(null);
 	const [bookName, setBookName] = useState('');
 	const [bookPhone, setBookPhone] = useState<string | undefined>();
@@ -394,6 +402,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							clientPhoneConfirmed?: boolean;
 							massageType?: string | null;
 							bookingId?: string | null;
+							lastCancellation?: LastCancellation | null;
 						}>;
 					};
 					if (typeof data.timezone === 'string') {
@@ -410,6 +419,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 							clientPhoneConfirmed: Boolean(slot.clientPhoneConfirmed),
 							massageType: slot.massageType ?? null,
 							bookingId: slot.bookingId ?? null,
+							lastCancellation: slot.lastCancellation ?? null,
 						})),
 					);
 				} catch {
@@ -458,7 +468,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 			setBookPhone(undefined);
 			setBookPhoneCountry('UA');
 			setBookMassageType('');
-			setSlotAction({ startIso, mode: 'choose' });
+			const slot = slotsRef.current.find(item => item.start === startIso);
+			setSlotAction({
+				startIso,
+				mode: 'choose',
+				lastCancellation: slot?.lastCancellation ?? null,
+			});
 		}
 
 		function openBookedSlotActions(startIso: string) {
@@ -475,6 +490,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				clientPhone: slot?.clientPhone ?? null,
 				clientPhoneConfirmed: Boolean(slot?.clientPhoneConfirmed),
 				massageType: slot?.massageType ?? null,
+				lastCancellation: slot?.lastCancellation ?? null,
 			});
 		}
 
@@ -1066,6 +1082,25 @@ export const MasseurAvailabilityCalendar = forwardRef<
 													</p>
 												) : null}
 											</div>
+										) : null}
+										{slotAction.lastCancellation ? (
+											<p className='mt-2 text-sm text-muted'>
+												{t.availabilityLastCancellation}:{' '}
+												{(() => {
+													const key =
+														`cancelReason_${slotAction.lastCancellation.reason}` as keyof typeof t;
+													const label =
+														typeof t[key] === 'string'
+															? (t[key] as string)
+															: slotAction.lastCancellation.reason;
+													const other =
+														slotAction.lastCancellation.reason === 'other' &&
+														slotAction.lastCancellation.reasonText?.trim()
+															? `: ${slotAction.lastCancellation.reasonText.trim()}`
+															: '';
+													return `${label}${other}`;
+												})()}
+											</p>
 										) : null}
 									</>
 								);

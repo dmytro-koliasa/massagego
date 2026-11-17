@@ -6,6 +6,10 @@ import {
   WEEKLY_COPY_MAX_WEEKS,
 } from "@/lib/booking-constants";
 import {
+  lastCancellationSince,
+  pickLastCancellationsBySlotStart,
+} from "@/lib/last-cancellation";
+import {
   addLocalWeeks,
   alignToHour,
   isSlotStarted,
@@ -45,7 +49,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "invalid_range" }, { status: 400 });
   }
 
-  const [slots, bookings] = await Promise.all([
+  const retentionSince = lastCancellationSince();
+
+  const [slots, bookings, cancelledClientBookings] = await Promise.all([
     prisma.availabilitySlot.findMany({
       where: {
         masseurId: gate.userId,
@@ -71,7 +77,27 @@ export async function GET(request: Request) {
         },
       },
     }),
+    prisma.booking.findMany({
+      where: {
+        masseurId: gate.userId,
+        slotStart: { gte: from, lt: to },
+        status: "cancelled",
+        cancelledBy: "client",
+        cancelledAt: { gte: retentionSince },
+        cancelReason: { not: null },
+      },
+      select: {
+        slotStart: true,
+        cancelReason: true,
+        cancelReasonText: true,
+        cancelledAt: true,
+      },
+    }),
   ]);
+
+  const lastByStart = pickLastCancellationsBySlotStart(
+    cancelledClientBookings,
+  );
 
   const bookedByStart = new Map(
     bookings
@@ -104,6 +130,7 @@ export async function GET(request: Request) {
           clientPhoneConfirmed: booked?.clientPhoneConfirmed ?? false,
           massageType: booked?.massageType ?? null,
           bookingId: booked?.id ?? null,
+          lastCancellation: lastByStart.get(start) ?? null,
         },
       ];
     }),
@@ -123,6 +150,7 @@ export async function GET(request: Request) {
       clientPhoneConfirmed: booked.clientPhoneConfirmed,
       massageType: booked.massageType,
       bookingId: booked.id,
+      lastCancellation: lastByStart.get(startIso) ?? null,
     });
   }
 
