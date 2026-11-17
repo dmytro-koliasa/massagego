@@ -22,6 +22,8 @@ export const dictionaries = {
 		masseursLoadError: 'Could not load masseurs. Please try again.',
 		masseursEmpty: 'No masseurs yet. When a masseur registers, they will appear here.',
 		masseursFilterEmpty: 'No masseurs in this locality.',
+		masseursEmptyInCity: 'No masseurs in your city yet.',
+		masseursShowAllCities: 'Show all cities',
 		masseursCityFilterLabel: 'Locality',
 		masseursCityFilterAll: 'All localities',
 		masseurFallbackName: 'Masseur',
@@ -46,7 +48,7 @@ export const dictionaries = {
 		bookingClientName: 'Your name',
 		bookingClientPhone: 'Your phone',
 		bookingProfileIncomplete:
-			'Add your name and phone in the profile before booking.',
+			'Complete your profile (name, phone, city, and email) before booking.',
 		bookingClientOverlap: 'You already have a booking at this time.',
 		bookingClientLimit: 'You already have the maximum of 30 upcoming bookings.',
 		bookingCancelNonCancellableNotice:
@@ -122,6 +124,7 @@ export const dictionaries = {
 		authGoogleOption: 'With Google',
 		authName: 'Full name',
 		authEmail: 'Email',
+		authEmailHint: 'Email for notifications and account recovery.',
 		authPhone: 'Phone',
 		authPassword: 'Password',
 		authPasswordConfirm: 'Confirm password',
@@ -143,6 +146,7 @@ export const dictionaries = {
 		authInvalidPhone: 'Enter a valid phone number for your country.',
 		authPhoneCountryExcluded: 'This country code is not supported.',
 		authPasswordMismatch: 'Passwords do not match.',
+		authVerifyEmailSent: 'We sent a confirmation link to your email.',
 		citySearchEmpty: 'No cities found.',
 		authAccountCreatedSignIn:
 			'Account created. Please sign in with your phone and password.',
@@ -169,6 +173,18 @@ export const dictionaries = {
 		profileDescription: 'Description',
 		profileLanguageTabs: 'Profile languages',
 		profileGeneralTitle: 'General information',
+		profilePhone: 'Phone',
+		profilePhonePublicNotice: 'Your phone number is visible to clients.',
+		profileTimezone: 'Time zone',
+		profileTimezoneDeviceMismatch:
+			'Your device time zone differs from your profile ({profile}). Calendars use your profile.',
+		profilePreferredLanguage: 'Preferred language',
+		profileCompleteTitle: 'Complete your profile',
+		profileCompleteSupport:
+			'Add your city and email so we can personalize your experience.',
+		profileCompleteSave: 'Save and continue',
+		profileEmailUnverified: 'Your email is not verified yet.',
+		profileResendVerification: 'Resend confirmation link',
 		profileBookingLinkTitle: 'Your booking link',
 		profileBookingLinkSupport:
 			'Share this link so clients can open your page and book a session.',
@@ -337,6 +353,8 @@ export const dictionaries = {
 		masseursLoadError: 'Не вдалося завантажити масажистів. Спробуйте ще раз.',
 		masseursEmpty: 'Масажистів ще немає. Коли масажист зареєструється, він з’явиться тут.',
 		masseursFilterEmpty: 'У цьому населеному пункті масажистів немає.',
+		masseursEmptyInCity: 'У вашому місті ще немає масажистів.',
+		masseursShowAllCities: 'Показати всі міста',
 		masseursCityFilterLabel: 'Населений пункт',
 		masseursCityFilterAll: 'Усі населені пункти',
 		masseurFallbackName: 'Масажист',
@@ -361,7 +379,7 @@ export const dictionaries = {
 		bookingClientName: 'Ваше ім’я',
 		bookingClientPhone: 'Ваш телефон',
 		bookingProfileIncomplete:
-			'Перед записом вкажіть ім’я та телефон у профілі.',
+			'Перед записом заповніть профіль (ім’я, телефон, місто та email).',
 		bookingClientOverlap: 'У вас уже є запис на цей час.',
 		bookingClientLimit: 'У вас уже максимум 30 майбутніх записів.',
 		bookingCancelNonCancellableNotice:
@@ -437,6 +455,7 @@ export const dictionaries = {
 		authGoogleOption: 'Через Google',
 		authName: 'Повне ім’я',
 		authEmail: 'Email',
+		authEmailHint: 'Email для сповіщень і відновлення доступу.',
 		authPhone: 'Телефон',
 		authPassword: 'Пароль',
 		authPasswordConfirm: 'Підтвердіть пароль',
@@ -458,6 +477,7 @@ export const dictionaries = {
 		authInvalidPhone: 'Введіть коректний номер телефону для вашої країни.',
 		authPhoneCountryExcluded: 'Цей код країни не підтримується.',
 		authPasswordMismatch: 'Паролі не збігаються.',
+		authVerifyEmailSent: 'Ми надіслали посилання для підтвердження на вашу електронну пошту.',
 		citySearchEmpty: 'Міст не знайдено.',
 		authAccountCreatedSignIn:
 			'Акаунт створено. Увійдіть за телефоном і паролем.',
@@ -484,6 +504,18 @@ export const dictionaries = {
 		profileDescription: 'Опис',
 		profileLanguageTabs: 'Мови профілю',
 		profileGeneralTitle: 'Загальна інформація',
+		profilePhone: 'Телефон',
+		profilePhonePublicNotice: 'Ваш номер телефону бачать клієнти.',
+		profileTimezone: 'Часовий пояс',
+		profileTimezoneDeviceMismatch:
+			'Часовий пояс пристрою відрізняється від профілю ({profile}). Календарі використовують профіль.',
+		profilePreferredLanguage: 'Бажана мова',
+		profileCompleteTitle: 'Заповніть профіль',
+		profileCompleteSupport:
+			'Додайте місто та email, щоб ми могли персоналізувати досвід.',
+		profileCompleteSave: 'Зберегти й продовжити',
+		profileEmailUnverified: 'Ваш email ще не підтверджено.',
+		profileResendVerification: 'Надіслати посилання ще раз',
 		profileBookingLinkTitle: 'Ваше посилання для запису',
 		profileBookingLinkSupport:
 			'Надішліть це посилання клієнтам — вони відкриють вашу сторінку і зможуть записатися.',

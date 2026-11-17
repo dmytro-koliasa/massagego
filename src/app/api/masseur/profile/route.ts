@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { resolveBookingSettings } from "@/lib/booking-settings";
+import { cityDisplayName, toCityWriteData } from "@/lib/city";
 import {
   normalizeMassageTypesInput,
   parseMassageTypes,
@@ -27,35 +28,57 @@ const profileSelect = {
   nameUk: true,
   slug: true,
   email: true,
+  phone: true,
   image: true,
   descriptionEn: true,
   descriptionUk: true,
   massageTypes: true,
   city: true,
+  cityPlaceId: true,
+  cityCountryCode: true,
+  cityNameEn: true,
+  cityNameUk: true,
+  cityLat: true,
+  cityLon: true,
   address: true,
+  timezone: true,
+  preferredLocale: true,
   bookingLeadHours: true,
   cancelCutoffHours: true,
 } as const;
 
-function toProfileResponse(user: {
-  id: string;
-  name: string | null;
-  nameEn: string | null;
-  nameUk: string | null;
-  slug: string | null;
-  email: string;
-  image: string | null;
-  descriptionEn: string | null;
-  descriptionUk: string | null;
-  massageTypes: string;
-  city: string | null;
-  address: string | null;
-  bookingLeadHours: number;
-  cancelCutoffHours: number;
-}) {
+function toProfileResponse(
+  user: {
+    id: string;
+    name: string | null;
+    nameEn: string | null;
+    nameUk: string | null;
+    slug: string | null;
+    email: string;
+    phone: string | null;
+    image: string | null;
+    descriptionEn: string | null;
+    descriptionUk: string | null;
+    massageTypes: string;
+    city: string | null;
+    cityPlaceId: string | null;
+    cityCountryCode: string | null;
+    cityNameEn: string | null;
+    cityNameUk: string | null;
+    cityLat: number | null;
+    cityLon: number | null;
+    address: string | null;
+    timezone: string;
+    preferredLocale: string;
+    bookingLeadHours: number;
+    cancelCutoffHours: number;
+  },
+  locale: "en" | "uk" = "en",
+) {
   const settings = resolveBookingSettings(user);
   return {
     ...user,
+    cityLabel: cityDisplayName(user, locale),
     massageTypes: parseMassageTypes(user.massageTypes),
     bookingLeadHours: settings.bookingLeadHours,
     cancelCutoffHours: settings.cancelCutoffHours,
@@ -87,7 +110,8 @@ export async function GET() {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  return NextResponse.json({ user: toProfileResponse(user) });
+  const locale = user.preferredLocale === "uk" ? "uk" : "en";
+  return NextResponse.json({ user: toProfileResponse(user, locale) });
 }
 
 export async function PATCH(request: Request) {
@@ -108,26 +132,24 @@ export async function PATCH(request: Request) {
       descriptionUk,
       city,
       address,
+      phone,
+      timezone,
+      preferredLocale,
       massageTypes: massageTypesRaw,
     } = parsed.data;
 
     const massageTypes = normalizeMassageTypesInput(massageTypesRaw);
+    const locale = preferredLocale === "uk" ? "uk" : "en";
+    const cityData = toCityWriteData(city, locale);
 
-    const data: {
-      name?: string | null;
-      nameEn?: string | null;
-      nameUk?: string | null;
-      descriptionEn?: string | null;
-      descriptionUk?: string | null;
-      city: string;
-      address: string;
-      massageTypes?: string;
-      slug?: string;
-    } = {
-      city,
+    const data: Record<string, unknown> = {
+      ...cityData,
       address,
+      phone,
+      timezone,
     };
 
+    if (preferredLocale) data.preferredLocale = preferredLocale;
     if (nameEn !== undefined) data.nameEn = nameEn;
     if (nameUk !== undefined) data.nameUk = nameUk;
     if (descriptionEn !== undefined) data.descriptionEn = descriptionEn;
@@ -136,8 +158,6 @@ export async function PATCH(request: Request) {
       data.massageTypes = serializeMassageTypes(massageTypes);
     }
 
-    // Keep Auth.js `name` in sync for sessions / Google accounts.
-    // Assign a stable public slug once (from name), so booking links stay shareable.
     if (nameEn !== undefined || nameUk !== undefined) {
       const current = await prisma.user.findUnique({
         where: { id: gate.userId },
@@ -161,7 +181,9 @@ export async function PATCH(request: Request) {
       select: profileSelect,
     });
 
-    return NextResponse.json({ user: toProfileResponse(user) });
+    return NextResponse.json({
+      user: toProfileResponse(user, locale),
+    });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
@@ -189,7 +211,7 @@ export async function POST(request: Request) {
 
     const current = await prisma.user.findUnique({
       where: { id: gate.userId },
-      select: { image: true },
+      select: { image: true, preferredLocale: true },
     });
 
     const imagePath = await storeUpload({
@@ -206,7 +228,8 @@ export async function POST(request: Request) {
 
     await deleteUpload(current?.image);
 
-    return NextResponse.json({ user: toProfileResponse(user) });
+    const locale = current?.preferredLocale === "uk" ? "uk" : "en";
+    return NextResponse.json({ user: toProfileResponse(user, locale) });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
@@ -219,7 +242,7 @@ export async function DELETE() {
   try {
     const current = await prisma.user.findUnique({
       where: { id: gate.userId },
-      select: { image: true },
+      select: { image: true, preferredLocale: true },
     });
 
     const user = await prisma.user.update({
@@ -230,7 +253,8 @@ export async function DELETE() {
 
     await deleteUpload(current?.image);
 
-    return NextResponse.json({ user: toProfileResponse(user) });
+    const locale = current?.preferredLocale === "uk" ? "uk" : "en";
+    return NextResponse.json({ user: toProfileResponse(user, locale) });
   } catch {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }

@@ -2,17 +2,25 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useLanguage } from "@/components/language-provider";
+import type { CanonicalCity } from "@/lib/city";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 type CitySuggestion = {
   id: string;
+  placeId: string;
+  countryCode: string;
   label: string;
   detail: string;
+  nameEn: string;
+  nameUk: string;
+  lat: number | null;
+  lon: number | null;
 };
 
 type CityAutocompleteProps = {
   value: string;
   onChange: (value: string) => void;
+  onSelectCity?: (city: CanonicalCity | null) => void;
   placeholder: string;
   label: string;
   lang: "en" | "uk";
@@ -24,6 +32,7 @@ const DEBOUNCE_MS = 450;
 export function CityAutocomplete({
   value,
   onChange,
+  onSelectCity,
   placeholder,
   label,
   lang,
@@ -113,8 +122,17 @@ export function CityAutocomplete({
   function pickSuggestion(item: CitySuggestion) {
     skipFetchRef.current = true;
     onChange(item.label);
+    onSelectCity?.({
+      placeId: item.placeId,
+      countryCode: item.countryCode,
+      nameEn: item.nameEn || item.label,
+      nameUk: item.nameUk || item.label,
+      lat: item.lat,
+      lon: item.lon,
+    });
     setSuggestions([]);
     setOpen(false);
+    setSearched(false);
   }
 
   return (
@@ -137,9 +155,12 @@ export function CityAutocomplete({
         aria-autocomplete="list"
         autoComplete="off"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          onSelectCity?.(null);
+        }}
         onFocus={() => {
-          if (suggestions.length > 0) setOpen(true);
+          if (suggestions.length > 0 || searched) setOpen(true);
         }}
         placeholder={placeholder}
         maxLength={CITY_MAX}

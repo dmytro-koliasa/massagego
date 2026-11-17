@@ -1,12 +1,15 @@
 import { z } from "zod";
 import {
-  emailSchema,
+  canonicalCitySchema,
+  localeSchema,
   NAME_MAX,
   PASSWORD_MAX,
   PASSWORD_MIN,
   passwordSchema,
   phoneSchema,
   portalSchema,
+  realEmailSchema,
+  emailSchema,
   requiredText,
 } from "@/lib/validation/common";
 
@@ -17,6 +20,7 @@ export const registerSchema = z
     email: emailSchema,
     password: passwordSchema,
     passwordConfirm: z.string().min(1).max(PASSWORD_MAX),
+    preferredLocale: localeSchema.optional(),
     portal: portalSchema.optional(),
     role: portalSchema.optional(),
   })
@@ -30,13 +34,16 @@ export const registerSchema = z
     }
   });
 
-/** Client registration: name + phone + password (+ confirm). */
+/** Client registration: name + phone + real email + city + password. */
 export const clientRegisterSchema = z
   .object({
     name: requiredText(NAME_MAX),
     phone: phoneSchema,
+    email: realEmailSchema,
+    city: canonicalCitySchema,
     password: passwordSchema,
     passwordConfirm: z.string().min(1).max(PASSWORD_MAX),
+    preferredLocale: localeSchema.optional(),
     portal: z.literal("client").optional(),
     role: z.literal("client").optional(),
   })

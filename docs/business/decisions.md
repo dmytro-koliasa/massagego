@@ -66,9 +66,9 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | - (not implemented) |
 | 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | - (not implemented) |
 | 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | - (not implemented) |
-| 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | PR 7 (`feat/excluded-country-list`) |
+| 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | [#11](https://github.com/dmytro-koliasa/massagego/pull/11) |
 | 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
-| 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | - (not implemented) |
+| 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | PR 8 (`feat/registration-profile-fields`) |
 | 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | - (not implemented) |
 | 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | PR 6 (`feat/thai-massage-hints`) |
 | 2026-11-16 | C-8 | A: remove `preferredDate`, `preferredTime`, `clientEmail`; correct the `clientUserId` comment | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
@@ -102,7 +102,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16) |
 | [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Approved** (2026-11-16) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
-| [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Approved** (2026-11-16) |
+| [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Implemented** ([#11](https://github.com/dmytro-koliasa/massagego/pull/11)) |
 | [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 | [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
@@ -259,9 +259,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 3. `timezone` is returned by `GET /api/masseur/availability`, `GET /api/masseurs/[id]/availability` and on each masseur in `GET /api/bookings`.
 4. A warning when the device zone differs from the profile is deferred to **PR 8**, together with choosing the zone.
 
-**Still to do (PR 8):** a masseur cannot choose the zone yet; proposing it from the city (X-2) is groomed there.
+**Timezone UI (PR 8):** masseur can set IANA timezone in the profile; choosing a city suggests a zone via `geo-tz` (confirmable); change is always allowed (UTC instants unchanged); device≠profile warning is shown.
 
-**Open sub-questions (for PR 8):** how a masseur sets or changes the timezone and whether it may change once bookings exist; what happens to existing and walk-in bookings if the timezone changes; whether to warn when the device zone differs from the profile.
+**Open sub-questions (for PR 8):** how a masseur sets or changes the timezone and whether it may change once bookings exist; what happens to existing and walk-in bookings if the timezone changes; whether to warn when the device zone differs from the profile. — **groomed above.**
 
 ### BR-007
 
@@ -441,7 +441,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 5. **One shared blocklist:** the excluded countries are defined **once**, as a single list of country codes in the code base, used by **both** the phone validation and the city search, so that the two can never disagree. Changing the list is a code change (there is no administration screen for it).
 6. **Scope of the rule:** it restricts phone numbers and the cities that can be chosen; it does not detect where a person actually is.
 
-**Implementation (PR 7, groomed 2026-11-17):**
+**Implementation ([#11](https://github.com/dmytro-koliasa/massagego/pull/11), groomed 2026-11-17):**
 - **List:** UN M49 Africa (region 002), including dependent territories (e.g. `RE`, `YT`, `EH`, `IO`, `SH`, `TF`) and Egypt; plus `RU` and `BY`. Kazakhstan (`KZ`) is not excluded.
 - **+7:** country resolved with `libphonenumber-js` (`RU` rejected, `KZ` accepted).
 - **Phone error:** `phone_country_excluded` → EN `This country code is not supported.` / UK `Цей код країни не підтримується.` (same copy for auth and walk-in). Malformed numbers keep `invalid_phone`.
@@ -501,12 +501,16 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: A.**
 **Impact:** UI (registration form, profile, list filter default), API (client register and profile, `GET /api/masseurs`), **DB** (a city for the client), existing clients without a city.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option A.**
+**Decision (Approved 2026-11-16):** **Option A.**
 
 1. **Client city:** the client chooses a **city at registration (required)**, with the same city search used by masseurs. It can be changed in the client profile.
 2. **List default:** the masseur list opens filtered to the **client's city**. The client can switch to another city or to all cities. This works together with the visibility rules of [BR-010](#br-010).
 
-**Open sub-questions for track 2 (proposed defaults, not yet confirmed by the owner):** store the city in a **canonical form** (an identifier from the map service plus the name in the interface language) so that "Київ" and "Kyiv" are one city, for both clients and masseurs; existing masseur city values need to be reconciled; existing clients without a city see "all cities" and are asked, without blocking sign-in, to choose one; when there are no masseurs in the client's city, show a message and a button to show all cities; whether automatic detection (option C) is later offered only as a suggestion.
+**Implementation (PR 8, groomed 2026-11-17):**
+- **Canonical city:** `cityPlaceId` (Nominatim) + `cityCountryCode` + `cityNameEn` / `cityNameUk` (+ optional lat/lon); legacy `city` string kept for old rows without backfill.
+- **Empty city list:** message + “Show all cities” / “Показати всі міста”.
+- **Incomplete clients:** complete-profile banner; sign-in and browse allowed; booking blocked until city + real email exist.
+- Automatic geolocation (option C) stays out of scope.
 
 **Related:** [BR-010](#br-010) (who is listed and in what order).
 
@@ -626,8 +630,8 @@ A review of all **Approved** decisions against each other, made on 2026-11-16. T
 | ID | Finding | Where it comes from | Suggested handling | Status |
 |---|---|---|---|---|
 | X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | **Approved** (2026-11-16): option A, see below |
-| X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Sub-question for implementation: propose the timezone from the city and let the masseur confirm | Open (sub-question), moved to PR 8 of the plan |
-| X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | UX note for implementation: keep the form short and clear; no decision needed now | Note |
+| X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Propose via `geo-tz` from city coordinates; masseur confirms/edits | Decided in PR 8 |
+| X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | Single-screen form (groomed PR 8) | Decided in PR 8 |
 | X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
 | X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Decided in BR-019 |
 

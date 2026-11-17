@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
-import { isPortal } from "@/lib/portals";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { isMassageTypeValue } from "@/lib/massage-types";
+import { isPortal } from "@/lib/portals";
+import { isValidIanaTimeZone } from "@/lib/timezone-suggest";
 
 export const NAME_MAX = 80;
 export const EMAIL_MAX = 254;
@@ -14,6 +15,7 @@ export const CITY_MAX = 80;
 export const CITY_QUERY_MIN = 2;
 export const ADDRESS_MAX = 150;
 export const DESCRIPTION_MAX = 200;
+export const PLACE_ID_MAX = 64;
 
 /** Trimmed string that may become empty; empty → null. */
 export function nullableText(max: number) {
@@ -40,6 +42,39 @@ export const emailSchema = z
   .max(EMAIL_MAX)
   .email()
   .transform((value) => value.toLowerCase());
+
+/** Real email for clients (rejects legacy synthetic `@client.local`). */
+export const realEmailSchema = emailSchema.refine(
+  (value) => !value.endsWith("@client.local"),
+  { message: "invalid_email" },
+);
+
+export const localeSchema = z.enum(["en", "uk"]);
+
+export const canonicalCitySchema = z.object({
+  placeId: requiredText(PLACE_ID_MAX),
+  countryCode: z
+    .string()
+    .trim()
+    .length(2)
+    .transform((value) => value.toUpperCase())
+    .refine((value) => !isExcludedCountryCode(value), {
+      message: "city_country_excluded",
+    }),
+  nameEn: requiredText(CITY_MAX),
+  nameUk: requiredText(CITY_MAX),
+  lat: z.number().finite().optional().nullable(),
+  lon: z.number().finite().optional().nullable(),
+});
+
+export const timeZoneSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine((value) => isValidIanaTimeZone(value), {
+    message: "invalid_timezone",
+  });
 
 const PASSWORD_COMPLEXITY = /^(?=.*\p{L})(?=.*\d)(?=.*[^\p{L}\p{N}\s]).+$/u;
 
@@ -109,12 +144,25 @@ export function zodErrorCode(error: z.ZodError): string {
     if (issue.message === "phone_country_excluded") {
       return "phone_country_excluded";
     }
+    if (issue.message === "city_country_excluded") {
+      return "city_country_excluded";
+    }
+    if (issue.message === "invalid_timezone") {
+      return "invalid_timezone";
+    }
     if (
       issue.message === "invalid_phone" ||
       path === "clientPhone" ||
       path === "phone"
     ) {
       return "invalid_phone";
+    }
+    if (
+      path === "city" ||
+      path.startsWith("city.") ||
+      issue.message === "invalid_city"
+    ) {
+      return "invalid_city";
     }
     if (
       path === "password" &&
@@ -131,11 +179,7 @@ export function zodErrorCode(error: z.ZodError): string {
     if (path === "email") {
       return "invalid_email";
     }
-    if (
-      path === "city" ||
-      path === "address" ||
-      issue.message === "address_required"
-    ) {
+    if (path === "address" || issue.message === "address_required") {
       return "address_required";
     }
     if (

@@ -1,9 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import PhoneInput, { type Country } from 'react-phone-number-input/max';
+import flags from 'react-phone-number-input/flags';
+import 'react-phone-number-input/style.css';
 import { useLanguage } from '@/components/language-provider';
 import {
 	getCustomMassageTypes,
@@ -24,10 +27,22 @@ import { CityAutocomplete } from '@/components/city-autocomplete';
 import {
 	BOOKING_LEAD_HOURS_OPTIONS,
 	CANCEL_CUTOFF_HOURS_OPTIONS,
+	DEFAULT_MASSEUR_TIME_ZONE,
 	type BookingLeadHours,
 	type CancelCutoffHours,
 } from '@/lib/booking-constants';
 import { resolveBookingSettings } from '@/lib/booking-settings';
+import type { CanonicalCity } from '@/lib/city';
+import { cityDisplayName, isCanonicalCity } from '@/lib/city';
+import {
+	clampInternationalPhone,
+	nationalPhoneInsert,
+} from '@/lib/phone';
+import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
+import {
+	deviceTimeZone,
+	suggestTimezone,
+} from '@/lib/timezone-suggest';
 import {
 	ADDRESS_MAX,
 	DESCRIPTION_MAX,
@@ -44,33 +59,73 @@ type Profile = {
 	nameUk: string | null;
 	slug: string | null;
 	email: string;
+	phone: string | null;
 	image: string | null;
 	descriptionEn: string | null;
 	descriptionUk: string | null;
 	massageTypes: MassageTypeValue[];
 	city: string | null;
+	cityPlaceId?: string | null;
+	cityCountryCode?: string | null;
+	cityNameEn?: string | null;
+	cityNameUk?: string | null;
+	cityLat?: number | null;
+	cityLon?: number | null;
+	cityLabel?: string | null;
 	address: string | null;
+	timezone?: string | null;
+	preferredLocale?: string | null;
 	bookingLeadHours?: number;
 	cancelCutoffHours?: number;
 };
+
+function cityFromProfile(profile: Profile): CanonicalCity | null {
+	const candidate = {
+		placeId: profile.cityPlaceId ?? '',
+		countryCode: profile.cityCountryCode ?? '',
+		nameEn: profile.cityNameEn ?? profile.city ?? '',
+		nameUk: profile.cityNameUk ?? profile.city ?? '',
+		lat: profile.cityLat,
+		lon: profile.cityLon,
+	};
+	return isCanonicalCity(candidate) ? candidate : null;
+}
+
+function cityLabelFromProfile(profile: Profile, locale: 'en' | 'uk') {
+	return (
+		profile.cityLabel?.trim() ||
+		cityDisplayName(profile, locale) ||
+		profile.city?.trim() ||
+		''
+	);
+}
 
 export function DashboardView({ profile }: { profile: Profile }) {
 	const { t, locale } = useLanguage();
 	const { update: updateSession } = useSession();
 	const availabilityRef = useRef<AvailabilityCalendarHandle>(null);
 	const initialSettings = resolveBookingSettings(profile);
+	const initialCity = cityFromProfile(profile);
+	const initialCityLabel = cityLabelFromProfile(profile, locale);
 	const [nameEn, setNameEn] = useState(profile.nameEn ?? profile.name ?? '');
 	const [nameUk, setNameUk] = useState(profile.nameUk ?? '');
 	const [descriptionEn, setDescriptionEn] = useState(profile.descriptionEn ?? '');
 	const [descriptionUk, setDescriptionUk] = useState(profile.descriptionUk ?? '');
 	const [massageTypes, setMassageTypes] = useState<MassageTypeValue[]>(profile.massageTypes);
 	const [customMassageType, setCustomMassageType] = useState('');
-	const [savedCity, setSavedCity] = useState(profile.city ?? '');
+	const [savedCity, setSavedCity] = useState(initialCityLabel);
+	const [savedCityObj, setSavedCityObj] = useState<CanonicalCity | null>(initialCity);
 	const [savedAddress, setSavedAddress] = useState(profile.address ?? '');
-	const [city, setCity] = useState(profile.city ?? '');
+	const [city, setCity] = useState(initialCityLabel);
+	const [selectedCity, setSelectedCity] = useState<CanonicalCity | null>(initialCity);
 	const [address, setAddress] = useState(profile.address ?? '');
+	const [phone, setPhone] = useState<string | undefined>(profile.phone ?? undefined);
+	const [phoneCountry, setPhoneCountry] = useState<Country>('UA');
+	const [timezone, setTimezone] = useState(
+		profile.timezone?.trim() || DEFAULT_MASSEUR_TIME_ZONE,
+	);
 	const [editingAddress, setEditingAddress] = useState(
-		!Boolean(profile.city?.trim() && profile.address?.trim()),
+		!Boolean(initialCity && profile.address?.trim()),
 	);
 	const [image, setImage] = useState(profile.image);
 	const [slug, setSlug] = useState(profile.slug);
@@ -88,8 +143,50 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	const [photoPending, setPhotoPending] = useState(false);
 	const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
-	const hasSavedAddress = Boolean(savedCity.trim() && savedAddress.trim());
+	const hasSavedAddress = Boolean(savedCityObj && savedAddress.trim());
 	const showAddressForm = editingAddress || !hasSavedAddress;
+	const deviceTz = deviceTimeZone();
+	const showTimezoneMismatch = Boolean(timezone && deviceTz && timezone !== deviceTz);
+
+	function applyCitySelection(next: CanonicalCity | null) {
+		setSelectedCity(next);
+		if (!next) return;
+		if (
+			typeof next.lat === 'number' &&
+			typeof next.lon === 'number' &&
+			(!timezone.trim() || timezone === DEFAULT_MASSEUR_TIME_ZONE)
+		) {
+			setTimezone(suggestTimezone(next.lat, next.lon));
+		}
+	}
+
+	function syncProfileCityFields(user: Profile) {
+		const nextCity = cityFromProfile(user);
+		const nextLabel = cityLabelFromProfile(user, locale);
+		setSavedCity(nextLabel);
+		setSavedCityObj(nextCity);
+		setCity(nextLabel);
+		setSelectedCity(nextCity);
+		setSavedAddress(user.address ?? '');
+		setAddress(user.address ?? '');
+		setPhone(user.phone ?? undefined);
+		setTimezone(user.timezone?.trim() || DEFAULT_MASSEUR_TIME_ZONE);
+	}
+
+	function buildProfilePayload(cityObj: CanonicalCity | null, addressValue: string) {
+		return masseurProfileSchema.safeParse({
+			nameEn,
+			nameUk,
+			descriptionEn,
+			descriptionUk,
+			massageTypes,
+			city: cityObj,
+			address: addressValue,
+			phone: phone ?? '',
+			timezone,
+			preferredLocale: locale,
+		});
+	}
 
 	function toggleMassageType(id: MassageTypeValue) {
 		setMassageTypes(current =>
@@ -128,24 +225,22 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	}
 
 	async function saveProfile() {
-		const cityToSave = showAddressForm ? city.trim() : savedCity.trim();
+		const cityObj = showAddressForm ? selectedCity : savedCityObj;
 		const addressToSave = showAddressForm ? address.trim() : savedAddress.trim();
-
-		const parsed = masseurProfileSchema.safeParse({
-			nameEn,
-			nameUk,
-			descriptionEn,
-			descriptionUk,
-			massageTypes,
-			city: cityToSave,
-			address: addressToSave,
-		});
+		const parsed = buildProfilePayload(cityObj, addressToSave);
 
 		if (!parsed.success) {
+			const code = zodErrorCode(parsed.error);
 			toast.error(
-				zodErrorCode(parsed.error) === 'address_required'
+				code === 'address_required' ||
+					code === 'invalid_type' ||
+					!cityObj
 					? t.profileAddressRequired
-					: t.profileSaveError,
+					: code === 'phone_country_excluded'
+						? t.authPhoneCountryExcluded
+						: code === 'invalid_phone'
+							? t.authInvalidPhone
+							: t.profileSaveError,
 			);
 			return;
 		}
@@ -180,10 +275,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			setDescriptionEn(data.user.descriptionEn ?? '');
 			setDescriptionUk(data.user.descriptionUk ?? '');
 			setMassageTypes(data.user.massageTypes ?? []);
-			setSavedCity(data.user.city ?? '');
-			setSavedAddress(data.user.address ?? '');
-			setCity(data.user.city ?? '');
-			setAddress(data.user.address ?? '');
+			syncProfileCityFields(data.user);
 			setSlug(data.user.slug);
 			setEditingAddress(false);
 			toast.success(t.profileSaved);
@@ -196,21 +288,18 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	}
 
 	async function saveAddress() {
-		const parsed = masseurProfileSchema.safeParse({
-			nameEn,
-			nameUk,
-			descriptionEn,
-			descriptionUk,
-			massageTypes,
-			city,
-			address,
-		});
+		const parsed = buildProfilePayload(selectedCity, address.trim());
 
 		if (!parsed.success) {
+			const code = zodErrorCode(parsed.error);
 			toast.error(
-				zodErrorCode(parsed.error) === 'address_required'
+				!selectedCity || code === 'address_required' || code === 'invalid_type'
 					? t.profileAddressRequired
-					: t.profileSaveError,
+					: code === 'phone_country_excluded'
+						? t.authPhoneCountryExcluded
+						: code === 'invalid_phone'
+							? t.authInvalidPhone
+							: t.profileSaveError,
 			);
 			return;
 		}
@@ -235,10 +324,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 			}
 
 			const data = (await response.json()) as { user: Profile };
-			setSavedCity(data.user.city ?? '');
-			setSavedAddress(data.user.address ?? '');
-			setCity(data.user.city ?? '');
-			setAddress(data.user.address ?? '');
+			syncProfileCityFields(data.user);
 			setSlug(data.user.slug);
 			setEditingAddress(false);
 			toast.success(t.profileAddressSaved);
@@ -296,12 +382,14 @@ export function DashboardView({ profile }: { profile: Profile }) {
 
 	function startEditAddress() {
 		setCity(savedCity);
+		setSelectedCity(savedCityObj);
 		setAddress(savedAddress);
 		setEditingAddress(true);
 	}
 
 	function cancelEditAddress() {
 		setCity(savedCity);
+		setSelectedCity(savedCityObj);
 		setAddress(savedAddress);
 		setEditingAddress(false);
 	}
@@ -622,12 +710,80 @@ export function DashboardView({ profile }: { profile: Profile }) {
 						</h2>
 					</div>
 
+					<div className='mb-6 space-y-5'>
+						<label className='block text-left'>
+							<span className='mb-1.5 block text-sm text-muted'>{t.profilePhone}</span>
+							<PhoneInput
+								international
+								countryCallingCodeEditable={false}
+								defaultCountry='UA'
+								countries={[...PHONE_COUNTRIES_ALLOWED]}
+								addInternationalOption={false}
+								flags={flags}
+								limitMaxLength
+								value={phone}
+								onChange={value =>
+									setPhone(clampInternationalPhone(value, phoneCountry))
+								}
+								onCountryChange={country => {
+									if (!country) return;
+									setPhoneCountry(country);
+									setPhone(current => clampInternationalPhone(current, country));
+								}}
+								className='PhoneInputField'
+								numberInputProps={{
+									name: 'tel',
+									autoComplete: 'tel',
+									required: true,
+									className:
+										'PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none',
+									onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
+										const inserted = (event.nativeEvent as InputEvent).data ?? '';
+										const input = event.currentTarget;
+										const start = input.selectionStart ?? input.value.length;
+										const end = input.selectionEnd ?? input.value.length;
+										const next = nationalPhoneInsert(
+											input.value,
+											start,
+											end,
+											inserted,
+											phoneCountry,
+										);
+										if (!next.exceeds) return;
+										event.preventDefault();
+										setPhone(next.value);
+									},
+								}}
+							/>
+							<span className='mt-1.5 block text-xs text-muted'>
+								{t.profilePhonePublicNotice}
+							</span>
+						</label>
+
+						<label className='block text-left'>
+							<span className='mb-1.5 block text-sm text-muted'>{t.profileTimezone}</span>
+							<input
+								type='text'
+								value={timezone}
+								onChange={event => setTimezone(event.target.value)}
+								placeholder={DEFAULT_MASSEUR_TIME_ZONE}
+								className='h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+							/>
+							{showTimezoneMismatch ? (
+								<span className='mt-1.5 block text-xs text-muted'>
+									{t.profileTimezoneDeviceMismatch.replaceAll('{profile}', timezone)}
+								</span>
+							) : null}
+						</label>
+					</div>
+
 					{showAddressForm ? (
 						<div className='space-y-5'>
 							<div className='grid gap-5 sm:grid-cols-2'>
 								<CityAutocomplete
 									value={city}
 									onChange={setCity}
+									onSelectCity={applyCitySelection}
 									label={t.profileCity}
 									placeholder={t.profileCityPlaceholder}
 									lang={locale === 'en' ? 'en' : 'uk'}

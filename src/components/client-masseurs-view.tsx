@@ -34,6 +34,12 @@ type LocalizedMasseur = {
 };
 
 const MASSEURS_PAGE_SIZE = 9;
+const CITY_FILTER_DEFAULT = 'default';
+
+type CityOption = {
+	value: string;
+	label: string;
+};
 
 type MasseursResponse = {
 	masseurs: MasseurCard[];
@@ -42,20 +48,22 @@ type MasseursResponse = {
 	total: number;
 	totalAll: number;
 	totalPages: number;
-	cities: string[];
+	cities: CityOption[];
+	cityFilter?: string;
+	defaultCityFilter?: string;
 };
 
 export function ClientMasseursView() {
 	const { t, locale } = useLanguage();
 	const [masseurs, setMasseurs] = useState<MasseurCard[]>([]);
-	const [cities, setCities] = useState<string[]>([]);
+	const [cities, setCities] = useState<CityOption[]>([]);
 	const [total, setTotal] = useState(0);
 	const [totalAll, setTotalAll] = useState(0);
 	const [totalPages, setTotalPages] = useState(1);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [viewMode, setViewMode] = useState<ViewMode>('grid');
-	const [cityFilter, setCityFilter] = useState('all');
+	const [cityFilter, setCityFilter] = useState(CITY_FILTER_DEFAULT);
 	const [page, setPage] = useState(1);
 
 	useEffect(() => {
@@ -70,7 +78,7 @@ export function ClientMasseursView() {
 					page: String(page),
 					pageSize: String(MASSEURS_PAGE_SIZE),
 				});
-				if (cityFilter !== 'all') {
+				if (cityFilter !== 'all' && cityFilter !== CITY_FILTER_DEFAULT) {
 					params.set('city', cityFilter);
 				}
 
@@ -87,6 +95,10 @@ export function ClientMasseursView() {
 				setTotal(data.total);
 				setTotalAll(data.totalAll);
 				setTotalPages(Math.max(1, data.totalPages));
+
+				if (cityFilter === CITY_FILTER_DEFAULT) {
+					setCityFilter(data.defaultCityFilter ?? data.cityFilter ?? 'all');
+				}
 
 				if (data.page !== page) {
 					setPage(data.page);
@@ -108,7 +120,12 @@ export function ClientMasseursView() {
 	}, [page, cityFilter, t.masseursLoadError]);
 
 	useEffect(() => {
-		if (cityFilter !== 'all' && cities.length > 0 && !cities.includes(cityFilter)) {
+		if (
+			cityFilter !== 'all' &&
+			cityFilter !== CITY_FILTER_DEFAULT &&
+			cities.length > 0 &&
+			!cities.some(city => city.value === cityFilter)
+		) {
 			setCityFilter('all');
 			setPage(1);
 		}
@@ -177,8 +194,8 @@ export function ClientMasseursView() {
 								>
 									<option value='all'>{t.masseursCityFilterAll}</option>
 									{cities.map(city => (
-										<option key={city} value={city}>
-											{city}
+										<option key={city.value} value={city.value}>
+											{city.label}
 										</option>
 									))}
 								</select>
@@ -224,9 +241,25 @@ export function ClientMasseursView() {
 							{t.masseursEmpty}
 						</p>
 					) : total === 0 ? (
-						<p className='rounded-lg border border-dashed border-surface-border px-6 py-12 text-center text-muted'>
-							{t.masseursFilterEmpty}
-						</p>
+						<div className='rounded-lg border border-dashed border-surface-border px-6 py-12 text-center'>
+							<p className='text-muted'>
+								{cityFilter !== 'all'
+									? t.masseursEmptyInCity
+									: t.masseursFilterEmpty}
+							</p>
+							{cityFilter !== 'all' && totalAll > 0 ? (
+								<button
+									type='button'
+									onClick={() => {
+										setCityFilter('all');
+										setPage(1);
+									}}
+									className='mt-4 h-11 rounded-lg border border-surface-border px-5 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent'
+								>
+									{t.masseursShowAllCities}
+								</button>
+							) : null}
+						</div>
 					) : viewMode === 'grid' ? (
 						<ul className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 							{localizedMasseurs.map(masseur => (
