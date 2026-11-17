@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22); local Resend ops [#23](https://github.com/dmytro-koliasa/massagego/pull/23). Remaining work: deferred product items (e.g. prices, payments, courses, complaints), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/CI/Telegram when chosen.
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22); local Resend ops [#23](https://github.com/dmytro-koliasa/massagego/pull/23). Remaining work: deferred product items (e.g. prices, payments, courses), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -30,7 +30,7 @@
 | P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`). **Local ops:** free-tier Resend + `docs/ops/email-local.md` + `npm run cron:notifications` (no Vercel). **Deferred:** production domain/sender and host cron. | PR 8 (verification), PR 9, PR 12 |
 | P-4 | Create the Telegram bot and decide how its token is stored. **Deferred** until a public URL exists (no paid tunnel/host required during local-only development). | PR 13 |
 | P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (PR 14). | PR 9, PR 12, PR 14 |
-| P-6 | Decide how the shared test database is provided in continuous integration (there is no CI today). | PR 1 onwards (recommended) |
+| P-6 | Decide how the shared test database is provided in continuous integration. **Addressed:** GitHub Actions (free `ubuntu-latest`) with a Postgres 16 service → `massage_test`; triggers `pull_request` + `push` to `master`; `lint` + unit + integration (`npm test`). E2E stays local. See [testing.md](../testing.md). | PR 1 onwards (recommended) |
 
 ## 3. Order and dependencies
 

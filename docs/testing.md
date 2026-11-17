@@ -1,6 +1,6 @@
 # Testing
 
-Local setup for **unit**, **integration**, and **E2E** tests. CI is deferred to a later PR.
+Local setup for **unit**, **integration**, and **E2E** tests. Continuous integration runs unit + integration + lint on GitHub Actions (see below). E2E stays local-only for now.
 
 ## Prerequisites
 
@@ -64,6 +64,20 @@ npm run test:e2e
 ```
 
 On PowerShell use `$env:TEST_DATABASE_URL="..."`.
+
+## Continuous integration (P-6)
+
+Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+
+| | |
+|---|---|
+| Triggers | `pull_request` (all branches) and `push` to `master` |
+| Runner | Free `ubuntu-latest` |
+| Database | Postgres 16 service container → `massage_test` |
+| Steps | `npm ci` → `db:migrate:test` → `lint` → `npm test` |
+| Not in CI | Playwright E2E, paid runners |
+
+Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow env only.
 
 ## E2E (Playwright)
 

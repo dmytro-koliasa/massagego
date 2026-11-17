@@ -52,4 +52,4 @@ Verification and password-reset emails use the same `sendEmail` adapter — they
 - Vercel project, production env, and billing
 - Custom Resend domain / production `EMAIL_FROM`
 - Telegram bot + public webhook
-- CI (including any paid runners)
+- Paid CI runners (free GitHub Actions CI is separate — see [testing.md](../testing.md))
