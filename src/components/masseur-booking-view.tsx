@@ -9,6 +9,11 @@ import { MasseurGallery } from "@/components/masseur-gallery";
 import { DEFAULT_CANCEL_CUTOFF_HOURS } from "@/lib/booking-constants";
 import { isNonCancellableAtBookingTime } from "@/lib/client-booking-rules";
 import {
+  hasConsecutiveHourPair,
+  showPersistentThaiHint,
+  THAI_MASSAGE_TYPE,
+} from "@/lib/thai-hints";
+import {
   bookingCreateSchema,
   NOTE_MAX,
   zodErrorCode,
@@ -86,6 +91,23 @@ export function MasseurBookingView({
       isNonCancellableAtBookingTime(new Date(start), cancelCutoffHours, now),
     );
   }, [selectedSlotStarts, cancelCutoffHours]);
+
+  function handleMassageTypeChange(next: string) {
+    setMassageType(next);
+    if (next === THAI_MASSAGE_TYPE) {
+      showPersistentThaiHint(t.bookingThaiMultiSlotHint);
+    }
+  }
+
+  function handleSelectedSlotsChange(next: string[]) {
+    const previous = selectedSlotStarts;
+    setSelectedSlotStarts(next);
+    if (massageType !== THAI_MASSAGE_TYPE) return;
+    // Slot-selection hint only when the selection grew and still has no pair.
+    if (next.length <= previous.length) return;
+    if (hasConsecutiveHourPair(next)) return;
+    showPersistentThaiHint(t.bookingThaiMultiSlotHint);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -262,7 +284,7 @@ export function MasseurBookingView({
           <ClientBookingCalendar
             masseurId={masseur.id}
             selectedStarts={selectedSlotStarts}
-            onChangeSelected={setSelectedSlotStarts}
+            onChangeSelected={handleSelectedSlotsChange}
             refreshKey={calendarRefreshKey}
             onRulesLoaded={(rules) =>
               setCancelCutoffHours(rules.cancelCutoffHours)
@@ -292,7 +314,9 @@ export function MasseurBookingView({
                   <select
                     required
                     value={massageType}
-                    onChange={(event) => setMassageType(event.target.value)}
+                    onChange={(event) =>
+                      handleMassageTypeChange(event.target.value)
+                    }
                     className="h-12 w-full text-foreground"
                   >
                     <option value="">{t.bookingMassageTypePlaceholder}</option>

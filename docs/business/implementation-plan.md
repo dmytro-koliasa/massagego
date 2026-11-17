@@ -138,11 +138,13 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 6 - Thai massage hints
 
+**Status:** implementing on branch `feat/thai-massage-hints` (groomed 2026-11-17).
+
+**Groomed decisions:** suppress slot-selection toast when ≥2 consecutive hours are already selected (type-change toast always); consecutive = same masseur/client/Thai type, ±1 h, no one-click neighbour cancel; shared booking hint + cancel-neighbour wording as groomed; client-only (not masseur walk-in/cancel).
+
 **Scope:** persistent toasts (closed only by the user): a recommendation to choose more than one consecutive slot when the type becomes Thai and after selecting a slot while Thai is chosen; on cancellation of one of consecutive slots, a recommendation to cancel the neighbour, or the message that the neighbour can no longer be cancelled.
 
 **Acceptance criteria:** each trigger shows the toast, the toast does not close by itself, texts exist in both languages, and nothing blocks a booking or cancellation.
-
-**To groom first:** whether the toast is suppressed when two or more consecutive slots are already selected; how "consecutive" is detected on cancellation; the wording.
 
 ### PR 7 - Shared excluded-country list
 

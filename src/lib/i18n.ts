@@ -65,6 +65,10 @@ export const dictionaries = {
 		cancelReason_changed_mind: 'I changed my mind',
 		cancelReason_wrong_slot: 'I booked the wrong time',
 		cancelReason_other: 'Other',
+		bookingThaiMultiSlotHint:
+			'Thai massage usually needs more than one consecutive hour. Consider selecting neighbouring slots.',
+		bookingThaiCancelNeighborHint:
+			'You cancelled one Thai slot. Consider cancelling the neighbouring hour too.',
 		bookingThaiNeighborCutoff:
 			'The neighbouring Thai slot can no longer be cancelled in the app. Please contact the masseur directly.',
 		bookingThaiNeighborCutoffWithPhone:
@@ -373,6 +377,10 @@ export const dictionaries = {
 		cancelReason_changed_mind: 'Передумав(ла)',
 		cancelReason_wrong_slot: 'Записався(лась) не на той час',
 		cancelReason_other: 'Інше',
+		bookingThaiMultiSlotHint:
+			'Для тайського масажу зазвичай потрібно більше однієї години підряд. Оберіть сусідні слоти.',
+		bookingThaiCancelNeighborHint:
+			'Ви скасували один слот тайського масажу. Рекомендуємо скасувати й сусідню годину.',
 		bookingThaiNeighborCutoff:
 			'Сусідній слот тайського масажу вже не можна скасувати в застосунку. Зв’яжіться з масажистом напряму.',
 		bookingThaiNeighborCutoffWithPhone:

@@ -145,6 +145,7 @@ export async function POST(request: Request) {
 
     let neighborHint:
       | { type: "thai_cutoff"; masseurPhone: string | null }
+      | { type: "thai_neighbor" }
       | undefined;
 
     if (booking.massageType === "thai") {
@@ -159,14 +160,17 @@ export async function POST(request: Request) {
         },
         select: { slotStart: true },
       });
-      if (
-        neighbour?.slotStart &&
-        !isWithinClientCancelWindow(neighbour.slotStart, cutoffHours, now)
-      ) {
-        neighborHint = {
-          type: "thai_cutoff",
-          masseurPhone: booking.masseur.phone?.trim() || null,
-        };
+      if (neighbour?.slotStart) {
+        if (
+          !isWithinClientCancelWindow(neighbour.slotStart, cutoffHours, now)
+        ) {
+          neighborHint = {
+            type: "thai_cutoff",
+            masseurPhone: booking.masseur.phone?.trim() || null,
+          };
+        } else {
+          neighborHint = { type: "thai_neighbor" };
+        }
       }
     }
 
