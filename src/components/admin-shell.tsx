@@ -10,6 +10,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const usersActive =
     pathname === "/admin" || pathname.startsWith("/admin/users");
+  const complaintsActive = pathname.startsWith("/admin/complaints");
   const auditActive = pathname.startsWith("/admin/audit");
 
   return (
@@ -33,6 +34,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             }`}
           >
             {t.adminNavUsers}
+          </Link>
+          <Link
+            href="/admin/complaints"
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+              complaintsActive
+                ? "border-accent text-foreground"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            {t.adminNavComplaints}
           </Link>
           <Link
             href="/admin/audit"

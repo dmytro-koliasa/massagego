@@ -68,6 +68,9 @@ model User {
   notificationPreferences NotificationPreference[]
   notificationOutbox      NotificationOutbox[]
   adminAuditLogsAsActor AdminAuditLog[] @relation("AdminAuditActor")
+  complaintsFiled    Complaint[] @relation("ComplaintReporter")
+  complaintsReceived Complaint[] @relation("ComplaintTarget")
+  complaintsResolved Complaint[] @relation("ComplaintResolver")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -188,6 +191,7 @@ model Booking {
   masseur User  @relation("MasseurBookings", fields: [masseurId], references: [id], onDelete: Cascade)
   client  User? @relation("ClientBookings", fields: [clientUserId], references: [id], onDelete: SetNull)
   notificationOutbox NotificationOutbox[]
+  complaints         Complaint[]
 
   @@index([masseurId])
   @@index([masseurId, slotStart])
@@ -197,6 +201,46 @@ model Booking {
   @@index([status, cancelledAt])
   @@index([status, slotStart])
   @@index([hasRetentionHold])
+}
+
+/// User-to-user complaint for admin review (BR-021).
+enum ComplaintCategory {
+  no_show
+  rude
+  spam
+  other
+}
+
+enum ComplaintStatus {
+  open
+  resolved
+  dismissed
+}
+
+model Complaint {
+  id           String            @id @default(cuid())
+  reporterId   String
+  targetId     String
+  bookingId    String?
+  category     ComplaintCategory
+  body         String            @db.VarChar(500)
+  status       ComplaintStatus   @default(open)
+  /// Internal admin note; never shown to reporter or target.
+  adminNote    String?           @db.VarChar(1000)
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  reporter   User     @relation("ComplaintReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  target     User     @relation("ComplaintTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  resolvedBy User?    @relation("ComplaintResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reporterId])
+  @@index([targetId])
+  @@index([bookingId])
 }
 
 enum NotificationEventType {
