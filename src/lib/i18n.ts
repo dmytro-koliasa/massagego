@@ -127,6 +127,8 @@ export const dictionaries = {
 		cancelReason_changed_mind: 'I changed my mind',
 		cancelReason_wrong_slot: 'I booked the wrong time',
 		cancelReason_other: 'Other',
+		cancelReason_client_account_deleted: 'Client deleted their account',
+		availabilityLastCancellation: 'Last cancellation',
 		bookingThaiMultiSlotHint:
 			'Thai massage usually needs more than one consecutive hour. Consider selecting neighbouring slots.',
 		bookingThaiCancelNeighborHint:
@@ -589,6 +591,8 @@ export const dictionaries = {
 		cancelReason_changed_mind: 'Передумав(ла)',
 		cancelReason_wrong_slot: 'Записався(лась) не на той час',
 		cancelReason_other: 'Інше',
+		cancelReason_client_account_deleted: 'Клієнт видалив обліковий запис',
+		availabilityLastCancellation: 'Останнє скасування',
 		bookingThaiMultiSlotHint:
 			'Для тайського масажу зазвичай потрібно більше однієї години підряд. Оберіть сусідні слоти.',
 		bookingThaiCancelNeighborHint:
