@@ -148,6 +148,10 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 7 - Shared excluded-country list
 
+**Status:** implementing on branch `feat/excluded-country-list` (groomed 2026-11-17).
+
+**Groomed decisions:** UN M49 Africa (+ dependent territories, Egypt) + `RU` + `BY`; +7 via libphonenumber (`KZ` ok, `RU` reject); phone copy `This country code is not supported.` / `Цей код країни не підтримується.`; city empty `No cities found.` / `Міст не знайдено.`; no legacy data migration.
+
 **Scope:** one list of excluded country codes (all African countries, Russia, Belarus) used by phone validation and the city search; any other valid international number is accepted; the phone picker offers the allowed countries (Ukraine default); the city search and the catalog city filter hide the excluded countries.
 
 **Acceptance criteria:**
@@ -155,8 +159,6 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Kazakhstan numbers (dialling code +7) are accepted and Russian ones rejected.
 - Cities of excluded countries are not offered in the search and are not shown as filter values.
 - The list is defined once.
-
-**To groom first:** the exact list of countries and territories; the error messages.
 
 ### PR 8 - Registration and profile fields
 

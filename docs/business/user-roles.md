@@ -110,7 +110,7 @@ Client phone numbers are visible to a masseur only through bookings on their own
 - Client endpoints reject masseur sessions and masseur endpoints reject client sessions, both through separate cookies and a database role check.
 - The city-search proxy and gallery endpoints are masseur-only.
 - Password policy: 8-64 characters containing a letter, a digit and a symbol.
-- Phone numbers must be valid numbers from the EU or Ukraine ([BR-013](decisions.md#br-013)).
+- Phone numbers must be valid international numbers except African countries, Russia and Belarus ([BR-013](decisions.md#br-013)).
 - Uploads: JPEG/PNG only for the gallery, 5 MB maximum, 3 images per masseur.
 
 ## 6. Gaps and open points

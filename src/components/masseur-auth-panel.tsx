@@ -17,7 +17,7 @@ import {
   type Portal,
 } from "@/lib/portals";
 import { createNativeValidationHandlers } from "@/lib/native-validation";
-import { PHONE_COUNTRIES_EU_UA } from "@/lib/phone-countries";
+import { PHONE_COUNTRIES_ALLOWED } from "@/lib/phone-countries";
 import {
   clampInternationalPhone,
   nationalPhoneInsert,
@@ -313,7 +313,7 @@ export function MasseurAuthPanel({
                 international
                 countryCallingCodeEditable={false}
                 defaultCountry="UA"
-                countries={[...PHONE_COUNTRIES_EU_UA]}
+                countries={[...PHONE_COUNTRIES_ALLOWED]}
                 addInternationalOption={false}
                 flags={flags}
                 limitMaxLength
@@ -664,6 +664,8 @@ function mapRegisterError(
       return t.authWeakPassword;
     case "password_mismatch":
       return t.authPasswordMismatch;
+    case "phone_country_excluded":
+      return t.authPhoneCountryExcluded;
     case "invalid_phone":
       return t.authInvalidPhone;
     case "invalid_email":
