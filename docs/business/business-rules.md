@@ -32,11 +32,16 @@ Rules the product owner has approved **and** that are implemented. A rule is add
 | AR-7 | The masseur availability calendar and the client booking calendar show days and hours in the masseur's time zone with the line "Times in {label}" / "Час: {label}". The client sessions calendar stays in the browser's zone and labels each event with that masseur's zone. Availability and bookings APIs return `timezone`. | [BR-006](decisions.md#br-006) (display) | `src/lib/calendar-time.ts`; `src/components/masseur-availability-calendar.tsx`; `src/components/client-booking-calendar.tsx`; `src/components/client-sessions-calendar.tsx`; `src/app/api/masseur/availability/route.ts`; `src/app/api/masseurs/[id]/availability/route.ts`; `src/app/api/bookings/route.ts`; [#6](https://github.com/dmytro-koliasa/massagego/pull/6) |
 | AR-8 | The global working window 05:00–23:00 (masseur time zone) is enforced on every write path: manual availability changes, weekly copy (including a supplied template) and masseur walk-in bookings. Adding or removing a started availability slot is rejected by the server (`slot_in_past`). | [BR-007](decisions.md#br-007) | `src/app/api/masseur/availability/route.ts`; `src/app/api/masseur/bookings/route.ts`; `src/lib/masseur-time.ts` (`isSlotStarted`); `tests/availability-rules.test.ts`; [#7](https://github.com/dmytro-koliasa/massagego/pull/7) |
 | AR-9 | Clients only see masseurs with a complete profile (name in at least one language, canonical city, address, phone) and at least one availability record ever. Cards show a green/red nearest-free-time plaque; free-time masseurs sort first; unlisted profiles open by link but cannot be booked; the list API does not return masseur email. | [BR-010](decisions.md#br-010), C-9 | `src/lib/masseur-catalog.ts`; `src/app/api/masseurs/route.ts`; `src/components/client-masseurs-view.tsx`; `src/app/client/masseur/[slug]/page.tsx`; `tests/masseur-catalog.test.ts`; PR 11 (`feat/masseur-catalog`) |
-A masseur cannot choose the zone yet (PR 8 of the [implementation plan](implementation-plan.md)).
+| AR-10 | Client cancellation requires a listed reason ("Other" needs text ≤200); the per-masseur cancel cutoff is enforced; own already-cancelled booking succeeds; missing or foreign booking returns the same `404 not_found`. | [BR-004](decisions.md#br-004), C-7 | `src/app/api/bookings/cancel/route.ts`; [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| AR-11 | Password reset is a one-time email link (1 h); clients request by phone, masseurs by email; clients still sign in with phone + password only. | [BR-019](decisions.md#br-019) | `src/app/api/auth/password-reset/*`; [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
+| AR-12 | Sensitive auth and booking endpoints use Postgres sliding-window rate limits per IP and per account. | [BR-020](decisions.md#br-020) | `src/lib/rate-limit.ts`; `RateLimitBucket`; [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
+| AR-13 | Uploaded images are content-checked and re-saved with sharp (JPEG/PNG/WebP in; metadata stripped; max long side 2000px). | [BR-022](decisions.md#br-022) | `src/lib/image-process.ts` (or equivalent); [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
+| AR-14 | Notifications: email is the main channel; optional Telegram; events 1–5 via outbox; per-event per-channel prefs; event 4 on client account deletion. | [BR-009](decisions.md#br-009) | [#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
+| AR-15 | Optional phone confirmation via Telegram contact share sets `phoneConfirmedAt` (not required to register or book). | [BR-023](decisions.md#br-023) | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
+| AR-16 | Self-service account deletion anonymises the user; client deletion auto-cancels future bookings (event 4); masseur deletion refused while future bookings exist; cancelled bookings without a retention hold are hard-deleted ~7 days after `cancelledAt`; completed bookings without a hold ~3 months after `slotStart`. | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) | `src/lib/account-deletion.ts`; `src/app/api/cron/cleanup/route.ts`; [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
+| AR-17 | Separate `admin` portal: env bootstrap of one super-admin; user list with Active/Blocked/Deleted filters; block/unblock client and masseur only; blocked users cannot sign in or create bookings (existing bookings stay); `AdminAuditLog` + `/admin/audit`. Complaints are out of scope. | [BR-021](decisions.md#br-021) | `src/app/admin/*`; `src/app/api/admin/*`; [#20](https://github.com/dmytro-koliasa/massagego/pull/20) |
 
-Storage for the cancellation reason (`cancelReason`, `cancelReasonText`) exists, but the reason rule of [BR-004](decisions.md#br-004) is **not yet implemented**: the API does not accept or require a reason yet.
-
-The only behavior that is clearly intended today is that a masseur cannot be double-booked for the same hour (section 5); it is listed as as-is because it has not been formally approved.
+Timezone choice for masseurs and related profile fields were delivered with registration/profile work (PR 8 / [#12](https://github.com/dmytro-koliasa/massagego/pull/12)).
 
 ---
 
@@ -232,7 +237,7 @@ Source: `src/auth/*`, `src/lib/validation/auth.ts`, `src/app/api/auth/register/r
 - Client: **phone** + password; the stored email is synthesised from the phone (`clientEmailFromPhone`).
 - Password: 8-64 characters, must contain a letter, a digit and a symbol.
 - Sessions are JWT, with a separate cookie per portal.
-- No rate limiting, email verification, password reset, or account deletion exists.
+- Rate limiting, email verification, password reset and account deletion are implemented (see AR-11, AR-12, AR-16).
 
 ### 9.2 Masseur profile - Implemented
 
@@ -245,9 +250,12 @@ Source: `src/auth/*`, `src/lib/validation/auth.ts`, `src/app/api/auth/register/r
 
 `GET /api/masseurs` lists only masseurs with a complete profile and at least one availability record ever (paginated, optional city filter). Cards include a nearest-free-time label; email is not returned.
 
-### 9.4 Data lifecycle - Needs Decision ([BR-011](decisions.md#br-011))
+### 9.4 Data lifecycle - Implemented ([BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018); see AR-16)
 
-- Deleting a masseur cascades to their bookings, slots and gallery. Deleting a client sets `Booking.clientUserId` to null. No deletion feature exists in the app today.
+- Self-service deletion anonymises the account (`deletedAt`, synthetic email, cleared PII, sessions and Telegram).
+- Client deletion auto-cancels future bookings (`client_account_deleted`) and notifies masseurs (event 4).
+- Masseur deletion is refused while active future bookings exist.
+- Cron `GET /api/cron/cleanup` hard-deletes cancelled bookings (~7 days) and completed bookings (~3 months) unless `hasRetentionHold`.
 
 ---
 

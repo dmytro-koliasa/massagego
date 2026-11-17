@@ -20,8 +20,8 @@
 | Notification settings: per event and per channel on/off, with at least one channel on for critical events — **email** in PR 12 (`NotificationPreference`); Telegram channel in PR 13 | both | [BR-009](decisions.md#br-009) |
 | Telegram link (chat identifier and link state) | both | [BR-009](decisions.md#br-009) |
 | "Phone confirmed" mark (set through the Telegram bot) | both | [BR-023](decisions.md#br-023) |
-| **Implementing** (PR 15): `blockedAt` (nullable timestamp); blocked users cannot sign in or create bookings; existing bookings stay | both (not admin) | [BR-021](decisions.md#br-021) |
-| Marker for an anonymised (deleted) account, with personal data erased | both | [BR-011](decisions.md#br-011) |
+| **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)): `blockedAt` (nullable timestamp); blocked users cannot sign in or create bookings; existing bookings stay | both (not admin) | [BR-021](decisions.md#br-021) |
+| **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)): `deletedAt` + anonymised account marker, with personal data erased | both | [BR-011](decisions.md#br-011) |
 
 ### `Booking`
 
@@ -29,7 +29,7 @@
 |---|---|
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): `status` restricted to the enum `BookingStatus` (`confirmed`, renamed from `pending`, and `cancelled`) | [BR-005](decisions.md#br-005) |
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): `cancelledBy` (enum `CancelledBy`: `client`, `masseur`) and `cancelledAt` | [BR-005](decisions.md#br-005) |
-| **Storage implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): cancellation reason `cancelReason` (enum `CancellationReason`, including the system key `client_account_deleted`) and `cancelReasonText` (`VARCHAR(200)`) for "Other". Still to do: accepting and requiring the reason in the API and the UI (PR 5 of the plan) | [BR-004](decisions.md#br-004), [BR-011](decisions.md#br-011) |
+| **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4), [#9](https://github.com/dmytro-koliasa/massagego/pull/9)): cancellation reason `cancelReason` (enum `CancellationReason`, including the system key `client_account_deleted`) and `cancelReasonText` (`VARCHAR(200)`); client API/UI require a reason | [BR-004](decisions.md#br-004), [BR-011](decisions.md#br-011) |
 | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)): indexes on (`status`, `cancelledAt`) and (`status`, `slotStart`) for the cleanup job | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
 | **Implemented** (PR 5): exclusion constraint `Booking_no_overlapping_active_client_slots` on (`clientUserId`, hour range) where status is not cancelled and `clientUserId` is not null | [BR-008](decisions.md#br-008) |
 | **Implemented** (PR 5): name and phone for client bookings copied from the account (`User.name`, `User.phone`) at booking time | [BR-008](decisions.md#br-008) |
@@ -46,7 +46,8 @@ No schema change. Only rules change (working window in the masseur's timezone, p
 | Telegram link token | One-time token used to connect an account to the bot | [BR-009](decisions.md#br-009) |
 | Email verification token (the existing `VerificationToken` table may be reused) | Confirm the email address — reused in PR 8/9 | [BR-009](decisions.md#br-009) |
 | Obligation flag on bookings and separate payment records | Keep bookings with financial or legal obligations out of automatic deletion | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018), later with [BR-015](decisions.md#br-015) |
-| **Implementing** (PR 15): `AdminAuditLog` (actor, action, target user, meta JSON, createdAt) | Administrator action audit trail (XR-1) | [BR-021](decisions.md#br-021) |
+| **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)): `AdminAuditLog` (actor, action, target user, meta JSON, createdAt) | Administrator action audit trail (XR-1) | [BR-021](decisions.md#br-021) |
+| **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)): `Booking.hasRetentionHold` (default false; cleanup job skips `true`) | Hold cancelled/completed bookings out of automatic hard delete until payments/legal | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) |
 
 ## 3. Configuration and constants in code
 

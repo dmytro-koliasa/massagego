@@ -87,23 +87,23 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) |
 | [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Implemented** (PR 4) |
 | [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Implemented** (PR 4) |
-| [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Approved** (2026-11-16) |
+| [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Implemented** ([#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) |
-| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)); choosing the zone remains for PR 8 |
+| [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6), [#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
-| [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Approved** (2026-11-16) |
-| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Approved** (2026-11-16); email **Implemented** in PR 12 |
+| [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
+| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** (PR 11, `feat/masseur-catalog`) |
-| [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Approved** (2026-11-16), except completed-booking retention ([BR-018](#br-018)) |
-| [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Approved** (2026-11-16) |
-| [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Approved** (2026-11-16; implementing PR 9) |
-| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Approved** (2026-11-16; implementing PR 9) |
-| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Approved** (2026-11-16); implementing in PR 15 |
-| [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Approved** (2026-11-16); implementing in PR 10 |
-| [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Approved** (2026-11-16) |
+| [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)); completed retention via [BR-018](#br-018) |
+| [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
+| [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)) |
+| [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)) |
+| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints deferred |
+| [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Implemented** ([#14](https://github.com/dmytro-koliasa/massagego/pull/14)) |
+| [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Implemented** ([#18](https://github.com/dmytro-koliasa/massagego/pull/18)) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
 | [BR-013](#br-013) | Supported phone countries | Low | A: keep EU + UA, document it (owner chose all countries except an excluded list) | **Implemented** ([#11](https://github.com/dmytro-koliasa/massagego/pull/11)) |
-| [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Approved** (2026-11-16) |
+| [BR-014](#br-014) | Long sessions (Thai massage) as consecutive slots | Medium | UI toast hints, no enforcement (chosen by the owner) | **Implemented** ([#10](https://github.com/dmytro-koliasa/massagego/pull/10)) |
 | [BR-015](#br-015) | Late-cancellation fee (50%) and online payment | Future | A: policy shown before booking, late cancellation flagged, payment settled offline (when picked up) | **Deferred** (2026-11-16) |
 | [BR-016](#br-016) | Massage courses (packages of 10-20 sessions) | Future | - (no recommendation yet) | **Deferred** (2026-11-16) |
 | [BR-017](#br-017) | Client city and default city filter | Medium | A: city required at client registration; list defaults to it | **Implemented** ([#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
@@ -198,7 +198,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Resolves when implemented:** C-5 (client could cancel past or in-progress bookings, a masseur could not).
 
-**Storage of the reason (implemented 2026-11-16, [#4](https://github.com/dmytro-koliasa/massagego/pull/4)):** `Booking.cancelReason` is the enum `CancellationReason` with the keys `cant_make_it`, `circumstances_changed`, `changed_mind`, `wrong_slot`, `other` and the system key `client_account_deleted` ([BR-011](#br-011)); the "Other" text is `Booking.cancelReasonText` (`VARCHAR(200)`). Only keys are stored; the English and Ukrainian labels belong to the UI. The API does not accept a reason yet: the dropdown, the validation and the cutoff come with PR 5 of the [implementation plan](implementation-plan.md). The rest of this decision stays **Approved**, not implemented.
+**Storage and enforcement (Implemented):** `Booking.cancelReason` is the enum `CancellationReason` with the keys `cant_make_it`, `circumstances_changed`, `changed_mind`, `wrong_slot`, `other` and the system key `client_account_deleted` ([BR-011](#br-011)); the "Other" text is `Booking.cancelReasonText` (`VARCHAR(200)`). Only keys are stored; the English and Ukrainian labels belong to the UI. Client cancel API and UI require a reason; cutoff and lead-time rules are enforced ([#4](https://github.com/dmytro-koliasa/massagego/pull/4), [#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9)).
 
 **Open sub-questions for track 2 (not yet groomed):** how the masseur's slot details show a cancellation reason, given that today a cancelled booking disappears from the masseur calendar and the hour simply shows as available again (e.g. a "last cancellation" line in the slot details, or a list of recent cancellations); where the reason is stored (new nullable fields on `Booking`, plus a timestamp; the reason list must be translated to English and Ukrainian) and whether existing cancelled bookings keep it empty; how reasons work when several consecutive slots are cancelled one by one ([BR-014](#br-014)); default cutoff for existing masseurs (24 h proposed); what happens to existing future bookings that fall inside a newly chosen cutoff; exact wording of the notice and the post-cutoff message in English and Ukrainian; where the cutoff and phone fields live in the dashboard; whether the post-cutoff message shows the phone as a tap-to-call link; how the phone is collected from existing masseurs; privacy wording shown on the profile form.
 
@@ -330,7 +330,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 10. **A user who has not connected Telegram** simply receives email; Telegram is optional.
 11. **Timing:** a cancellation notice is sent **at once** when the cancellation happens, so it is delivered well before the cancelled booking is deleted after 7 days.
 
-**Status: Approved (2026-11-16); email channel Implemented in PR 12 (`feat/email-notifications`); Telegram implementing in PR 13.** Account-deletion enqueue for event 4 remains PR 14.
+**Status: Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17) email + outbox, [#18](https://github.com/dmytro-koliasa/massagego/pull/18) Telegram, [#19](https://github.com/dmytro-koliasa/massagego/pull/19) event-4 on account deletion).
 
 **PR 12 implementation notes:** Resend provider; Postgres `NotificationPreference` + `NotificationOutbox`; Vercel Cron every 5 minutes with backoff 1→5→15→30 min and 24h max age; separate Notifications pages (email only); critical email locked on until Telegram; short transactional EN/UK copy; walk-ins send nothing; unverified/synthetic emails skipped.
 
@@ -366,7 +366,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** UI (delete account), API, DB (soft-delete fields / anonymisation job), existing rows unaffected.
 
-**Decision (Approved 2026-11-16); implementing in PR 14 (`feat/account-deletion-cleanup`).**
+**Status: Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)).
 
 *Account deletion (question 1, option B).* A user deletes their own account in the application. Personal data is erased or anonymised (name, phone, email, photo, address, description). Bookings that remain are kept for the other party's history, with the deleted person's name and phone replaced by "deleted user" and no phone number. The phone number becomes free for a new registration.
 
@@ -402,7 +402,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Current implementation:** kept indefinitely; no deletion or anonymisation exists.
 **Options considered:** **A.** keep while accounts exist, anonymise on account deletion; **B.** anonymise personal data after a fixed period; **C.** hard delete the record after a fixed period.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option C, with a period of 3 months.** Created from point 4 of [BR-011](#br-011), which left this open.
+**Status: Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)).
+
+**Decision (option C, with a period of 3 months).** Created from point 4 of [BR-011](#br-011), which left this open.
 
 1. **Hard delete after 3 months:** a completed (held) booking is **physically deleted** from the database **3 months after the session**, by the same regular background job as in [BR-011](#br-011). No anonymised copy or soft delete is kept. After deletion the booking appears nowhere (client session list, masseur calendar details, other screens).
 2. **Only when there are no obligations:** a booking with **financial or legal obligations** (payments, refunds, accounting, a dispute, a legal duty to keep it) is **never deleted automatically**. No payments exist today ([BR-015](#br-015) is deferred), so this clause has no data yet. When payments are introduced, payment data must live in **separate records with their own legally required retention**, which are not deleted together with the booking; the obligation flag and its criteria are to be designed with payments and legal advice.
@@ -521,7 +523,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** How does a user recover access to an account (forgotten password) and how does a client sign in once an email exists ([BR-009](#br-009))?
 **Current implementation:** Password reset via one-time email link (PR 9): client requests by phone, masseur by email; link uses `VerificationToken` with identifier `password-reset:${userId}`; TTL 1 hour; new request invalidates the previous token; email sent only when the user has `passwordHash` and `emailVerified`; request always returns the same success message; after confirm, all `Session` rows for the user are deleted.
 **Why:** A user who forgets a password is locked out. With a verified email ([BR-009](#br-009)) a reset becomes possible.
-**Status: Approved (2026-11-16); implementing in PR 9.** Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
+**Status: Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)). Added 2026-11-16 from the gaps noted in the review (`user-roles.md`).
 
 **Decision (2026-11-16, option A):** **password reset by email link**, for both roles. The user enters their phone (client) or email (masseur) and receives a one-time link, valid for a limited time, to set a new password; it is sent to the **verified** email ([BR-009](#br-009)). SMS codes and manual reset by support were considered and not chosen (SMS may come later with [BR-023](#br-023)).
 
@@ -534,7 +536,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** How is the service protected from abuse (brute-force login, mass registration, booking spam)?
 **Current implementation:** Sliding-window rate limits in PostgreSQL (`RateLimitBucket`, PR 9): sign-in 10 / 15 min per IP and per account; registration 5 / hour per IP; password-reset request 5 / hour per IP and per identifier; booking create/cancel 30 / 15 min per IP and per account. Over limit → HTTP 429 with EN/UK “Too many attempts…” copy. Sign-in IP limit is applied inside Auth.js `authorize` via the request object (best-effort if proxy headers are absent).
 **Why:** Open endpoints can be attacked; the booking limits in [BR-008](#br-008) do not stop automated abuse.
-**Status: Approved (2026-11-16); implementing in PR 9.** Added 2026-11-16.
+**Status: Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)). Added 2026-11-16.
 
 **Decision (option A):** basic **rate limits per IP and per account** on the sensitive requests: sign-in, registration, password reset ([BR-019](#br-019)), booking creation and cancellation. After the limit is exceeded the request is blocked for a while with a clear message. Considered and not chosen: limits only on sign-in and reset (B), a captcha on top of limits (C; may be added later if real bots appear, it would send data to a provider, XR-1), and doing nothing (D).
 
@@ -543,9 +545,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-021
 
 **Business question:** Is there an administrator or support role, and what can it do (view, block or delete accounts, handle complaints, edit the country blocklist)?
-**Current implementation:** No administrator, support or moderation role exists; all changes are made in the database or code.
+**Current implementation:** Minimal admin portal with user list, block/unblock and audit log; complaints not built yet.
 **Why:** Account deletion ([BR-011](#br-011)), complaints and abuse ([BR-020](#br-020)) need someone to act.
-**Status: Approved (2026-11-16); implementing in PR 15 (`feat/admin-panel`).** Added 2026-11-16.
+**Status: Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints deferred. Added 2026-11-16.
 
 **Decision (option B):** a **minimal administration panel** with a list of users, **blocking and unblocking** accounts, and a view of complaints. Considered and not chosen: no admin role with everything done by hand (A), and an external database tool without our own panel (C).
 
@@ -556,7 +558,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** What rules apply to uploaded images (profile photo, gallery)?
 **Current implementation:** Gallery: JPEG or PNG, up to 5 MB, 3 images per masseur; the type comes from the file's declared type and the size from the request, without checking the actual file content; avatars follow similar rules.
 **Why:** Unverified uploads can carry unsafe content; image rules also affect storage cost and privacy ([XR-1](#cross-cutting-requirements)).
-**Status: Approved (2026-11-16); implementing in PR 10.** Added 2026-11-16.
+**Status: Implemented** ([#14](https://github.com/dmytro-koliasa/massagego/pull/14)). Added 2026-11-16.
 
 **Decision (option A):** the server **checks the real content of an uploaded image** (not the declared type), **computes the width and height itself**, and **re-saves the image** in a safe format, which also **removes embedded metadata such as GPS location**. The size and dimension limits stay enforced. Considered and not chosen: checking without re-saving (B) and keeping the current behaviour (C).
 
@@ -565,9 +567,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-023
 
 **Business question:** Is the phone number verified (for example by an SMS code) at registration?
-**Current implementation:** Only the format is checked; a client can register with any valid number, including someone else's, and the phone is the client's login. [BR-009](#br-009) verifies the email, not the phone.
+**Current implementation:** Optional Telegram contact-share confirmation sets `phoneConfirmedAt`; not required to register or book.
 **Why:** The phone is both the login and the number a masseur sees; an unverified phone allows impersonation. SMS costs money ([BR-009](#br-009) discussed SMS).
-**Status: Approved (2026-11-16); implementing in PR 13 (`feat/telegram-phone-confirm`).** Added 2026-11-16.
+**Status: Implemented** ([#18](https://github.com/dmytro-koliasa/massagego/pull/18)). Added 2026-11-16.
 
 **Decision (option B):** an **optional confirmation of the phone number through the Telegram bot** of [BR-009](#br-009). The user who connects Telegram can share their contact with the bot (the standard "share my number" button); the bot checks that the contact belongs to the same Telegram account and that the number **matches the phone in the application account**. If so, the account gets a **"phone confirmed" mark**, which the masseur sees next to the client's name in a booking. The confirmation is **not required** to register or to book. Considered and not chosen: no confirmation (A), mandatory Telegram confirmation for everyone (C; it would exclude people without Telegram and contradict BR-009) and SMS codes (D; paid, needs a provider).
 
@@ -584,19 +586,19 @@ Until each item is groomed and approved, its status stays **Open**. These are de
 
 | ID | Finding | Evidence | Status | Closed by (when implemented) |
 |---|---|---|---|---|
-| C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | Open | [BR-002](#br-002) |
+| C-1 | **Started-slot rule differs by path.** Client API accepts a slot that started up to 60 min ago; masseur API and resolve route reject any started slot; the client UI hides started slots. | `bookings/route.ts` (`slotStart.getTime() < now - SLOT_MS`) vs `masseur/bookings/route.ts` (`isSlotExpired`) vs `masseurs/[id]/availability/route.ts` (`rangeStart`) | **Implemented** ([#8](https://github.com/dmytro-koliasa/massagego/pull/8)): lead time; no 60-minute grace | [BR-002](#br-002) |
 | C-2 | **Business hours use server-local time on the server and browser-local time in the UI.** If the server timezone differs from users' (likely for UTC hosting; actual deployment timezone **not verified**), the server rejects hours the UI offers (e.g. 05:00-06:59 local) and permits hours the UI hides. | `isWithinBusinessHours` (`getHours`) vs `masseur-availability-calendar.tsx` (`getWeekSlotStarts`) | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6)) | [BR-006](#br-006) |
 | C-3 | **Business hours not enforced everywhere.** Masseur walk-in route and weekly-copy `template` accept any hour, and the walk-in route creates an availability row outside 05:00-23:00. | `masseur/bookings/route.ts`, `masseur/availability/route.ts` (`PUT`) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | [BR-007](#br-007) |
 | C-4 | **Past-time checks are UI-only for availability edits.** `POST /api/masseur/availability` does not reject started or past hours; the resolve and masseur-booking routes do. | `applySlotChange` | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | [BR-007](#br-007) |
-| C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | Open | [BR-004](#br-004) |
+| C-5 | **Past cancellation asymmetry.** A client can cancel past/ongoing bookings; a masseur cannot. | `bookings/cancel/route.ts` vs `resolve/route.ts` | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)): client cancel cutoff refuses past/ongoing; masseur resolve still refuses started slots | [BR-004](#br-004) |
 | C-6 | **Weekly copy shifts by `setDate(+7)` in server-local time.** Under a DST change the copied slots can move by one hour relative to users' local clock when the server timezone is UTC. | `addWeeks` in `masseur/availability/route.ts` | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)): `addLocalWeeks` in the masseur's zone | [BR-006](#br-006) |
-| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | **Approved** (2026-11-16) | this item, see "Decisions on C-7 and C-8" below |
+| C-7 | **Re-cancelling returns 403 `forbidden`**, not an idempotent success or 404, because a missing, foreign or already-cancelled booking are indistinguishable by design. | `bookings/cancel/route.ts` | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) | this item, see "Decisions on C-7 and C-8" below |
 | C-9 | **Masseur email is returned to every client.** `GET /api/masseurs` selects `email` and includes it in the JSON, but the UI never displays it. Whether masseur contact details should be public is an undecided product/privacy question; no `BR` item exists yet (only the code behavior is recorded here). | `src/app/api/masseurs/route.ts` | **Implemented** (PR 11): email removed from the list response | [BR-010](#br-010) |
 | C-8 | **Schema comment drift.** `Booking.clientUserId` is commented "Required for new bookings" but masseur walk-ins create it as `null`. Fields `preferredDate`, `preferredTime`, `clientEmail` are written as `null` and otherwise unused. | `prisma/schema.prisma`, both create routes | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) | this item, see "Decisions on C-7 and C-8" below |
 
 **Decisions on C-7 and C-8 (grooming, 2026-11-16):**
 
-- **C-7 (Approved, not implemented), option A:** when a client cancels a booking that is **their own and already cancelled**, the request **succeeds** ("already cancelled"). When the booking **does not exist or belongs to someone else**, the server returns the **same 404 `not_found`** for both cases, so that other people's bookings cannot be probed. The `403 forbidden` for these cases goes away. This matters because cancelled bookings are deleted after 7 days ([BR-011](#br-011)), so "no such booking" becomes an ordinary situation (for example an old browser tab).
+- **C-7 (Implemented in [#9](https://github.com/dmytro-koliasa/massagego/pull/9)), option A:** when a client cancels a booking that is **their own and already cancelled**, the request **succeeds** ("already cancelled"). When the booking **does not exist or belongs to someone else**, the server returns the **same 404 `not_found`** for both cases, so that other people's bookings cannot be probed. The `403 forbidden` for these cases goes away. This matters because cancelled bookings are deleted after 7 days ([BR-011](#br-011)), so "no such booking" becomes an ordinary situation (for example an old browser tab).
 - **C-8 (Implemented in [#4](https://github.com/dmytro-koliasa/massagego/pull/4)), option A:** **remove the three unused columns** `preferredDate`, `preferredTime` and `clientEmail` from `Booking` (a database migration) and **correct the schema comment** on `clientUserId` (it is empty for masseur walk-in bookings). Reasons: the columns are always `null`, the email for notifications comes from the account ([BR-009](#br-009)) and a walk-in client has no account, and the owner wants as little personal data as possible (XR-1). If notifications for walk-in clients are ever wanted, that is added deliberately as a new feature.
 
 ### Checked and consistent
