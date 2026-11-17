@@ -37,6 +37,8 @@ export const dictionaries = {
 		masseursPaginationNext: 'Next page',
 		masseursPaginationLast: 'Last page',
 		masseursTablePhoto: 'Photo',
+		masseursAvailabilityColumn: 'Availability',
+		masseurProfileNotReady: 'This profile is not ready yet.',
 		clientSessionsTitle: 'My sessions',
 		clientSessionsSupport:
 			'Your booked sessions. Click a slot to cancel it.',
@@ -377,6 +379,8 @@ export const dictionaries = {
 		masseursPaginationNext: 'Наступна сторінка',
 		masseursPaginationLast: 'Остання сторінка',
 		masseursTablePhoto: 'Фото',
+		masseursAvailabilityColumn: 'Доступність',
+		masseurProfileNotReady: 'Цей профіль ще не готовий.',
 		clientSessionsTitle: 'Мої сеанси',
 		clientSessionsSupport:
 			'Ваші заброньовані сеанси. Натисніть слот, щоб скасувати.',

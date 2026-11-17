@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/client";
 import { cityDisplayName, cityFilterKey } from "@/lib/city";
+import {
+  availabilityLabelForNearest,
+  compareMasseurCatalogOrder,
+  findNearestFreeSlots,
+  listedMasseurWhere,
+  type CatalogLocale,
+} from "@/lib/masseur-catalog";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { CITY_MAX } from "@/lib/validation";
+import type { Prisma } from "@prisma/client";
 
 const DEFAULT_PAGE_SIZE = 9;
 const MAX_PAGE_SIZE = 50;
@@ -22,8 +30,23 @@ const masseurSelect = {
   cityCountryCode: true,
   cityNameEn: true,
   cityNameUk: true,
+  timezone: true,
+  bookingLeadHours: true,
   createdAt: true,
 } as const;
+
+function cityFilterWhere(
+  requested: string,
+): Prisma.UserWhereInput | undefined {
+  if (requested === "all" || !requested) return undefined;
+  if (requested.startsWith("id:")) {
+    return { cityPlaceId: requested.slice(3) };
+  }
+  if (requested.startsWith("name:")) {
+    return { city: requested.slice(5) };
+  }
+  return { OR: [{ cityPlaceId: requested }, { city: requested }] };
+}
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -53,7 +76,8 @@ export async function GET(request: Request) {
     searchParams.get("pageSize") ?? String(DEFAULT_PAGE_SIZE),
   );
   const cityParam = searchParams.get("city")?.trim() ?? "";
-  const locale = clientUser?.preferredLocale === "uk" ? "uk" : "en";
+  const locale: CatalogLocale =
+    clientUser?.preferredLocale === "uk" ? "uk" : "en";
 
   const page =
     Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
@@ -77,32 +101,19 @@ export async function GET(request: Request) {
         ? "all"
         : defaultFilterValue;
 
-  const where =
-    requested === "all" || !requested
-      ? { portal: "masseur" as const }
-      : requested.startsWith("id:")
-        ? {
-            portal: "masseur" as const,
-            cityPlaceId: requested.slice(3),
-          }
-        : requested.startsWith("name:")
-          ? {
-              portal: "masseur" as const,
-              city: requested.slice(5),
-            }
-          : {
-              portal: "masseur" as const,
-              OR: [{ cityPlaceId: requested }, { city: requested }],
-            };
+  const cityWhere = cityFilterWhere(requested);
+  const listedBase: Prisma.UserWhereInput = {
+    portal: "masseur",
+    ...listedMasseurWhere,
+  };
+  const where: Prisma.UserWhereInput = cityWhere
+    ? { AND: [listedBase, cityWhere] }
+    : listedBase;
 
-  const [total, totalAll, cityRows, masseurs] = await Promise.all([
-    prisma.user.count({ where }),
-    prisma.user.count({ where: { portal: "masseur" } }),
+  const [totalAll, cityRows, candidates] = await Promise.all([
+    prisma.user.count({ where: listedBase }),
     prisma.user.findMany({
-      where: {
-        portal: "masseur",
-        OR: [{ cityPlaceId: { not: null } }, { city: { not: null } }],
-      },
+      where: listedBase,
       select: {
         city: true,
         cityPlaceId: true,
@@ -113,12 +124,49 @@ export async function GET(request: Request) {
     }),
     prisma.user.findMany({
       where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
       select: masseurSelect,
     }),
   ]);
+
+  const nearestById = await findNearestFreeSlots(
+    candidates.map((masseur) => ({
+      id: masseur.id,
+      timezone: masseur.timezone,
+      bookingLeadHours: masseur.bookingLeadHours,
+    })),
+  );
+
+  const now = new Date();
+  const ranked = candidates
+    .map((masseur) => {
+      const nearestFreeAt = nearestById.get(masseur.id) ?? null;
+      const hasFreeTime = nearestFreeAt !== null;
+      return {
+        masseur,
+        nearestFreeAt,
+        hasFreeTime,
+        availabilityLabel: availabilityLabelForNearest(
+          nearestFreeAt,
+          masseur.timezone,
+          locale,
+          now,
+        ),
+      };
+    })
+    .sort((a, b) =>
+      compareMasseurCatalogOrder(
+        { hasFreeTime: a.hasFreeTime, createdAt: a.masseur.createdAt },
+        { hasFreeTime: b.hasFreeTime, createdAt: b.masseur.createdAt },
+      ),
+    );
+
+  const total = ranked.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageSlice = ranked.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
 
   const cityMap = new Map<string, string>();
   for (const row of cityRows) {
@@ -143,25 +191,23 @@ export async function GET(request: Request) {
       }),
     );
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-
-  const pageMasseurs =
-    safePage === page
-      ? masseurs
-      : await prisma.user.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          skip: (safePage - 1) * pageSize,
-          take: pageSize,
-          select: masseurSelect,
-        });
-
   return NextResponse.json({
-    masseurs: pageMasseurs.map((masseur) => ({
-      ...masseur,
-      cityLabel: cityDisplayName(masseur, locale),
-    })),
+    masseurs: pageSlice.map(
+      ({ masseur, nearestFreeAt, hasFreeTime, availabilityLabel }) => {
+        const {
+          timezone: _timezone,
+          bookingLeadHours: _bookingLeadHours,
+          ...card
+        } = masseur;
+        return {
+          ...card,
+          cityLabel: cityDisplayName(masseur, locale),
+          nearestFreeAt: nearestFreeAt?.toISOString() ?? null,
+          hasFreeTime,
+          availabilityLabel,
+        };
+      },
+    ),
     page: safePage,
     pageSize,
     total,

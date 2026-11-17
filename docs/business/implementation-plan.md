@@ -190,7 +190,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 10 - Image upload checks
 
-**Status:** implementing on branch `feat/image-upload-checks` (groomed 2026-11-17).
+**Status:** merged ([#14](https://github.com/dmytro-koliasa/massagego/pull/14), 2026-11-17); client geo-tz/`fs` follow-up [#15](https://github.com/dmytro-koliasa/massagego/pull/15).
 
 **Groomed decisions:**
 - Library: **sharp** (already a dependency).
@@ -205,11 +205,18 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 11 - Masseur catalog
 
+**Status:** implementing on branch `feat/masseur-catalog` (groomed 2026-11-17).
+
+**Groomed decisions:**
+- Listed only if complete profile (`nameEn` or `nameUk`, `cityPlaceId`, `address`, `phone` non-empty) **and** at least one `AvailabilitySlot` row ever; legacy `city` alone is not enough.
+- Nearest free time within `CLIENT_BOOKING_WINDOW_DAYS` (120) end-of-day in masseur TZ, outside lead hours; green/red plaque text always present (EN/UK); TZ via `formatTimeZoneOffsetLabel`.
+- Order: free time first, then `createdAt` DESC; city filter, pagination totals and city options count **only listed** masseurs.
+- Unlisted profile opens by direct link with "not ready" message; booking UI and create/availability APIs refuse.
+- Remove masseur email from `GET /api/masseurs` (closes C-9). Empty-city CTA from PR 8 kept.
+
 **Scope:** list a masseur only if the profile is complete (name, city, address, phone) and at least one availability record exists; a card label (green with the nearest free time, red "No free time"; free time means a future, unbooked slot outside the masseur's lead time and within 120 days); masseurs with free time first, then the others, newest first; the list defaults to the client's city with a switch to another city or all cities; a profile that is not listed opens but cannot be booked ("profile is not ready yet"); the masseur email is removed from the list response.
 
 **Acceptance criteria:** each rule has a test; the label always contains text; the nearest free time is shown in the masseur's timezone with the label; the response no longer contains the email. Closes C-9.
-
-**To groom first:** the exact "complete profile" check; how the label and the order are computed efficiently for a page; the message when the client's city has no masseurs.
 
 ### PR 12 - Email notifications
 
