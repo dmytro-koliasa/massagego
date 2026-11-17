@@ -159,8 +159,13 @@ export function MasseurBookingView({
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        if (data.error === "missing_fields") {
+        const data = (await response.json()) as {
+          error?: string;
+          message?: string;
+        };
+        if (response.status === 429 || data.error === "rate_limited") {
+          toast.error(data.message || t.authRateLimited.replace("{n}", "1"));
+        } else if (data.error === "missing_fields") {
           toast.error(t.bookingMissingFields);
         } else if (data.error === "CLIENT_PROFILE_INCOMPLETE") {
           toast.error(t.bookingProfileIncomplete);

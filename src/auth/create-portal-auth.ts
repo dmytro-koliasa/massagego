@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -10,8 +10,49 @@ import { isPortal, portalHomePath } from "@/lib/portals";
 import { findPortalUserByEmail, findPortalUserByPhone, readAuthIntentCookie } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
+import {
+  checkRateLimit,
+  minutesFromRetryAfter,
+  RATE_LIMITS,
+} from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { clientLoginSchema, loginSchema, NAME_MAX } from "@/lib/validation";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
+
+/** Surfaced to the client as `signIn` result `code` (e.g. rate_limited_5). */
+class RateLimitedSignIn extends CredentialsSignin {
+  constructor(minutes: number) {
+    super();
+    this.code = `rate_limited_${minutes}`;
+  }
+}
+
+async function enforceSignInRateLimits(
+  request: Request | undefined,
+  accountKey: string,
+) {
+  // IP is best-effort: Auth.js v5 passes the original Request into authorize.
+  const ip = request ? getClientIp(request) : "unknown";
+  const ipLimit = await checkRateLimit(
+    `signin:ip:${ip}`,
+    RATE_LIMITS.signIn.limit,
+    RATE_LIMITS.signIn.windowMs,
+  );
+  if (!ipLimit.ok) {
+    throw new RateLimitedSignIn(minutesFromRetryAfter(ipLimit.retryAfterSec));
+  }
+
+  const accountLimit = await checkRateLimit(
+    `signin:account:${accountKey}`,
+    RATE_LIMITS.signIn.limit,
+    RATE_LIMITS.signIn.windowMs,
+  );
+  if (!accountLimit.ok) {
+    throw new RateLimitedSignIn(
+      minutesFromRetryAfter(accountLimit.retryAfterSec),
+    );
+  }
+}
 
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
@@ -104,7 +145,7 @@ export function createPortalAuth(portal: Portal) {
           phone: { label: "Phone", type: "text" },
           password: { label: "Password", type: "password" },
         },
-        async authorize(credentials) {
+        async authorize(credentials, request) {
           if (portal === "client") {
             // Auth.js posts credentials as x-www-form-urlencoded; "+" may become
             // a space or be stripped. Normalize to E.164 before Zod.
@@ -124,6 +165,11 @@ export function createPortalAuth(portal: Portal) {
             }
 
             const { phone, password } = parsed.data;
+            await enforceSignInRateLimits(
+              request,
+              `client:${phone}`,
+            );
+
             const user = await findPortalUserByPhone(phone, portal);
 
             if (!user?.passwordHash) {
@@ -153,6 +199,7 @@ export function createPortalAuth(portal: Portal) {
           }
 
           const { email, password } = parsed.data;
+          await enforceSignInRateLimits(request, `masseur:${email}`);
 
           const user = await findPortalUserByEmail(email, portal);
 

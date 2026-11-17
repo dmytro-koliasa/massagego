@@ -99,6 +99,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+/// Sliding-window counter for BR-020 rate limits (Postgres-backed for serverless).
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  windowStart DateTime
+  count       Int
+  updatedAt   DateTime @updatedAt
+}
+
 /// The exclusion constraint "Booking_no_overlapping_active_slots" (SQL only)
 /// treats every status except `cancelled` as occupying the hour. Review it
 /// whenever a value is added here.

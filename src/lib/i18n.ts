@@ -130,7 +130,16 @@ export const dictionaries = {
 		authPasswordConfirm: 'Confirm password',
 		authForgotPassword: 'Forgot password',
 		authForgotPasswordHint:
-			'Password recovery is not available yet. If you cannot sign in, register again with a new account or contact support.',
+			'Enter the phone or email for your account. If a reset is possible, we will email a link.',
+		authForgotSubmit: 'Send reset link',
+		authForgotBackToLogin: 'Back to sign in',
+		authResetPasswordTitle: 'Set a new password',
+		authResetPasswordSubmit: 'Save new password',
+		authResetPasswordSuccess: 'Password updated. Sign in with your new password.',
+		authResetTokenInvalid: 'This reset link is invalid or has expired. Request a new one.',
+		authPasswordResetSent:
+			'If an account can reset its password, we sent a link.',
+		authRateLimited: 'Too many attempts. Try again in {n} min.',
 		authShowPassword: 'Show password',
 		authHidePassword: 'Hide password',
 		authSignIn: 'Sign in',
@@ -461,7 +470,17 @@ export const dictionaries = {
 		authPasswordConfirm: 'Підтвердіть пароль',
 		authForgotPassword: 'Забув пароль',
 		authForgotPasswordHint:
-			'Відновлення пароля ще недоступне. Якщо не можете увійти — створіть новий акаунт або зверніться в підтримку.',
+			'Введіть телефон або email акаунта. Якщо скидання можливе, ми надішлемо посилання на пошту.',
+		authForgotSubmit: 'Надіслати посилання',
+		authForgotBackToLogin: 'Назад до входу',
+		authResetPasswordTitle: 'Встановіть новий пароль',
+		authResetPasswordSubmit: 'Зберегти новий пароль',
+		authResetPasswordSuccess: 'Пароль оновлено. Увійдіть з новим паролем.',
+		authResetTokenInvalid:
+			'Це посилання для скидання недійсне або прострочене. Запросіть нове.',
+		authPasswordResetSent:
+			'Якщо для цього акаунта можливе скидання пароля, ми надіслали посилання.',
+		authRateLimited: 'Забагато спроб. Спробуйте знову через {n} хв.',
 		authShowPassword: 'Показати пароль',
 		authHidePassword: 'Сховати пароль',
 		authSignIn: 'Увійти',

@@ -5,9 +5,15 @@ import {
   neighbouringSlotStarts,
 } from "@/lib/client-booking-rules";
 import { requireClientSession } from "@/lib/client-session.server";
+import {
+  rateLimitJsonResponse,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { bookingCancelSchema, parseWithSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -18,6 +24,25 @@ export async function POST(request: Request) {
         { error: client.error },
         { status: client.status },
       );
+    }
+
+    const locale = resolveRequestLocale(request);
+    const ipLimit = await checkRateLimit(
+      `booking-cancel:ip:${getClientIp(request)}`,
+      RATE_LIMITS.bookingCancel.limit,
+      RATE_LIMITS.bookingCancel.windowMs,
+    );
+    if (!ipLimit.ok) {
+      return rateLimitJsonResponse(ipLimit.retryAfterSec, locale);
+    }
+
+    const accountLimit = await checkRateLimit(
+      `booking-cancel:account:${client.userId}`,
+      RATE_LIMITS.bookingCancel.limit,
+      RATE_LIMITS.bookingCancel.windowMs,
+    );
+    if (!accountLimit.ok) {
+      return rateLimitJsonResponse(accountLimit.retryAfterSec, locale);
     }
 
     const body = await request.json();

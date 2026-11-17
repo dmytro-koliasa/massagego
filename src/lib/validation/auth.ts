@@ -67,7 +67,39 @@ export const clientLoginSchema = z.object({
   password: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
 });
 
+/** Client reset by phone; masseur reset by email. */
+export const passwordResetRequestSchema = z.discriminatedUnion("portal", [
+  z.object({
+    portal: z.literal("client"),
+    phone: phoneSchema,
+    preferredLocale: localeSchema.optional(),
+  }),
+  z.object({
+    portal: z.literal("masseur"),
+    email: emailSchema,
+    preferredLocale: localeSchema.optional(),
+  }),
+]);
+
+export const passwordResetConfirmSchema = z
+  .object({
+    token: z.string().trim().min(1).max(128),
+    password: passwordSchema,
+    passwordConfirm: z.string().min(1).max(PASSWORD_MAX),
+  })
+  .superRefine((value, ctx) => {
+    if (value.password !== value.passwordConfirm) {
+      ctx.addIssue({
+        code: "custom",
+        message: "password_mismatch",
+        path: ["passwordConfirm"],
+      });
+    }
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ClientRegisterInput = z.infer<typeof clientRegisterSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ClientLoginInput = z.infer<typeof clientLoginSchema>;
+export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;
