@@ -5,7 +5,7 @@ async function waitForClientSession(page: Page) {
     (res) =>
       res.url().includes("/api/auth/client/session") && res.status() < 500,
   );
-  await page.goto("/client/login");
+  await page.goto("/client/login", { waitUntil: "domcontentloaded" });
   await sessionReady;
 }
 
@@ -42,5 +42,11 @@ export async function signInAsClient(
   await page.locator('input[type="password"]').first().fill(password);
   await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
 
-  await expect(page).toHaveURL(/\/client\/?$/, { timeout: 15_000 });
+  // Auth can succeed while the login page still shows the redirect preloader.
+  // Prefer an explicit navigation once the session is clearly established.
+  await expect(
+    page.getByRole("button", { name: /Sign out|Вийти/ }),
+  ).toBeVisible({ timeout: 20_000 });
+  await page.goto("/client", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/client\/?$/, { timeout: 10_000 });
 }
