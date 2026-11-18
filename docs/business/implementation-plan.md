@@ -325,6 +325,8 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Without a hint and with both cookies, APIs return `409 ambiguous_portal`.
 - Unit tests cover single session, hinted dual session, ambiguous dual session, and missing hinted session.
 
+**E2E (local, suite `inboxDual`):** one browser context keeps client + masseur cookies → client books → masseur inbox badge/row works (UI sends `X-Portal`); bare `fetch('/api/notifications/inbox')` without the header returns `409 ambiguous_portal` (`e2e/masseur-inbox-dual-session.spec.ts`).
+
 ### Follow-up — Masseur bulk-cancel future bookings (X-4 / BR-011)
 
 **Status:** groomed 2026-11-18; **merged** ([#63](https://github.com/dmytro-koliasa/massagego/pull/63)).
