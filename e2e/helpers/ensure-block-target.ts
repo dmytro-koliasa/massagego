@@ -1,10 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
-const CLIENT_EMAIL = "e2e-client-admin-block@test.local";
-const CLIENT_PHONE = "+380501000021";
 const CLIENT_PASSWORD = "E2eClient123!";
-const CLIENT_NAME = "E2E Block Client";
+
+type BlockTargetSuite = "block" | "unblock";
+
+const SUITE_IDS: Record<
+  BlockTargetSuite,
+  { email: string; phone: string; name: string }
+> = {
+  block: {
+    email: "e2e-client-admin-block@test.local",
+    phone: "+380501000021",
+    name: "E2E Block Client",
+  },
+  unblock: {
+    email: "e2e-client-admin-unblock@test.local",
+    phone: "+380501000022",
+    name: "E2E Unblock Client",
+  },
+};
 
 function testPrisma() {
   const databaseUrl =
@@ -16,25 +31,32 @@ function testPrisma() {
   );
 }
 
-/** Upserts an unblocked client for admin block/unblock E2E. */
-export async function ensureBlockTargetClient(): Promise<{
+/**
+ * Upserts a client for admin block/unblock E2E.
+ * Suite `unblock` seeds with `blockedAt` already set.
+ */
+export async function ensureBlockTargetClient(
+  suite: BlockTargetSuite = "block",
+): Promise<{
   id: string;
   email: string;
   phone: string;
   password: string;
   name: string;
 }> {
+  const ids = SUITE_IDS[suite];
   const prisma = testPrisma();
   const passwordHash = await hash(CLIENT_PASSWORD, 12);
+  const blockedAt = suite === "unblock" ? new Date() : null;
 
   try {
     const client = await prisma.user.upsert({
-      where: { email_portal: { email: CLIENT_EMAIL, portal: "client" } },
+      where: { email_portal: { email: ids.email, portal: "client" } },
       create: {
-        email: CLIENT_EMAIL,
+        email: ids.email,
         portal: "client",
-        name: CLIENT_NAME,
-        phone: CLIENT_PHONE,
+        name: ids.name,
+        phone: ids.phone,
         passwordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
@@ -42,10 +64,11 @@ export async function ensureBlockTargetClient(): Promise<{
         cityNameEn: "Kyiv",
         cityNameUk: "Київ",
         preferredLocale: "en",
+        blockedAt,
       },
       update: {
-        name: CLIENT_NAME,
-        phone: CLIENT_PHONE,
+        name: ids.name,
+        phone: ids.phone,
         passwordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
@@ -53,7 +76,7 @@ export async function ensureBlockTargetClient(): Promise<{
         cityNameEn: "Kyiv",
         cityNameUk: "Київ",
         deletedAt: null,
-        blockedAt: null,
+        blockedAt,
         preferredLocale: "en",
       },
       select: { id: true },
@@ -62,18 +85,18 @@ export async function ensureBlockTargetClient(): Promise<{
     await prisma.rateLimitBucket.deleteMany({
       where: {
         OR: [
-          { key: { contains: CLIENT_PHONE } },
-          { key: { contains: CLIENT_EMAIL } },
+          { key: { contains: ids.phone } },
+          { key: { contains: ids.email } },
         ],
       },
     });
 
     return {
       id: client.id,
-      email: CLIENT_EMAIL,
-      phone: CLIENT_PHONE,
+      email: ids.email,
+      phone: ids.phone,
       password: CLIENT_PASSWORD,
-      name: CLIENT_NAME,
+      name: ids.name,
     };
   } finally {
     await prisma.$disconnect();
