@@ -5,14 +5,9 @@ import { DateTime } from "luxon";
 const ZONE = "Europe/Kyiv";
 const LEAD_HOURS = 1;
 const SLOT_MS = 60 * 60 * 1000;
-
-const CLIENT_EMAIL = "e2e-client@test.local";
-const CLIENT_PHONE = "+380501000001";
 const CLIENT_PASSWORD = "E2eClient123!";
 
-const MASSEUR_EMAIL = "e2e-masseur@test.local";
-const MASSEUR_PHONE = "+380501000002";
-const MASSEUR_SLUG = "e2e-booking-masseur";
+export type BookingFixtureSuite = "book" | "cancel";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -21,6 +16,26 @@ export type BookingFixture = {
   masseurName: string;
   slotStartIso: string;
   needsNextWeek: boolean;
+};
+
+const SUITE_IDS: Record<
+  BookingFixtureSuite,
+  { clientEmail: string; clientPhone: string; masseurEmail: string; masseurPhone: string; slug: string }
+> = {
+  book: {
+    clientEmail: "e2e-client@test.local",
+    clientPhone: "+380501000001",
+    masseurEmail: "e2e-masseur@test.local",
+    masseurPhone: "+380501000002",
+    slug: "e2e-booking-masseur",
+  },
+  cancel: {
+    clientEmail: "e2e-client-cancel@test.local",
+    clientPhone: "+380501000003",
+    masseurEmail: "e2e-masseur-cancel@test.local",
+    masseurPhone: "+380501000004",
+    slug: "e2e-cancel-masseur",
+  },
 };
 
 function testPrisma() {
@@ -74,22 +89,27 @@ export function pickBookableSlotStart(now = DateTime.now().setZone(ZONE)): {
 
 /**
  * Upserts a complete client + listed masseur + one free slot on massage_test.
+ * Pass a suite key so parallel Playwright workers do not share the same rows.
  */
-export async function ensureBookingFixture(): Promise<BookingFixture> {
+export async function ensureBookingFixture(
+  suite: BookingFixtureSuite = "book",
+): Promise<BookingFixture> {
+  const ids = SUITE_IDS[suite];
   const prisma = testPrisma();
   const passwordHash = await hash(CLIENT_PASSWORD, 12);
   const { start, needsNextWeek } = pickBookableSlotStart();
   const end = new Date(start.getTime() + SLOT_MS);
-  const masseurName = "E2E Booking Masseur";
+  const masseurName =
+    suite === "cancel" ? "E2E Cancel Masseur" : "E2E Booking Masseur";
 
   try {
     const client = await prisma.user.upsert({
-      where: { email_portal: { email: CLIENT_EMAIL, portal: "client" } },
+      where: { email_portal: { email: ids.clientEmail, portal: "client" } },
       create: {
-        email: CLIENT_EMAIL,
+        email: ids.clientEmail,
         portal: "client",
         name: "E2E Client",
-        phone: CLIENT_PHONE,
+        phone: ids.clientPhone,
         passwordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
@@ -100,7 +120,7 @@ export async function ensureBookingFixture(): Promise<BookingFixture> {
       },
       update: {
         name: "E2E Client",
-        phone: CLIENT_PHONE,
+        phone: ids.clientPhone,
         passwordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
@@ -115,14 +135,14 @@ export async function ensureBookingFixture(): Promise<BookingFixture> {
     });
 
     const masseur = await prisma.user.upsert({
-      where: { email_portal: { email: MASSEUR_EMAIL, portal: "masseur" } },
+      where: { email_portal: { email: ids.masseurEmail, portal: "masseur" } },
       create: {
-        email: MASSEUR_EMAIL,
+        email: ids.masseurEmail,
         portal: "masseur",
-        slug: MASSEUR_SLUG,
+        slug: ids.slug,
         nameEn: masseurName,
         nameUk: masseurName,
-        phone: MASSEUR_PHONE,
+        phone: ids.masseurPhone,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -131,15 +151,16 @@ export async function ensureBookingFixture(): Promise<BookingFixture> {
         address: "1 E2E Street",
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
-        cancelCutoffHours: 24,
+        // Match lead so bookable slots stay inside the client cancel window.
+        cancelCutoffHours: LEAD_HOURS,
         massageTypes: "[]",
         preferredLocale: "en",
       },
       update: {
-        slug: MASSEUR_SLUG,
+        slug: ids.slug,
         nameEn: masseurName,
         nameUk: masseurName,
-        phone: MASSEUR_PHONE,
+        phone: ids.masseurPhone,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -148,7 +169,7 @@ export async function ensureBookingFixture(): Promise<BookingFixture> {
         address: "1 E2E Street",
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
-        cancelCutoffHours: 24,
+        cancelCutoffHours: LEAD_HOURS,
         massageTypes: "[]",
         deletedAt: null,
         blockedAt: null,
@@ -174,9 +195,9 @@ export async function ensureBookingFixture(): Promise<BookingFixture> {
     });
 
     return {
-      clientPhone: CLIENT_PHONE,
+      clientPhone: ids.clientPhone,
       clientPassword: CLIENT_PASSWORD,
-      masseurSlug: MASSEUR_SLUG,
+      masseurSlug: ids.slug,
       masseurName,
       slotStartIso: start.toISOString(),
       needsNextWeek,

@@ -94,6 +94,8 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - admin bootstrap login → `/admin` users list (`e2e/admin-login.spec.ts`; needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`; upserts admin on `massage_test` via `e2e/helpers/ensure-admin.ts`)
 - Booking happy path:
   - seed client + listed masseur + one free slot (`e2e/helpers/ensure-booking-fixture.ts`) → client login → `/client/masseur/{slug}` → select slot → Request booking → success toast (`e2e/booking-happy-path.spec.ts`)
+  - same fixture → book → click own slot → cancel reason → success toast (`e2e/booking-cancel.spec.ts`)
+  - shared client login helper: `e2e/helpers/client-auth.ts`
 - `next.config.ts` sets `allowedDevOrigins` for `127.0.0.1` / `localhost` so Playwright can hydrate against the `webServer` host
 
 `BASE_URL` overrides the default `http://127.0.0.1:3001`.  
