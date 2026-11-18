@@ -350,21 +350,20 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### Follow-up — Playwright E2E for #62–#64 (local)
 
-**Status:** groomed 2026-11-18; **PR 1 (inbox) merged** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65)); **PR 2 (bulk-cancel) implemented locally** (pending PR); then `?slot=` deep-link.
+**Status:** groomed 2026-11-18; **PR 1–2 merged** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65), [#66](https://github.com/dmytro-koliasa/massagego/pull/66)); **PR 3 (`?slot=` deep-link) implemented locally** (pending PR).
 
 **Groomed decisions (series):**
 - Three sequential PRs (same cadence as [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60)), not one mega-spec.
-- **PR 1 — in-app inbox:** client books via UI → masseur sees nav unread badge + inbox row → click → `/masseur/dashboard` + item no longer unread + badge cleared/hidden. ([#65](https://github.com/dmytro-koliasa/massagego/pull/65))
-- **PR 2 — bulk-cancel (X-4):** seed ≥1 future confirmed booking → dashboard **Cancel all upcoming** → confirm with **keep available** (default) → success toast; booked hour gone / available again. New suite `bulkCancel` (do not reuse `masseurResolve`). Not in this PR: `#bulk-cancel` hash, unavailable mode, client inbox event 3.
-- New `ensureBookingFixture` suites with dedicated phones/emails/slug.
-- Later: recent-cancellations `?slot=` deep-link.
+- **PR 1 — in-app inbox:** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65)).
+- **PR 2 — bulk-cancel (X-4):** ([#66](https://github.com/dmytro-koliasa/massagego/pull/66)).
+- **PR 3 — Recent cancellations → `?slot=`:** seed cancelled client booking + available slot on same `slotStart` (suite `slotDeepLink`) → masseur clicks Recent cancellations row → slot details dialog open + URL without `slot`. Not in this PR: missing-slot toast-only path; pulse CSS assert; raw `goto ?slot=` without the list.
 
-**Scope (PR 2):** one Playwright happy-path for masseur bulk-cancel keep-available; update [testing.md](../testing.md).
+**Scope (PR 3):** one Playwright happy-path for AR-24 list deep-link; update [testing.md](../testing.md).
 
-**Acceptance criteria (PR 2):**
-- Spec passes locally with `npm run test:e2e` against suite `bulkCancel`.
-- Confirm dialog shows count; after cancel, success toast for available mode; calendar no longer shows the booked event as booked.
-- `#bulk-cancel` / unavailable path deferred.
+**Acceptance criteria (PR 3):**
+- Spec passes locally with `npm run test:e2e` against suite `slotDeepLink`.
+- Clicking the list row opens the calendar slot dialog; after consume, URL is `/masseur/dashboard` without `slot`.
+- Missing-slot / pulse deferred.
 
 ## 5. Risks and notes
 
