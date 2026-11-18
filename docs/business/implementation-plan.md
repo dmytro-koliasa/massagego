@@ -269,7 +269,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Client delete cancels future bookings + event 4 notify; masseur blocked with `{n}` + calendar link.
 - Privacy updated; hosting backup scrub deferred to P-2.
 
-**Scope:** self-service account deletion with anonymisation; a client's future bookings are cancelled automatically (reason "client account deleted") and the masseur is notified; a masseur with future bookings cannot delete the account; a scheduled job physically deletes cancelled bookings 7 days after `cancelledAt` and completed bookings 3 months after the session start, never touching bookings with financial or legal obligations; the hint "Sessions from the last 3 months are shown" on the history screens.
+**Scope:** self-service account deletion with anonymisation; a client's future bookings are cancelled automatically (reason "client account deleted") and the masseur is notified; a masseur with future bookings cannot delete the account; a scheduled job physically deletes cancelled bookings 7 days after `cancelledAt` and completed bookings 3 months after the session start, never touching bookings with financial or legal obligations; the hint "Past sessions older than 3 months are removed." on the client sessions list and masseur availability calendar.
 
 **Acceptance criteria:** a booking cancelled more than 7 days ago no longer exists and is returned nowhere; a booking cancelled less than 7 days ago is unchanged; a completed booking older than 3 months is deleted; a deleted client's name and phone are gone from the remaining bookings; the job is idempotent and logs failures; a masseur deletion with future bookings is refused with a clear message.
 

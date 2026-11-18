@@ -455,7 +455,8 @@ export const dictionaries = {
 		phoneConfirmedBadge: 'Confirmed',
 		footerPrivacy: 'Privacy',
 		footerTerms: 'Terms',
-		clientSessionsHistoryHint: 'Sessions from the last 3 months are shown.',
+		sessionsHistoryHint:
+			'Past sessions older than 3 months are removed.',
 		deletedUserLabel: 'Deleted user',
 		deleteAccountTitle: 'Delete account',
 		deleteAccountSupport:
@@ -963,7 +964,8 @@ export const dictionaries = {
 		phoneConfirmedBadge: 'Підтверджено',
 		footerPrivacy: 'Конфіденційність',
 		footerTerms: 'Умови',
-		clientSessionsHistoryHint: 'Показано сеанси за останні 3 місяці.',
+		sessionsHistoryHint:
+			'Сеанси старші за 3 місяці видаляються.',
 		deletedUserLabel: 'Видалений користувач',
 		deleteAccountTitle: 'Видалити акаунт',
 		deleteAccountSupport:

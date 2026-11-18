@@ -463,7 +463,7 @@ export function ClientMasseursView() {
 						</h2>
 						<p className='mt-1 text-sm text-muted'>{t.clientSessionsSupport}</p>
 						<p className='mt-1 text-xs text-muted'>
-							{t.clientSessionsHistoryHint}
+							{t.sessionsHistoryHint}
 						</p>
 					</div>
 					<ClientSessionsCalendar />

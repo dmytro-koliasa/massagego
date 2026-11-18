@@ -799,6 +799,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 						{t.availabilityTitle}
 					</h2>
 					<p className='mt-1 text-sm text-muted'>{t.availabilitySupport}</p>
+					<p className='mt-1 text-xs text-muted'>{t.sessionsHistoryHint}</p>
 				</div>
 
 				<div className={`AvailabilityCalendar ${loading || repeating ? 'opacity-80' : ''}`}>
