@@ -65,7 +65,7 @@ The constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dm
 | Cancelled booking retention | 7 days from `cancelledAt` | [BR-011](decisions.md#br-011) |
 | Completed booking retention | 3 months from the session start | [BR-018](decisions.md#br-018) |
 | Excluded countries | one shared list for phone and city: all African countries, Russia, Belarus | [BR-013](decisions.md#br-013) |
-| Cancellation reasons list | five reasons plus the system reason; keys defined by the enum `CancellationReason` ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)), labels still to be added with PR 5 | [BR-004](decisions.md#br-004) |
+| Cancellation reasons list | five reasons plus the system reason; keys defined by the enum `CancellationReason` ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)); EN/UK labels in `src/lib/i18n.ts` | [BR-004](decisions.md#br-004) |
 
 ## 4. Background jobs
 

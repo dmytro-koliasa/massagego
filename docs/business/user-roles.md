@@ -65,7 +65,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | Edit masseur avatar | - | - | **own** | `api/masseur/profile` |
 | Search cities (OpenStreetMap proxy) | - | - | **Y** | `api/geocode/city` |
 | List other clients or other masseurs' private data | - | - | - | no endpoint exists |
-| Delete an account | - | - | - | not implemented ([BR-011](decisions.md#br-011)) |
+| Delete an account | - | **own** | **own** (refused while future bookings exist) | **Implemented** ([BR-011](decisions.md#br-011), [#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
 
 ### 2.4 Authentication
 

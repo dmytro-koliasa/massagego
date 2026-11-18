@@ -63,7 +63,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | `feat/booking-reminders` |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | PR 13 (`feat/telegram-phone-confirm`) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
-| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints deferred | PR 15 (`feat/admin-panel`) |
+| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | PR 15 (`feat/admin-panel`); complaints on `feat/complaints` |
 | 2026-11-17 | BR-021 | Complaints: client↔masseur via booking; categories; admin inbox + note; rate limit 5/h | `feat/complaints` |
 | 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
 | 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
@@ -114,7 +114,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-001
 
 **Business question:** Are all sessions exactly 60 minutes, or should masseurs offer 30/90/120-minute sessions?
-**Current implementation:** Fixed 60 min everywhere (`SLOT_MS`, calendars, constraint). `Booking` has no duration field.
+**Baseline (pre track-2):** Fixed 60 min everywhere (`SLOT_MS`, calendars, constraint). `Booking` has no duration field.
 **Why a decision is needed:** Real massage services vary in length. The DB constraint and data model cannot represent anything else without a migration.
 **Options:**
 - **A.** Keep 60 min fixed; document as a product rule.
@@ -123,14 +123,14 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: A** for now: it is the cheapest, consistent with the existing UI, and avoids data-model changes until demand is proven. Revisit before onboarding masseurs who need other lengths.
 **Impact:** A - docs only. B/C - UI (calendar slot size, multi-hour selection), API (duration param, availability generation), **DB (new `durationMinutes`/`slotEnd` column and a replacement exclusion constraint on a stored end)**, and backfill of existing rows to 60.
 
-**Decision (Approved 2026-11-16, not implemented):** **Option A.** Every session is exactly 60 minutes. Rationale from the owner: an average massage lasts about 45 minutes, plus about 15 minutes reserved for rest/turnaround, so each session is priced and scheduled as one 60-minute slot. Longer sessions (e.g. Thai massage) are booked as several consecutive slots; see [BR-014](#br-014). No change to the data model or the exclusion constraint.
+**Decision (Approved 2026-11-16):** **Option A.** Every session is exactly 60 minutes. Rationale from the owner: an average massage lasts about 45 minutes, plus about 15 minutes reserved for rest/turnaround, so each session is priced and scheduled as one 60-minute slot. Longer sessions (e.g. Thai massage) are booked as several consecutive slots; see [BR-014](#br-014). No change to the data model or the exclusion constraint.
 
 **Implemented (2026-11-16, [#5](https://github.com/dmytro-koliasa/massagego/pull/5)):** the session length is one shared constant (`SESSION_MINUTES`, `SLOT_MS` in `src/lib/booking-constants.ts`) used by the routes and the calendars; the duplicated copies are removed. The exclusion constraint still hard-codes `interval '1 hour'` in SQL and must change together with the constant.
 
 ### BR-002
 
 **Business question:** How far in advance must a booking be made, and may a client book an hour that has already started?
-**Current implementation:** Client API accepts starts up to 60 min in the past; masseur API rejects any started slot; the client UI hides started slots.
+**Baseline (pre track-2):** Client API accepts starts up to 60 min in the past; masseur API rejects any started slot; the client UI hides started slots.
 **Why:** Inconsistent across paths (C-1); no minimum lead time, so a client can book the next minute.
 **Options:**
 - **A.** Reject any started slot on every path; no lead time.
@@ -154,7 +154,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-003
 
 **Business question:** How far into the future can a client book?
-**Current implementation:** No limit; availability can exist up to 52 weeks ahead.
+**Baseline (pre track-2):** No limit; availability can exist up to 52 weeks ahead.
 **Why:** Unbounded horizon increases no-shows and stale availability.
 **Options:** **A.** No limit. **B.** Fixed window (e.g. 90 days). **C.** Per-masseur horizon.
 **Recommendation: B.**
@@ -175,7 +175,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-004
 
 **Business question:** When may a booking be cancelled, by whom, and are there consequences?
-**Current implementation:** Clients can cancel at any time, including past/ongoing sessions. Masseurs can cancel only before the slot starts. No notice, reason, fee or notification.
+**Baseline (pre track-2):** Clients can cancel at any time, including past/ongoing sessions. Masseurs can cancel only before the slot starts. No notice, reason, fee or notification.
 **Why:** A client can erase a past booking, which damages the masseur's history; late cancellations have no policy.
 **Options:**
 - **A.** Keep as is.
@@ -212,7 +212,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-005
 
 **Business question:** Does a booking need masseur confirmation, and are `completed` / `no_show` states needed?
-**Current implementation:** Only `pending` (set at creation, never advanced) and `cancelled`. `status` is a free string.
+**Baseline (pre track-2):** Only `pending` (set at creation, never advanced) and `cancelled`. `status` is a free string.
 **Why:** `pending` implies an approval step that does not exist; the UI shows bookings as booked/occupied immediately, i.e. effectively confirmed.
 **Options:**
 - **A.** Treat creation as confirmation: keep two states but give `pending` an accurate name.
@@ -221,7 +221,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: A now**, B/C only if the product needs approval or reporting. Whichever is chosen, constrain `status` to an enum.
 **Impact:** UI labels; API; **DB** (rename or enum migration, and the exclusion constraint's `<> 'cancelled'` predicate must be reviewed for any new releasing state such as `declined`).
 
-**Decision (Approved 2026-11-16, not implemented):**
+**Decision (Approved 2026-11-16):**
 
 1. **No confirmation by the masseur (option A).** A booking is valid as soon as it is created. The status `pending` is renamed to **`confirmed`**; the only statuses are **`confirmed`** and **`cancelled`**. There is no confirm/decline flow, no "awaiting approval" state and no per-masseur confirmation setting. A masseur who does not want a booking cancels it (rules in [BR-004](#br-004)).
 2. **No post-session statuses (option A).** There are no `completed` or `no_show` statuses. Whether a session took place is derived from time: a `confirmed` booking whose session time has passed is a past (held) session. Past bookings cannot be cancelled by the client ([BR-004](#br-004)). Tracking no-shows can be reconsidered together with [BR-015](#br-015) (late-cancellation fee) or reporting.
@@ -239,13 +239,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-006
 
 **Business question:** In which timezone are working hours, slots and "today" defined?
-**Current implementation:** UTC storage, browser-local display, server-local alignment and business-hours check (C-2, C-6).
+**Baseline (pre track-2):** UTC storage, browser-local display, server-local alignment and business-hours check (C-2, C-6).
 **Why:** Behavior depends on the hosting server's timezone and on each viewer's browser; this directly affects availability correctness.
 **Options:** **A.** Assume one fixed timezone (Europe/Kyiv) everywhere. **B.** Store an IANA timezone per masseur; compute hours and display in it. **C.** Keep browser-local.
 **Recommendation: B** (A is acceptable as a stopgap if all masseurs are in one zone).
 **Impact:** UI (render calendars in masseur tz and say so), API (hour validation and weekly copy in that tz), **DB** (new `User.timezone`), existing data needs a default timezone.
 
-**Decision (Approved 2026-11-16, not implemented):**
+**Decision (Approved 2026-11-16):**
 
 1. **Timezone model:** each masseur has an IANA timezone (e.g. `Europe/Kyiv`). Slots, working hours (currently 05:00-23:00, see BR-007) and "today" are evaluated in the masseur's timezone, independent of the server and of the viewer's browser. Instants stay stored as UTC.
 2. **Display to clients:** times are shown in the **masseur's** timezone with a visible label (e.g. "Kyiv, UTC+2").
@@ -273,13 +273,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-007
 
 **Business question:** Can masseurs set their own working hours, days off and holidays?
-**Current implementation:** Global 05:00-23:00; no days-off concept; availability set per hour; weekly copy as a shortcut; the walk-in route ignores the window.
+**Baseline (pre track-2):** Global 05:00-23:00; no days-off concept; availability set per hour; weekly copy as a shortcut; the walk-in route ignores the window.
 **Why:** Fixed hours do not fit all masseurs; days off are implicit.
 **Options:** **A.** Keep global window and per-hour availability. **B.** Per-masseur weekly schedule plus per-hour exceptions. **C.** B plus date-range time off.
 **Recommendation: B**, and apply one window rule to every write path.
 **Impact:** UI (schedule editor), API (all availability and booking routes), **DB** (schedule table or JSON), existing availability rows unaffected.
 
-**Decision (Approved 2026-11-16, not implemented):**
+**Decision (Approved 2026-11-16):**
 
 1. **Working hours (option A):** one **global** window **05:00-23:00** for all masseurs (the last slot starts at 22:00). It is not configurable per masseur and there is no weekly schedule. It is evaluated in the **masseur's timezone** ([BR-006](#br-006)).
 2. **Enforced on every write path:** the window applies to manual availability changes, to the weekly copy (including a client-supplied template) and to the masseur's walk-in bookings. A slot outside the window cannot be created by any of them.
@@ -297,13 +297,13 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-008
 
 **Business question:** May one client hold overlapping or unlimited bookings?
-**Current implementation:** No per-client constraint. A client may book unlimited hours in one request, and two masseurs at the same time.
+**Baseline (pre track-2):** No per-client constraint. A client may book unlimited hours in one request, and two masseurs at the same time.
 **Why:** Enables abuse (blocking a masseur's day) and accidental double-booking.
 **Options:** **A.** No limit. **B.** Block overlapping bookings for the same client and cap slots per request (e.g. 4). **C.** B plus a cap on future pending bookings per client.
 **Recommendation: B.**
 **Impact:** UI (selection cap and error), API (client create route), optional DB constraint on `clientUserId` (NULL walk-ins excluded), existing data to be checked first.
 
-**Decision (Approved 2026-11-16, not implemented):**
+**Decision (Approved 2026-11-16):**
 
 1. **No overlapping bookings per client (option B):** one client account cannot hold two active (`confirmed`) bookings for the same hour, with the same or with different masseurs. Consequence accepted by the owner: booking another person, or a couple, in the same hour through one account is not possible; a second person needs their own account. Masseur walk-in bookings (no client account) are not affected.
 2. **Limit on active future bookings: 30 per client.** Only `confirmed` bookings whose session has not yet started count; past and cancelled bookings do not. The cap exists because massage is sold in **courses of 10-15, at most 20 sessions**, so a low limit would get in the way. A request that would take the client above 30 is rejected as a whole.
@@ -315,15 +315,15 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-009
 
 **Business question:** Must masseurs and clients be notified of bookings and cancellations?
-**Current implementation:** No notifications. The masseur sees client name and phone in the calendar; `clientEmail` is unused.
+**Baseline (pre track-2):** No notifications. The masseur sees client name and phone in the calendar; `clientEmail` is unused.
 **Why:** Cancellations are invisible to the other party until they open the app.
 **Options:** **A.** None. **B.** Email/SMS to masseur on new booking and to client on masseur cancellation. **C.** B plus reminders.
 **Recommendation: B.**
 **Impact:** new provider integration, API hooks, possibly `Booking`/`User` contact fields; clients register by phone only, so SMS or a collected email is needed.
 
-**Owner note (2026-11-16):** notifications are to be handled as a **separate new, not yet implemented feature**, and must cover **all relevant events**, not only cancellations. Known requirement so far: the masseur is notified when a client cancels a booking ([BR-004](#br-004)). Channels (email, SMS, in-app), the full list of events, recipients and message content are still to be groomed. Status stays **Open**.
+**Owner note (2026-11-16, historical):** notifications were to cover **all relevant events**, not only cancellations (starting from the masseur notice when a client cancels, [BR-004](#br-004)). First-version channels, events and prefs were groomed below and **Implemented** (see Status). Remaining product open items: optional **in-app notification list**; production Resend domain/sender (P-3); Telegram webhook on a public host (P-4).
 
-**Decisions so far (grooming in progress; BR-009 stays Open until the whole feature is groomed):**
+**Decisions (groomed; first version Implemented):**
 
 1. **Channels (2026-11-16, option C):** **email is the main channel for both sides**, and users may **optionally connect Telegram** to receive the same events instantly. Email is the guaranteed fallback. WhatsApp, Viber and SMS are not part of this decision and may be considered later (they are paid and need business approval).
 2. **Consequences:** the **client** must give a **real email address at registration** (today the stored email is synthesised from the phone); the masseur already has an email. Connecting Telegram is voluntary and consent-based (the user starts the bot from a link in the app); a Telegram bot cannot write first. Using Telegram and an email provider means personal data goes to external processors, to be covered in the privacy policy and consent (XR-1).
@@ -350,7 +350,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-010
 
 **Business question:** Which masseurs may clients see and book?
-**Current implementation:** Every masseur account is listed, even with no profile, massage types or availability.
+**Baseline (pre track-2):** Every masseur account is listed, even with no profile, massage types or availability.
 **Why:** Clients can open empty or half-configured profiles.
 **Options:** **A.** List all. **B.** List only masseurs with required profile fields and at least one future slot. **C.** Explicit "published" toggle.
 **Recommendation: B.**
@@ -369,7 +369,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-011
 
 **Business question:** What happens to bookings and personal data when accounts are removed, and how long are cancelled bookings kept?
-**Current implementation:** No deletion UI. Cascading delete of masseur data; client deletion nulls `clientUserId`. Cancelled rows are kept indefinitely.
+**Baseline (pre track-2):** No deletion UI. Cascading delete of masseur data; client deletion nulls `clientUserId`. Cancelled rows are kept indefinitely.
 **Why:** Privacy and legal obligations; history integrity.
 **Options:** **A.** Hard delete. **B.** Soft delete with anonymisation of personal data, retaining booking history. **C.** Retention period.
 **Recommendation: B.**
@@ -380,7 +380,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 *Account deletion (question 1, option B).* A user deletes their own account in the application. Personal data is erased or anonymised (name, phone, email, photo, address, description). Bookings that remain are kept for the other party's history, with the deleted person's name and phone replaced by "deleted user" and no phone number. The phone number becomes free for a new registration.
 
 *Future bookings on deletion (question 2, option C).*
-- **Client:** may delete the account at any time. Their future bookings are **cancelled automatically** (the cancellation cutoff of [BR-004](#br-004) does not apply), with the reason "client account deleted" (no free text) and `cancelledBy` = client; the hours become free; the masseur sees it in the calendar and, once [BR-009](#br-009) exists, is notified.
+- **Client:** may delete the account at any time. Their future bookings are **cancelled automatically** (the cancellation cutoff of [BR-004](#br-004) does not apply), with the reason "client account deleted" (no free text) and `cancelledBy` = client; the hours become free; the masseur sees it in the calendar and is notified ([BR-009](#br-009) event 4).
 - **Masseur:** cannot delete the account while there are **active future bookings**. They must first cancel them under the normal masseur cancellation rules.
 
 *Cancelled bookings (question 3, owner's modified option B).*
@@ -408,7 +408,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-018
 
 **Business question:** How long are completed (held) bookings kept, and what happens to their personal data?
-**Current implementation:** kept indefinitely; no deletion or anonymisation exists.
+**Baseline (pre track-2):** kept indefinitely; no deletion or anonymisation exists.
 **Options considered:** **A.** keep while accounts exist, anonymise on account deletion; **B.** anonymise personal data after a fixed period; **C.** hard delete the record after a fixed period.
 
 **Status: Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)).
@@ -465,10 +465,10 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-014
 
 **Business question:** How are sessions longer than 60 minutes (e.g. Thai massage) booked, given that [BR-001](#br-001) fixes the slot at 60 minutes?
-**Current implementation:** A client may select several hours in one request; each hour becomes an independent booking with no link between them. Nothing knows that Thai massage needs more than one slot, and cancelling one hour leaves the others booked.
+**Baseline (pre track-2):** A client may select several hours in one request; each hour becomes an independent booking with no link between them. Nothing knows that Thai massage needs more than one slot, and cancelling one hour leaves the others booked.
 **Options considered:** (1) enforce a minimum number of consecutive slots per massage type; (2) UI hint only; (3) group bookings so that they are cancelled together.
 
-**Decision (Approved 2026-11-16, not implemented):** UI hints only, **no enforcement and no grouping**. The client is reminded through toasts; the data model is unchanged and each hour stays an independent booking.
+**Decision (Approved 2026-11-16):** UI hints only, **no enforcement and no grouping**. The client is reminded through toasts; the data model is unchanged and each hour stays an independent booking.
 
 1. **Booking hint.** When the client selects the massage type **Thai** (changing the type to Thai), a toast recommends choosing more than one consecutive slot.
 2. **Slot-selection hint.** While the type is Thai, the same toast is shown again after the client selects a slot in the calendar.
@@ -508,7 +508,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-017
 
 **Business question:** How is the list of masseurs narrowed for a client, so that a client in Kyiv does not have to browse masseurs from the whole country?
-**Current implementation:** The client has **no city**: registration asks only for name, phone and password, and the client profile edits only names. The masseur list defaults to "all cities" and the client must pick a city in a filter. Cities in the filter are the cities of masseurs, stored as plain text chosen from OpenStreetMap suggestions in the masseur's interface language, so the same city may be stored as "Київ" and "Kyiv" and appear twice.
+**Baseline (pre track-2):** The client has **no city**: registration asks only for name, phone and password, and the client profile edits only names. The masseur list defaults to "all cities" and the client must pick a city in a filter. Cities in the filter are the cities of masseurs, stored as plain text chosen from OpenStreetMap suggestions in the masseur's interface language, so the same city may be stored as "Київ" and "Kyiv" and appear twice.
 **Why:** The default list is long and not relevant to the client.
 **Options:** **A.** City required at client registration; the list defaults to the client's city. **B.** Ask for the city on first visit to the list. **C.** Detect the city automatically (IP or browser geolocation). **D.** Remember the last chosen city in the browser.
 **Recommendation: A.**
@@ -554,7 +554,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-021
 
 **Business question:** Is there an administrator or support role, and what can it do (view, block or delete accounts, handle complaints, edit the country blocklist)?
-**Current implementation:** Minimal admin portal with user list, block/unblock and audit log; complaints not built yet.
+**Current implementation:** Minimal admin portal with user list, block/unblock, audit log, and complaints inbox (`/admin/complaints`).
 **Why:** Account deletion ([BR-011](#br-011)), complaints and abuse ([BR-020](#br-020)) need someone to act.
 **Status: Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints added on `feat/complaints`. Added 2026-11-16.
 
@@ -567,7 +567,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 ### BR-022
 
 **Business question:** What rules apply to uploaded images (profile photo, gallery)?
-**Current implementation:** Gallery: JPEG or PNG, up to 5 MB, 3 images per masseur; the type comes from the file's declared type and the size from the request, without checking the actual file content; avatars follow similar rules.
+**Baseline (pre track-2):** Gallery: JPEG or PNG, up to 5 MB, 3 images per masseur; the type comes from the file's declared type and the size from the request, without checking the actual file content; avatars follow similar rules.
 **Why:** Unverified uploads can carry unsafe content; image rules also affect storage cost and privacy ([XR-1](#cross-cutting-requirements)).
 **Status: Implemented** ([#14](https://github.com/dmytro-koliasa/massagego/pull/14)). Added 2026-11-16.
 
