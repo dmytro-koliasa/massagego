@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Follow-ups: product [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); tests/ops/CI [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#33](https://github.com/dmytro-koliasa/massagego/pull/33); local Playwright E2E [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60) (public/auth smoke, client book/cancel/cutoff/Thai/sessions/complaints, masseur resolve/walk-in/report/slot, admin block/unblock/complaints/dismiss; password-reset + client login; catalogue in [testing.md](../testing.md)); docs closeout [#49](https://github.com/dmytro-koliasa/massagego/pull/49); docs hygiene [#39](https://github.com/dmytro-koliasa/massagego/pull/39), [#42](https://github.com/dmytro-koliasa/massagego/pull/42), [#43](https://github.com/dmytro-koliasa/massagego/pull/43). Remaining work: **masseur bulk-cancel** (X-4 / BR-011 groomed 2026-11-18; see follow-up below); deferred product items (e.g. prices, payments, courses); P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`); later Vercel/Telegram when chosen. In-app inbox shipped [#62](https://github.com/dmytro-koliasa/massagego/pull/62). CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Follow-ups: product [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); tests/ops/CI [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#33](https://github.com/dmytro-koliasa/massagego/pull/33); local Playwright E2E [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60) (public/auth smoke, client book/cancel/cutoff/Thai/sessions/complaints, masseur resolve/walk-in/report/slot, admin block/unblock/complaints/dismiss; password-reset + client login; catalogue in [testing.md](../testing.md)); docs closeout [#49](https://github.com/dmytro-koliasa/massagego/pull/49); docs hygiene [#39](https://github.com/dmytro-koliasa/massagego/pull/39), [#42](https://github.com/dmytro-koliasa/massagego/pull/42), [#43](https://github.com/dmytro-koliasa/massagego/pull/43). Product follow-ups shipped: in-app inbox [#62](https://github.com/dmytro-koliasa/massagego/pull/62), masseur bulk-cancel (X-4) [#63](https://github.com/dmytro-koliasa/massagego/pull/63), recent-cancellations deep-link [#64](https://github.com/dmytro-koliasa/massagego/pull/64), E2E [#65](https://github.com/dmytro-koliasa/massagego/pull/65)–[#67](https://github.com/dmytro-koliasa/massagego/pull/67). Remaining: deferred product items (e.g. prices, payments, courses); P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`); later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -311,7 +311,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### Follow-up — Masseur bulk-cancel future bookings (X-4 / BR-011)
 
-**Status:** groomed 2026-11-18; **implemented locally** (PR pending).
+**Status:** groomed 2026-11-18; **merged** ([#63](https://github.com/dmytro-koliasa/massagego/pull/63)).
 
 **Groomed decisions** (see [BR-011](decisions.md#br-011) / X-4):
 - General tool near the masseur calendar **and** CTA from the delete-account blocked banner.
@@ -350,13 +350,13 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### Follow-up — Playwright E2E for #62–#64 (local)
 
-**Status:** groomed 2026-11-18; **PR 1–2 merged** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65), [#66](https://github.com/dmytro-koliasa/massagego/pull/66)); **PR 3 (`?slot=` deep-link) implemented locally** (pending PR).
+**Status:** groomed 2026-11-18; **merged** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65), [#66](https://github.com/dmytro-koliasa/massagego/pull/66), [#67](https://github.com/dmytro-koliasa/massagego/pull/67)).
 
 **Groomed decisions (series):**
 - Three sequential PRs (same cadence as [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60)), not one mega-spec.
 - **PR 1 — in-app inbox:** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65)).
 - **PR 2 — bulk-cancel (X-4):** ([#66](https://github.com/dmytro-koliasa/massagego/pull/66)).
-- **PR 3 — Recent cancellations → `?slot=`:** seed cancelled client booking + available slot on same `slotStart` (suite `slotDeepLink`) → masseur clicks Recent cancellations row → slot details dialog open + URL without `slot`. Not in this PR: missing-slot toast-only path; pulse CSS assert; raw `goto ?slot=` without the list.
+- **PR 3 — Recent cancellations → `?slot=`:** ([#67](https://github.com/dmytro-koliasa/massagego/pull/67)) seed cancelled client booking + available slot on same `slotStart` (suite `slotDeepLink`) → masseur clicks Recent cancellations row → slot details dialog open + URL without `slot`. Not covered: missing-slot toast-only path; pulse CSS assert; raw `goto ?slot=` without the list.
 
 **Scope (PR 3):** one Playwright happy-path for AR-24 list deep-link; update [testing.md](../testing.md).
 
@@ -372,4 +372,4 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - **Hard deletion is irreversible:** a wrongly cancelled booking cannot be restored after 7 days, and history older than 3 months is gone ([BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018)).
 - **Dependencies on providers:** email, Telegram and the hosting scheduler were designed into plan PRs 9/12/13/14 ([#13](https://github.com/dmytro-koliasa/massagego/pull/13), [#17](https://github.com/dmytro-koliasa/massagego/pull/17)–[#19](https://github.com/dmytro-koliasa/massagego/pull/19)); remaining production cost/limits for Resend domain (P-3) and Telegram webhook host (P-4) are not yet known.
 - **Deferred items stay out of scope:** prices ([BR-012](decisions.md#br-012)), late-cancellation fee and payment ([BR-015](decisions.md#br-015)), courses ([BR-016](decisions.md#br-016)). When payments arrive, the obligation flag and the separate payment records must be designed (see [BR-011](decisions.md#br-011) and [BR-018](decisions.md#br-018)).
-- **Notes carried from the review:** X-2 (timezone from the city), X-3 (long registration form), X-4 (masseur bulk-cancel — groomed 2026-11-18; see follow-up above).
+- **Notes carried from the review:** X-2 (timezone from the city), X-3 (long registration form), X-4 (masseur bulk-cancel — [#63](https://github.com/dmytro-koliasa/massagego/pull/63)).
