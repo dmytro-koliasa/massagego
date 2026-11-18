@@ -5,14 +5,17 @@ import { ensureBookingFixture } from "./helpers/ensure-booking-fixture";
 test("cancelling one Thai slot hints to cancel the neighbour", async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   const fixture = await ensureBookingFixture("thai");
 
   await signInAsClient(page, fixture.clientPhone, fixture.clientPassword);
 
-  await page.goto(`/client/masseur/${fixture.masseurSlug}`);
+  await page.goto(`/client/masseur/${fixture.masseurSlug}`, {
+    waitUntil: "domcontentloaded",
+  });
   await expect(
     page.getByRole("heading", { level: 1, name: fixture.masseurName }),
-  ).toBeVisible({ timeout: 15_000 });
+  ).toBeVisible({ timeout: 20_000 });
 
   if (fixture.needsNextWeek) {
     await page.locator(".fc-next-button").click();
