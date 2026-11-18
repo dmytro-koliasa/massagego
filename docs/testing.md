@@ -98,7 +98,9 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - suite `cutoff` seeds a booking already inside cancel cutoff → click own slot → no dialog, toast with masseur phone (`e2e/booking-cancel-cutoff.spec.ts`)
   - suite `thai` seeds two consecutive Thai bookings → cancel one → neighbour hint toast (`e2e/booking-thai-neighbour.spec.ts`)
   - suite `thaiCutoff` seeds cancellable Thai hour + neighbour past cutoff → cancel → phone toast (`e2e/booking-thai-neighbour-cutoff.spec.ts`)
+  - suite `masseurResolve` seeds confirmed booking → masseur login → booked slot → Make available → success toast (`e2e/booking-masseur-resolve.spec.ts`)
   - shared client login helper: `e2e/helpers/client-auth.ts`
+  - shared masseur login helper: `e2e/helpers/masseur-auth.ts`
 - `next.config.ts` sets `allowedDevOrigins` for `127.0.0.1` / `localhost` so Playwright can hydrate against the `webServer` host
 
 `BASE_URL` overrides the default `http://127.0.0.1:3001`.  

@@ -9,17 +9,21 @@ const CUTOFF_HOURS = 24;
 const THAI_CUTOFF_HOURS = 4;
 const SLOT_MS = 60 * 60 * 1000;
 const CLIENT_PASSWORD = "E2eClient123!";
+const MASSEUR_PASSWORD = "E2eMasseur123!";
 
 export type BookingFixtureSuite =
   | "book"
   | "cancel"
   | "cutoff"
   | "thai"
-  | "thaiCutoff";
+  | "thaiCutoff"
+  | "masseurResolve";
 
 export type BookingFixture = {
   clientPhone: string;
   clientPassword: string;
+  masseurEmail: string;
+  masseurPassword: string;
   masseurSlug: string;
   masseurName: string;
   masseurPhone: string;
@@ -75,6 +79,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000010",
     slug: "e2e-thai-cutoff-masseur",
   },
+  masseurResolve: {
+    clientEmail: "e2e-client-masseur-resolve@test.local",
+    clientPhone: "+380501000011",
+    masseurEmail: "e2e-masseur-resolve@test.local",
+    masseurPhone: "+380501000012",
+    slug: "e2e-masseur-resolve",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -82,6 +93,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "cutoff") return "E2E Cutoff Masseur";
   if (suite === "thai") return "E2E Thai Masseur";
   if (suite === "thaiCutoff") return "E2E Thai Cutoff Masseur";
+  if (suite === "masseurResolve") return "E2E Resolve Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -251,13 +263,15 @@ export function pickThaiCutoffPairStarts(
  * Suite `cutoff` seeds a booking already past cancel cutoff.
  * Suite `thai` seeds two consecutive Thai bookings for X-1 neighbour hints.
  * Suite `thaiCutoff` seeds a cancellable Thai hour next to a neighbour already past cutoff.
+ * Suite `masseurResolve` seeds a confirmed booking for the masseur resolve (Make available) path.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
 ): Promise<BookingFixture> {
   const ids = SUITE_IDS[suite];
   const prisma = testPrisma();
-  const passwordHash = await hash(CLIENT_PASSWORD, 12);
+  const clientPasswordHash = await hash(CLIENT_PASSWORD, 12);
+  const masseurPasswordHash = await hash(MASSEUR_PASSWORD, 12);
   const thaiPair =
     suite === "thai"
       ? pickThaiPairStarts()
@@ -291,7 +305,7 @@ export async function ensureBookingFixture(
         portal: "client",
         name: "E2E Client",
         phone: ids.clientPhone,
-        passwordHash,
+        passwordHash: clientPasswordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -302,7 +316,7 @@ export async function ensureBookingFixture(
       update: {
         name: "E2E Client",
         phone: ids.clientPhone,
-        passwordHash,
+        passwordHash: clientPasswordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -324,6 +338,7 @@ export async function ensureBookingFixture(
         nameEn: masseurName,
         nameUk: masseurName,
         phone: ids.masseurPhone,
+        passwordHash: masseurPasswordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -341,6 +356,7 @@ export async function ensureBookingFixture(
         nameEn: masseurName,
         nameUk: masseurName,
         phone: ids.masseurPhone,
+        passwordHash: masseurPasswordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -372,6 +388,8 @@ export async function ensureBookingFixture(
         OR: [
           { key: { contains: ids.clientPhone } },
           { key: { contains: ids.clientEmail } },
+          { key: { contains: ids.masseurEmail } },
+          { key: { contains: ids.masseurPhone } },
         ],
       },
     });
@@ -390,7 +408,7 @@ export async function ensureBookingFixture(
     ];
     await prisma.availabilitySlot.createMany({ data: slotRows });
 
-    if (suite === "cutoff") {
+    if (suite === "cutoff" || suite === "masseurResolve") {
       await prisma.booking.create({
         data: {
           masseurId: masseur.id,
@@ -423,6 +441,8 @@ export async function ensureBookingFixture(
     return {
       clientPhone: ids.clientPhone,
       clientPassword: CLIENT_PASSWORD,
+      masseurEmail: ids.masseurEmail,
+      masseurPassword: MASSEUR_PASSWORD,
       masseurSlug: ids.slug,
       masseurName,
       masseurPhone: ids.masseurPhone,
