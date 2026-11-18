@@ -25,6 +25,7 @@ export type BookingFixtureSuite =
   | "masseurReport"
   | "slotUnavailable"
   | "inbox"
+  | "inboxDual"
   | "bulkCancel"
   | "slotDeepLink";
 
@@ -146,6 +147,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000032",
     slug: "e2e-inbox-masseur",
   },
+  inboxDual: {
+    clientEmail: "e2e-client-inbox-dual@test.local",
+    clientPhone: "+380501000037",
+    masseurEmail: "e2e-masseur-inbox-dual@test.local",
+    masseurPhone: "+380501000038",
+    slug: "e2e-inbox-dual-masseur",
+  },
   bulkCancel: {
     clientEmail: "e2e-client-bulk-cancel@test.local",
     clientPhone: "+380501000033",
@@ -175,6 +183,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "masseurReport") return "E2E Report Masseur";
   if (suite === "slotUnavailable") return "E2E Slot Unavailable Masseur";
   if (suite === "inbox") return "E2E Inbox Masseur";
+  if (suite === "inboxDual") return "E2E Inbox Dual Masseur";
   if (suite === "bulkCancel") return "E2E Bulk Cancel Masseur";
   if (suite === "slotDeepLink") return "E2E Slot Deep Link Masseur";
   return "E2E Booking Masseur";
@@ -363,6 +372,7 @@ export function pickThaiCutoffPairStarts(
  * Suite `masseurWalkIn` / `slotUnavailable` seed a free published slot (no booking row).
  * Suites `complaint`, `sessionsCancel`, `masseurReport` seed a confirmed account booking.
  * Suite `inbox` seeds a free published slot for the in-app notification happy path.
+ * Suite `inboxDual` same free-slot seed for dual client+masseur cookie / `X-Portal` E2E.
  * Suite `bulkCancel` seeds a confirmed booking for masseur bulk-cancel (X-4).
  * Suite `slotDeepLink` seeds a client-cancelled booking + free slot for AR-24 deep-link.
  */
