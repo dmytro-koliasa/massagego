@@ -1,7 +1,7 @@
 # Booking Lifecycle
 
 > **As-is:** documents the lifecycle the code **implements today**. Binding product rules live in [business-rules.md](business-rules.md#approved-rules) (AR-*) and [decisions.md](decisions.md).
-> **Status:** refreshed 2026-11-18 after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); local Playwright E2E through [#55](https://github.com/dmytro-koliasa/massagego/pull/55)).
+> **Status:** refreshed 2026-11-18 after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); local Playwright E2E through [#60](https://github.com/dmytro-koliasa/massagego/pull/60)).
 > Tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)).
 
 ## 1. Statuses - Implemented
