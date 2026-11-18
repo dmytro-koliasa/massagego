@@ -3,6 +3,7 @@ import {
   cancelledBookingEligibleBefore,
   completedBookingEligibleBefore,
 } from "@/lib/booking-cleanup-rules";
+import { deleteExpiredInAppNotifications } from "@/lib/notifications/inbox";
 import { prisma } from "@/lib/prisma";
 
 export {
@@ -11,8 +12,8 @@ export {
 } from "@/lib/booking-cleanup-rules";
 
 /**
- * Hard-delete cancelled (7d) and completed (3mo) bookings without retention hold.
- * Idempotent. Logs counts only (no PII).
+ * Hard-delete cancelled (7d) and completed (3mo) bookings without retention hold,
+ * plus expired in-app inbox rows (~30d). Idempotent. Logs counts only (no PII).
  */
 export async function processBookingCleanup(options?: {
   limit?: number;
@@ -20,6 +21,7 @@ export async function processBookingCleanup(options?: {
 }): Promise<{
   deletedCancelled: number;
   deletedCompleted: number;
+  deletedInAppNotifications: number;
 }> {
   const now = options?.now ?? new Date();
   const limit = options?.limit ?? 500;
@@ -58,8 +60,11 @@ export async function processBookingCleanup(options?: {
     await prisma.booking.deleteMany({ where: { id: { in: completedIds } } });
   }
 
+  const inbox = await deleteExpiredInAppNotifications({ now, limit });
+
   return {
     deletedCancelled: cancelledIds.length,
     deletedCompleted: completedIds.length,
+    deletedInAppNotifications: inbox.deleted,
   };
 }

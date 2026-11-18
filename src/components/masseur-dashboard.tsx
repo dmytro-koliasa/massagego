@@ -25,6 +25,7 @@ import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
 import { MasseurRecentCancellations } from '@/components/masseur-recent-cancellations';
+import { NotificationNavLink } from '@/components/notification-nav-link';
 import { CityAutocomplete } from '@/components/city-autocomplete';
 import {
 	BOOKING_LEAD_HOURS_OPTIONS,
@@ -478,12 +479,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 						{t.masseurPageTitle}
 					</h1>
 					<p>
-						<a
-							href='/masseur/notifications'
-							className='text-sm font-medium text-accent underline-offset-4 hover:underline'
-						>
-							{t.notifNavLink}
-						</a>
+						<NotificationNavLink href='/masseur/notifications' />
 					</p>
 				</div>
 

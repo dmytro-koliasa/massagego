@@ -8,6 +8,7 @@ import { BackNavLink } from '@/components/back-nav-link';
 import { ClientProfileCard } from '@/components/client-profile-card';
 import { useLanguage } from '@/components/language-provider';
 import { ClientSessionsCalendar } from '@/components/client-sessions-calendar';
+import { NotificationNavLink } from '@/components/notification-nav-link';
 import { shouldSkipImageOptimization } from '@/lib/upload-url';
 
 export type MasseurCard = {
@@ -172,12 +173,7 @@ export function ClientMasseursView() {
 						{t.clientPageTitle}
 					</h1>
 					<p>
-						<Link
-							href='/client/notifications'
-							className='text-sm font-medium text-accent underline-offset-4 hover:underline'
-						>
-							{t.notifNavLink}
-						</Link>
+						<NotificationNavLink href='/client/notifications' />
 					</p>
 				</div>
 

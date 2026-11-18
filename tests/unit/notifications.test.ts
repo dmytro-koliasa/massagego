@@ -9,9 +9,12 @@ import {
 import { isPastRetryWindow, nextRetryAt } from "@/lib/notifications/retry";
 import {
   emailBodyLooksPhoneFree,
+  inAppNotificationHref,
+  renderInAppNotification,
   renderNotificationEmail,
   renderNotificationTelegram,
 } from "@/lib/notifications/templates";
+import { inAppRetentionCutoff } from "@/lib/notifications/inbox-rules";
 import type { NotificationPayload } from "@/lib/notifications/types";
 import { phonesMatch, samePersonContact } from "@/lib/telegram/phone";
 import { botText } from "@/lib/telegram/texts";
@@ -198,6 +201,27 @@ describe("notification templates", () => {
       "https://example.com",
     );
     expect(rendered.text.toLowerCase()).toContain("reason");
+  });
+
+  it("renders in-app copy without open-in-app URL", () => {
+    const rendered = renderInAppNotification("booking_reminder", basePayload);
+    expect(rendered.title.toLowerCase()).toContain("reminder");
+    expect(rendered.body).toContain("Kyiv, UTC+2");
+    expect(rendered.body).not.toMatch(/Open in app:/i);
+    expect(emailBodyLooksPhoneFree(rendered.body)).toBe(true);
+    expect(inAppNotificationHref("booking_reminder")).toBe("/client");
+    expect(inAppNotificationHref("booking_created")).toBe(
+      "/masseur/dashboard",
+    );
+  });
+});
+
+describe("in-app inbox retention", () => {
+  it("cuts off after 30 UTC days", () => {
+    const now = new Date("2026-11-18T12:00:00.000Z");
+    expect(inAppRetentionCutoff(now).toISOString()).toBe(
+      "2026-10-19T12:00:00.000Z",
+    );
   });
 });
 

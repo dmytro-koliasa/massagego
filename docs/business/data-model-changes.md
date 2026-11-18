@@ -46,6 +46,7 @@ No schema change. Rules only: working window in masseur TZ, past edits rejected,
 | Item | Purpose | Decision |
 |---|---|---|
 | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17)): `NotificationOutbox` + `NotificationPreference` | Delivery, retries, prefs (XR-1 payloads) | [BR-009](decisions.md#br-009) |
+| **Implemented** (2026-11-18): `InAppNotification` | In-app feed: recipient, event type, title/body/href, `readAt`, `createdAt`; ~30-day retention | [BR-009](decisions.md#br-009) |
 | **Implemented** ([#18](https://github.com/dmytro-koliasa/massagego/pull/18)): Telegram link tokens via `VerificationToken` (`telegram-link:` prefix) | One-time bot connect | [BR-009](decisions.md#br-009) |
 | **Implemented** ([#12](https://github.com/dmytro-koliasa/massagego/pull/12), [#13](https://github.com/dmytro-koliasa/massagego/pull/13)): `VerificationToken` reused for email verify + password reset | Confirm email / reset | [BR-009](decisions.md#br-009), [BR-019](decisions.md#br-019) |
 | **Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)): `RateLimitBucket` | Sliding-window rate limits (BR-020) | [BR-020](decisions.md#br-020) |
@@ -77,6 +78,7 @@ Constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dmytro
 | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)): delete cancelled bookings older than 7 days without retention hold | daily cron `/api/cron/cleanup` (+ `npm run cron:cleanup`) | [BR-011](decisions.md#br-011) |
 | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)): delete completed bookings older than 3 months without retention hold | same cleanup cron | [BR-018](decisions.md#br-018) |
 | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#27](https://github.com/dmytro-koliasa/massagego/pull/27)): retry failed notifications + claim reminders | every 5 min `/api/cron/notifications` (+ local `npm run cron:notifications`) | [BR-009](decisions.md#br-009) |
+| **Implemented** (2026-11-18): delete in-app inbox rows older than ~30 days | daily `/api/cron/cleanup` via `deleteExpiredInAppNotifications` | [BR-009](decisions.md#br-009) |
 
 ## 5. Behaviour-only (no new columns) — Implemented
 

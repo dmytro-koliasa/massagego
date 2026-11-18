@@ -167,6 +167,38 @@ export function renderNotificationTelegram(
   return { text: `${email.subject}\n\n${email.text}` };
 }
 
+/** In-app feed copy — same facts as email, without the open-in-app URL line. */
+export function renderInAppNotification(
+  eventType: NotificationEventType,
+  payload: NotificationPayload,
+): { title: string; body: string } {
+  const email = renderNotificationEmail(eventType, payload, "https://app.local");
+  const lines = email.text
+    .split("\n")
+    .filter((line) => !/^Open in app:|^Відкрити в застосунку:/.test(line));
+  return { title: email.subject, body: lines.join("\n") };
+}
+
+/** Deep link target for an inbox row (portal pages that already exist). */
+export function inAppNotificationHref(
+  eventType: NotificationEventType,
+): string {
+  switch (eventType) {
+    case "booking_created":
+    case "booking_cancelled_by_client":
+    case "booking_cancelled_client_deleted":
+      return "/masseur/dashboard";
+    case "booking_confirmed":
+    case "booking_cancelled_by_masseur":
+    case "booking_reminder":
+      return "/client";
+    default: {
+      const _exhaustive: never = eventType;
+      throw new Error(`Unknown event: ${_exhaustive}`);
+    }
+  }
+}
+
 /** Guard for tests: rendered bodies must not contain phone-like digits runs. */
 export function emailBodyLooksPhoneFree(text: string): boolean {
   // Reject E.164-ish or long digit groups that look like phone numbers.

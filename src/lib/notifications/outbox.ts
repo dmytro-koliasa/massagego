@@ -9,6 +9,7 @@ import {
   isEmailNotificationEnabled,
   isTelegramNotificationEnabled,
 } from "@/lib/notifications/prefs";
+import { createInAppNotification } from "@/lib/notifications/inbox";
 import { isPastRetryWindow, nextRetryAt } from "@/lib/notifications/retry";
 import {
   renderNotificationEmail,
@@ -286,6 +287,11 @@ async function enqueueChannels(options: {
   eventType: NotificationEventType;
   payload: NotificationPayload;
 }): Promise<void> {
+  try {
+    await createInAppNotification(options);
+  } catch (error) {
+    console.error("[notifications] createInAppNotification", error);
+  }
   await enqueueAndSendEmailNotification(options);
   await enqueueAndSendTelegramNotification(options);
 }
