@@ -1,6 +1,6 @@
 # Business Rules
 
-> **Status:** refreshed after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); follow-ups through [#38](https://github.com/dmytro-koliasa/massagego/pull/38)).
+> **Status:** refreshed after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); follow-ups through [#48](https://github.com/dmytro-koliasa/massagego/pull/48)).
 > The section **Approved rules** below is binding. Sections 1–9 below are a **historical pre-track-2 as-is snapshot** (originally `f29ca32`, 2026-11-15) and may contradict current code — prefer AR-* / [decisions.md](decisions.md) for behaviour today.
 > Nothing here was verified against production data or a production deployment.
 > Open decisions (`BR-xxx`) and inconsistencies (`C-x`) are tracked in [decisions.md](decisions.md).
