@@ -8,7 +8,7 @@ const CUTOFF_HOURS = 24;
 const SLOT_MS = 60 * 60 * 1000;
 const CLIENT_PASSWORD = "E2eClient123!";
 
-export type BookingFixtureSuite = "book" | "cancel" | "cutoff";
+export type BookingFixtureSuite = "book" | "cancel" | "cutoff" | "thai";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -17,6 +17,8 @@ export type BookingFixture = {
   masseurName: string;
   masseurPhone: string;
   slotStartIso: string;
+  /** Second consecutive hour for Thai neighbour suites. */
+  neighborSlotStartIso?: string;
   needsNextWeek: boolean;
 };
 
@@ -51,11 +53,19 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000006",
     slug: "e2e-cutoff-masseur",
   },
+  thai: {
+    clientEmail: "e2e-client-thai@test.local",
+    clientPhone: "+380501000007",
+    masseurEmail: "e2e-masseur-thai@test.local",
+    masseurPhone: "+380501000008",
+    slug: "e2e-thai-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "cancel") return "E2E Cancel Masseur";
   if (suite === "cutoff") return "E2E Cutoff Masseur";
+  if (suite === "thai") return "E2E Thai Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -144,10 +154,34 @@ export function pickCutoffSlotStart(now = DateTime.now().setZone(ZONE)): {
   return { start: candidate.toUTC().toJSDate(), needsNextWeek };
 }
 
+/** Two consecutive bookable hours (neighbour still inside 05–22 local). */
+export function pickThaiPairStarts(now = DateTime.now().setZone(ZONE)): {
+  start: Date;
+  neighbor: Date;
+  needsNextWeek: boolean;
+} {
+  let { start, needsNextWeek } = pickBookableSlotStart(now);
+  let local = DateTime.fromJSDate(start, { zone: "utc" }).setZone(ZONE);
+  if (local.hour >= 22) {
+    local = normalizeWorkingHour(
+      local.plus({ days: 1 }).set({ hour: 10, minute: 0, second: 0, millisecond: 0 }),
+    );
+    const earliest = now.plus({ hours: LEAD_HOURS });
+    while (local <= earliest) {
+      local = normalizeWorkingHour(local.plus({ hours: 1 }));
+    }
+    needsNextWeek = local > now.endOf("week");
+    start = local.toUTC().toJSDate();
+  }
+  const neighbor = new Date(start.getTime() + SLOT_MS);
+  return { start, neighbor, needsNextWeek };
+}
+
 /**
  * Upserts a complete client + listed masseur + one free slot on massage_test.
  * Pass a suite key so parallel Playwright workers do not share the same rows.
- * Suite `cutoff` also seeds a confirmed booking already past cancel cutoff.
+ * Suite `cutoff` seeds a booking already past cancel cutoff.
+ * Suite `thai` seeds two consecutive Thai bookings for X-1 neighbour hints.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -155,12 +189,19 @@ export async function ensureBookingFixture(
   const ids = SUITE_IDS[suite];
   const prisma = testPrisma();
   const passwordHash = await hash(CLIENT_PASSWORD, 12);
+  const thaiPair = suite === "thai" ? pickThaiPairStarts() : null;
   const picked =
-    suite === "cutoff" ? pickCutoffSlotStart() : pickBookableSlotStart();
+    suite === "cutoff"
+      ? pickCutoffSlotStart()
+      : thaiPair
+        ? { start: thaiPair.start, needsNextWeek: thaiPair.needsNextWeek }
+        : pickBookableSlotStart();
   const { start, needsNextWeek } = picked;
+  const neighborStart = thaiPair?.neighbor;
   const end = new Date(start.getTime() + SLOT_MS);
   const masseurName = suiteMasseurName(suite);
   const cancelCutoffHours = suite === "cutoff" ? CUTOFF_HOURS : LEAD_HOURS;
+  const massageTypes = suite === "thai" ? '["thai"]' : "[]";
 
   try {
     const client = await prisma.user.upsert({
@@ -212,7 +253,7 @@ export async function ensureBookingFixture(
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
         cancelCutoffHours,
-        massageTypes: "[]",
+        massageTypes,
         preferredLocale: "en",
       },
       update: {
@@ -229,7 +270,7 @@ export async function ensureBookingFixture(
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
         cancelCutoffHours,
-        massageTypes: "[]",
+        massageTypes,
         deletedAt: null,
         blockedAt: null,
         preferredLocale: "en",
@@ -245,13 +286,20 @@ export async function ensureBookingFixture(
     await prisma.availabilitySlot.deleteMany({
       where: { masseurId: masseur.id },
     });
-    await prisma.availabilitySlot.create({
-      data: {
-        masseurId: masseur.id,
-        start,
-        end,
-      },
-    });
+
+    const slotRows = [
+      { masseurId: masseur.id, start, end },
+      ...(neighborStart
+        ? [
+            {
+              masseurId: masseur.id,
+              start: neighborStart,
+              end: new Date(neighborStart.getTime() + SLOT_MS),
+            },
+          ]
+        : []),
+    ];
+    await prisma.availabilitySlot.createMany({ data: slotRows });
 
     if (suite === "cutoff") {
       await prisma.booking.create({
@@ -266,6 +314,23 @@ export async function ensureBookingFixture(
       });
     }
 
+    if (suite === "thai" && neighborStart) {
+      const shared = {
+        masseurId: masseur.id,
+        clientUserId: client.id,
+        clientName: client.name ?? "E2E Client",
+        clientPhone: client.phone ?? ids.clientPhone,
+        massageType: "thai",
+        status: "confirmed" as const,
+      };
+      await prisma.booking.createMany({
+        data: [
+          { ...shared, slotStart: start },
+          { ...shared, slotStart: neighborStart },
+        ],
+      });
+    }
+
     return {
       clientPhone: ids.clientPhone,
       clientPassword: CLIENT_PASSWORD,
@@ -273,6 +338,7 @@ export async function ensureBookingFixture(
       masseurName,
       masseurPhone: ids.masseurPhone,
       slotStartIso: start.toISOString(),
+      neighborSlotStartIso: neighborStart?.toISOString(),
       needsNextWeek,
     };
   } finally {
