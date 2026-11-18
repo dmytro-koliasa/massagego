@@ -1,16 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
 
 type Props = {
 	onCancelled?: () => void;
-	autoOpen?: boolean;
 };
 
-export function MasseurBulkCancel({ onCancelled, autoOpen = false }: Props) {
+function subscribeHash(onStoreChange: () => void) {
+	window.addEventListener('hashchange', onStoreChange);
+	return () => window.removeEventListener('hashchange', onStoreChange);
+}
+
+function getBulkCancelHash() {
+	return window.location.hash === '#bulk-cancel';
+}
+
+function getBulkCancelHashServer() {
+	return false;
+}
+
+export function MasseurBulkCancel({ onCancelled }: Props) {
 	const { t } = useLanguage();
+	const hashAutoOpen = useSyncExternalStore(
+		subscribeHash,
+		getBulkCancelHash,
+		getBulkCancelHashServer,
+	);
 	const [open, setOpen] = useState(false);
 	const [pending, setPending] = useState(false);
 	const [loadingCount, setLoadingCount] = useState(false);
@@ -18,15 +35,17 @@ export function MasseurBulkCancel({ onCancelled, autoOpen = false }: Props) {
 	const [availability, setAvailability] = useState<'available' | 'unavailable'>(
 		'available',
 	);
+	const [autoOpenDone, setAutoOpenDone] = useState(false);
 
-	async function loadCount() {
+	const loadCount = useCallback(async () => {
 		setLoadingCount(true);
 		try {
 			const response = await fetch('/api/masseur/bookings/bulk-cancel');
 			if (!response.ok) throw new Error('load_failed');
 			const data = (await response.json()) as { count?: number };
-			setCount(typeof data.count === 'number' ? data.count : 0);
-			return typeof data.count === 'number' ? data.count : 0;
+			const next = typeof data.count === 'number' ? data.count : 0;
+			setCount(next);
+			return next;
 		} catch {
 			toast.error(t.bulkCancelLoadError);
 			setCount(null);
@@ -34,24 +53,45 @@ export function MasseurBulkCancel({ onCancelled, autoOpen = false }: Props) {
 		} finally {
 			setLoadingCount(false);
 		}
-	}
+	}, [t.bulkCancelLoadError]);
 
 	useEffect(() => {
-		void loadCount();
-	}, []);
-
-	useEffect(() => {
-		if (!autoOpen) return;
 		let cancelled = false;
 		void (async () => {
-			const n = await loadCount();
-			if (!cancelled && n !== null && n > 0) setOpen(true);
+			const response = await fetch('/api/masseur/bookings/bulk-cancel');
+			if (cancelled) return;
+			if (!response.ok) {
+				toast.error(t.bulkCancelLoadError);
+				setCount(null);
+				return;
+			}
+			const data = (await response.json()) as { count?: number };
+			if (cancelled) return;
+			setCount(typeof data.count === 'number' ? data.count : 0);
 		})();
 		return () => {
 			cancelled = true;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- open once when hash requests it
-	}, [autoOpen]);
+	}, [t.bulkCancelLoadError]);
+
+	useEffect(() => {
+		if (!hashAutoOpen || autoOpenDone) return;
+		let cancelled = false;
+		void (async () => {
+			const response = await fetch('/api/masseur/bookings/bulk-cancel');
+			if (cancelled) return;
+			if (!response.ok) return;
+			const data = (await response.json()) as { count?: number };
+			const next = typeof data.count === 'number' ? data.count : 0;
+			if (cancelled) return;
+			setCount(next);
+			setAutoOpenDone(true);
+			if (next > 0) setOpen(true);
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [hashAutoOpen, autoOpenDone]);
 
 	async function openDialog() {
 		const n = await loadCount();
