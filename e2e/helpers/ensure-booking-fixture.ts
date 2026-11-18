@@ -25,7 +25,8 @@ export type BookingFixtureSuite =
   | "masseurReport"
   | "slotUnavailable"
   | "inbox"
-  | "bulkCancel";
+  | "bulkCancel"
+  | "slotDeepLink";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -152,6 +153,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000034",
     slug: "e2e-bulk-cancel-masseur",
   },
+  slotDeepLink: {
+    clientEmail: "e2e-client-slot-deeplink@test.local",
+    clientPhone: "+380501000035",
+    masseurEmail: "e2e-masseur-slot-deeplink@test.local",
+    masseurPhone: "+380501000036",
+    slug: "e2e-slot-deeplink-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -168,6 +176,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "slotUnavailable") return "E2E Slot Unavailable Masseur";
   if (suite === "inbox") return "E2E Inbox Masseur";
   if (suite === "bulkCancel") return "E2E Bulk Cancel Masseur";
+  if (suite === "slotDeepLink") return "E2E Slot Deep Link Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -355,6 +364,7 @@ export function pickThaiCutoffPairStarts(
  * Suites `complaint`, `sessionsCancel`, `masseurReport` seed a confirmed account booking.
  * Suite `inbox` seeds a free published slot for the in-app notification happy path.
  * Suite `bulkCancel` seeds a confirmed booking for masseur bulk-cancel (X-4).
+ * Suite `slotDeepLink` seeds a client-cancelled booking + free slot for AR-24 deep-link.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -540,6 +550,24 @@ export async function ensureBookingFixture(
           { ...shared, slotStart: neighborStart },
         ],
       });
+    }
+
+    if (suite === "slotDeepLink") {
+      const booking = await prisma.booking.create({
+        data: {
+          masseurId: masseur.id,
+          clientUserId: client.id,
+          clientName: client.name ?? "E2E Client",
+          clientPhone: client.phone ?? ids.clientPhone,
+          slotStart: start,
+          status: "cancelled",
+          cancelledBy: "client",
+          cancelledAt: new Date(),
+          cancelReason: "cant_make_it",
+        },
+        select: { id: true },
+      });
+      bookingId = booking.id;
     }
 
     return {
