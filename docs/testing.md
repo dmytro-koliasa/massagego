@@ -110,6 +110,7 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - suite `sessionsCancel` → My sessions → Cancel booking → success toast (`e2e/client-sessions-cancel.spec.ts`)
   - masseur credentials login → `/masseur/dashboard` (`e2e/masseur-login-success.spec.ts`)
   - client forgot password → Send reset link → success toast (`e2e/client-password-reset.spec.ts`; `EMAIL_PROVIDER=log`)
+  - masseur forgot password → Send reset link → success toast (`e2e/masseur-password-reset.spec.ts`; `EMAIL_PROVIDER=log`)
   - shared client login helper: `e2e/helpers/client-auth.ts`
   - shared masseur login helper: `e2e/helpers/masseur-auth.ts`
 - `next.config.ts` sets `allowedDevOrigins` for `127.0.0.1` / `localhost` so Playwright can hydrate against the `webServer` host
