@@ -84,6 +84,7 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
 - Config: `playwright.config.ts`
 - Starts `next dev` on port **3001** via `webServer` (or reuses an already running server when not in CI)
 - Uses `TEST_DATABASE_URL` as `DATABASE_URL` for the app process when set
+- Forces `EMAIL_PROVIDER=log` in the Playwright `webServer` so booking notifications do not hit Resend
 - Smoke / public specs:
   - home brand visible (`e2e/home.spec.ts`)
   - `/admin/login` heading + form fields (`e2e/admin-login.spec.ts`)
@@ -91,6 +92,8 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - `/privacy` and `/terms` headings (`e2e/legal.spec.ts`)
 - Auth success:
   - admin bootstrap login → `/admin` users list (`e2e/admin-login.spec.ts`; needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`; upserts admin on `massage_test` via `e2e/helpers/ensure-admin.ts`)
+- Booking happy path:
+  - seed client + listed masseur + one free slot (`e2e/helpers/ensure-booking-fixture.ts`) → client login → `/client/masseur/{slug}` → select slot → Request booking → success toast (`e2e/booking-happy-path.spec.ts`)
 - `next.config.ts` sets `allowedDevOrigins` for `127.0.0.1` / `localhost` so Playwright can hydrate against the `webServer` host
 
 `BASE_URL` overrides the default `http://127.0.0.1:3001`.  

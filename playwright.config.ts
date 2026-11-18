@@ -55,6 +55,8 @@ export default defineConfig({
     env: {
       ...process.env,
       AUTH_URL: baseURL,
+      // Avoid real provider calls (Resend/etc.) during local Playwright runs.
+      EMAIL_PROVIDER: "log",
       // Prefer the dedicated test DB when present so E2E does not touch dev data.
       ...(process.env.TEST_DATABASE_URL
         ? { DATABASE_URL: process.env.TEST_DATABASE_URL }
