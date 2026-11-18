@@ -18,7 +18,8 @@ export type BookingFixtureSuite =
   | "thai"
   | "thaiCutoff"
   | "masseurResolve"
-  | "masseurUnavailable";
+  | "masseurUnavailable"
+  | "masseurWalkIn";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -94,6 +95,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000014",
     slug: "e2e-masseur-unavailable",
   },
+  masseurWalkIn: {
+    clientEmail: "e2e-client-masseur-walkin@test.local",
+    clientPhone: "+380501000015",
+    masseurEmail: "e2e-masseur-walkin@test.local",
+    masseurPhone: "+380501000016",
+    slug: "e2e-masseur-walkin",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -103,6 +111,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "thaiCutoff") return "E2E Thai Cutoff Masseur";
   if (suite === "masseurResolve") return "E2E Resolve Masseur";
   if (suite === "masseurUnavailable") return "E2E Unavailable Masseur";
+  if (suite === "masseurWalkIn") return "E2E Walk-in Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -274,6 +283,7 @@ export function pickThaiCutoffPairStarts(
  * Suite `thaiCutoff` seeds a cancellable Thai hour next to a neighbour already past cutoff.
  * Suite `masseurResolve` seeds a confirmed booking for the masseur resolve (Make available) path.
  * Suite `masseurUnavailable` seeds a confirmed booking for Make unavailable.
+ * Suite `masseurWalkIn` seeds a free published slot for masseur walk-in booking (no booking row).
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
