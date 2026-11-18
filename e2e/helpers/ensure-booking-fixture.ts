@@ -19,7 +19,11 @@ export type BookingFixtureSuite =
   | "thaiCutoff"
   | "masseurResolve"
   | "masseurUnavailable"
-  | "masseurWalkIn";
+  | "masseurWalkIn"
+  | "complaint"
+  | "sessionsCancel"
+  | "masseurReport"
+  | "slotUnavailable";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -29,6 +33,8 @@ export type BookingFixture = {
   masseurSlug: string;
   masseurName: string;
   masseurPhone: string;
+  /** Seeded booking id when the suite creates a confirmed booking. */
+  bookingId?: string;
   /** For thaiCutoff: the cancellable (later) slot the test should click. */
   slotStartIso: string;
   /** Earlier consecutive hour (inside cutoff for thaiCutoff). */
@@ -102,6 +108,34 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000016",
     slug: "e2e-masseur-walkin",
   },
+  complaint: {
+    clientEmail: "e2e-client-complaint@test.local",
+    clientPhone: "+380501000017",
+    masseurEmail: "e2e-masseur-complaint@test.local",
+    masseurPhone: "+380501000018",
+    slug: "e2e-complaint-masseur",
+  },
+  sessionsCancel: {
+    clientEmail: "e2e-client-sessions-cancel@test.local",
+    clientPhone: "+380501000019",
+    masseurEmail: "e2e-masseur-sessions-cancel@test.local",
+    masseurPhone: "+380501000020",
+    slug: "e2e-sessions-cancel-masseur",
+  },
+  masseurReport: {
+    clientEmail: "e2e-client-masseur-report@test.local",
+    clientPhone: "+380501000023",
+    masseurEmail: "e2e-masseur-report@test.local",
+    masseurPhone: "+380501000024",
+    slug: "e2e-masseur-report",
+  },
+  slotUnavailable: {
+    clientEmail: "e2e-client-slot-unavailable@test.local",
+    clientPhone: "+380501000025",
+    masseurEmail: "e2e-masseur-slot-unavailable@test.local",
+    masseurPhone: "+380501000026",
+    slug: "e2e-slot-unavailable",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -112,7 +146,22 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "masseurResolve") return "E2E Resolve Masseur";
   if (suite === "masseurUnavailable") return "E2E Unavailable Masseur";
   if (suite === "masseurWalkIn") return "E2E Walk-in Masseur";
+  if (suite === "complaint") return "E2E Complaint Masseur";
+  if (suite === "sessionsCancel") return "E2E Sessions Cancel Masseur";
+  if (suite === "masseurReport") return "E2E Report Masseur";
+  if (suite === "slotUnavailable") return "E2E Slot Unavailable Masseur";
   return "E2E Booking Masseur";
+}
+
+function seedsConfirmedBooking(suite: BookingFixtureSuite) {
+  return (
+    suite === "cutoff" ||
+    suite === "masseurResolve" ||
+    suite === "masseurUnavailable" ||
+    suite === "complaint" ||
+    suite === "sessionsCancel" ||
+    suite === "masseurReport"
+  );
 }
 
 function canCancelSlot(
@@ -283,7 +332,8 @@ export function pickThaiCutoffPairStarts(
  * Suite `thaiCutoff` seeds a cancellable Thai hour next to a neighbour already past cutoff.
  * Suite `masseurResolve` seeds a confirmed booking for the masseur resolve (Make available) path.
  * Suite `masseurUnavailable` seeds a confirmed booking for Make unavailable.
- * Suite `masseurWalkIn` seeds a free published slot for masseur walk-in booking (no booking row).
+ * Suite `masseurWalkIn` / `slotUnavailable` seed a free published slot (no booking row).
+ * Suites `complaint`, `sessionsCancel`, `masseurReport` seed a confirmed account booking.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -394,6 +444,11 @@ export async function ensureBookingFixture(
       select: { id: true },
     });
 
+    await prisma.complaint.deleteMany({
+      where: {
+        OR: [{ reporterId: client.id }, { targetId: masseur.id }, { targetId: client.id }, { reporterId: masseur.id }],
+      },
+    });
     await prisma.booking.deleteMany({
       where: {
         OR: [{ masseurId: masseur.id }, { clientUserId: client.id }],
@@ -428,12 +483,9 @@ export async function ensureBookingFixture(
     ];
     await prisma.availabilitySlot.createMany({ data: slotRows });
 
-    if (
-      suite === "cutoff" ||
-      suite === "masseurResolve" ||
-      suite === "masseurUnavailable"
-    ) {
-      await prisma.booking.create({
+    let bookingId: string | undefined;
+    if (seedsConfirmedBooking(suite)) {
+      const booking = await prisma.booking.create({
         data: {
           masseurId: masseur.id,
           clientUserId: client.id,
@@ -442,7 +494,9 @@ export async function ensureBookingFixture(
           slotStart: start,
           status: "confirmed",
         },
+        select: { id: true },
       });
+      bookingId = booking.id;
     }
 
     if ((suite === "thai" || suite === "thaiCutoff") && neighborStart) {
@@ -470,6 +524,7 @@ export async function ensureBookingFixture(
       masseurSlug: ids.slug,
       masseurName,
       masseurPhone: ids.masseurPhone,
+      bookingId,
       slotStartIso: start.toISOString(),
       neighborSlotStartIso: neighborStart?.toISOString(),
       needsNextWeek,
