@@ -23,7 +23,8 @@ export type BookingFixtureSuite =
   | "complaint"
   | "sessionsCancel"
   | "masseurReport"
-  | "slotUnavailable";
+  | "slotUnavailable"
+  | "inbox";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -136,6 +137,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000026",
     slug: "e2e-slot-unavailable",
   },
+  inbox: {
+    clientEmail: "e2e-client-inbox@test.local",
+    clientPhone: "+380501000031",
+    masseurEmail: "e2e-masseur-inbox@test.local",
+    masseurPhone: "+380501000032",
+    slug: "e2e-inbox-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -150,6 +158,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "sessionsCancel") return "E2E Sessions Cancel Masseur";
   if (suite === "masseurReport") return "E2E Report Masseur";
   if (suite === "slotUnavailable") return "E2E Slot Unavailable Masseur";
+  if (suite === "inbox") return "E2E Inbox Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -334,6 +343,7 @@ export function pickThaiCutoffPairStarts(
  * Suite `masseurUnavailable` seeds a confirmed booking for Make unavailable.
  * Suite `masseurWalkIn` / `slotUnavailable` seed a free published slot (no booking row).
  * Suites `complaint`, `sessionsCancel`, `masseurReport` seed a confirmed account booking.
+ * Suite `inbox` seeds a free published slot for the in-app notification happy path.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -447,6 +457,11 @@ export async function ensureBookingFixture(
     await prisma.complaint.deleteMany({
       where: {
         OR: [{ reporterId: client.id }, { targetId: masseur.id }, { targetId: client.id }, { reporterId: masseur.id }],
+      },
+    });
+    await prisma.inAppNotification.deleteMany({
+      where: {
+        OR: [{ userId: client.id }, { userId: masseur.id }],
       },
     });
     await prisma.booking.deleteMany({
