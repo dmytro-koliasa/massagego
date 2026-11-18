@@ -134,7 +134,13 @@ export const masseurBookingResolveSchema = z.object({
   availability: z.enum(["available", "unavailable"]),
 });
 
+/** Cancel all future confirmed bookings for the masseur (X-4). */
+export const masseurBulkCancelSchema = z.object({
+  availability: z.enum(["available", "unavailable"]),
+});
+
 export type BookingCreateInput = z.infer<typeof bookingCreateSchema>;
 export type BookingCancelInput = z.infer<typeof bookingCancelSchema>;
 export type MasseurBookingCreateInput = z.infer<typeof masseurBookingCreateSchema>;
 export type MasseurBookingResolveInput = z.infer<typeof masseurBookingResolveSchema>;
+export type MasseurBulkCancelInput = z.infer<typeof masseurBulkCancelSchema>;

@@ -58,6 +58,7 @@ import {
 
 export type AvailabilityCalendarHandle = {
 	save: () => Promise<boolean>;
+	reload: () => Promise<void>;
 };
 
 type SlotStatus = 'available' | 'booked';
@@ -788,6 +789,12 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				} catch {
 					toast.error(t.availabilitySaveError);
 					return false;
+				}
+			},
+			async reload() {
+				const currentRange = rangeRef.current;
+				if (currentRange) {
+					await loadSlots(currentRange.from, currentRange.to);
 				}
 			},
 		}));

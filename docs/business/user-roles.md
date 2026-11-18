@@ -129,4 +129,4 @@ Former “gaps” that are now shipped (track 2):
 | Notifying the counterpart of changes | **Implemented** — email [#17](https://github.com/dmytro-koliasa/massagego/pull/17), Telegram [#18](https://github.com/dmytro-koliasa/massagego/pull/18), event 4 [#19](https://github.com/dmytro-koliasa/massagego/pull/19); reminders [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
 | Account deletion and retention | **Implemented** — [BR-011](decisions.md#br-011) / [BR-018](decisions.md#br-018) / [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
 
-Still open outside track-2 product code: P-1 prod DB verify, P-2 legal review, production Resend domain (P-3), Telegram webhook on a public host (P-4), deferred BR-012/015/016. In-app notification list (BR-009) implemented locally (PR pending).
+Still open outside track-2 product code: P-1 prod DB verify, P-2 legal review, production Resend domain (P-3), Telegram webhook on a public host (P-4), deferred BR-012/015/016. Masseur bulk-cancel (X-4) implemented locally (PR pending).

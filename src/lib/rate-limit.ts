@@ -6,6 +6,8 @@ export const RATE_LIMITS = {
   passwordReset: { limit: 5, windowMs: 60 * 60 * 1000 },
   bookingCreate: { limit: 30, windowMs: 15 * 60 * 1000 },
   bookingCancel: { limit: 30, windowMs: 15 * 60 * 1000 },
+  /** Masseur bulk-cancel of all future bookings (X-4) — few times per hour. */
+  masseurBulkCancel: { limit: 5, windowMs: 60 * 60 * 1000 },
   complaintCreate: { limit: 5, windowMs: 60 * 60 * 1000 },
 } as const;
 

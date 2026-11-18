@@ -482,6 +482,27 @@ export const dictionaries = {
 		deleteAccountMasseurBlocked:
 			'Cancel your future bookings before deleting your account. You have {n} future booking(s).',
 		deleteAccountOpenCalendar: 'Open calendar',
+		deleteAccountBulkCancelCta: 'Cancel all future bookings',
+		bulkCancelTitle: 'Cancel all future bookings',
+		bulkCancelSupport:
+			'Cancel every upcoming confirmed booking at once. Clients with accounts are notified.',
+		bulkCancelCount: 'Upcoming bookings: {n}',
+		bulkCancelButton: 'Cancel all upcoming',
+		bulkCancelNone: 'No upcoming bookings to cancel.',
+		bulkCancelLoadError: 'Could not load upcoming bookings.',
+		bulkCancelError: 'Could not cancel upcoming bookings.',
+		bulkCancelSuccessAvailable:
+			'Cancelled {n} booking(s). Hours are available again.',
+		bulkCancelSuccessUnavailable:
+			'Cancelled {n} booking(s). Hours were removed from availability.',
+		bulkCancelConfirmTitle: 'Cancel {n} upcoming booking(s)?',
+		bulkCancelConfirmMessage:
+			'Each client with an account will get a cancellation notice. Walk-ins are cancelled without a notice.',
+		bulkCancelAvailabilityLegend: 'After cancellation',
+		bulkCancelKeepAvailable: 'Keep hours available for new bookings',
+		bulkCancelMakeUnavailable: 'Remove hours from availability',
+		bulkCancelCancel: 'Keep bookings',
+		bulkCancelConfirmAction: 'Cancel all',
 		complaintDialogTitle: 'Report this user',
 		complaintDialogSupport:
 			'Your report goes to administrators only. The other person will not see it.',
@@ -1001,6 +1022,27 @@ export const dictionaries = {
 		deleteAccountMasseurBlocked:
 			'Спочатку скасуйте майбутні бронювання, щоб видалити акаунт. У вас є {n} майбутн(іх) бронюван(ня/ь).',
 		deleteAccountOpenCalendar: 'Відкрити календар',
+		deleteAccountBulkCancelCta: 'Скасувати всі майбутні бронювання',
+		bulkCancelTitle: 'Скасувати всі майбутні бронювання',
+		bulkCancelSupport:
+			'Скасуйте всі майбутні підтверджені бронювання одразу. Клієнти з акаунтом отримають сповіщення.',
+		bulkCancelCount: 'Майбутніх бронювань: {n}',
+		bulkCancelButton: 'Скасувати всі майбутні',
+		bulkCancelNone: 'Немає майбутніх бронювань для скасування.',
+		bulkCancelLoadError: 'Не вдалося завантажити майбутні бронювання.',
+		bulkCancelError: 'Не вдалося скасувати майбутні бронювання.',
+		bulkCancelSuccessAvailable:
+			'Скасовано бронювань: {n}. Години знову доступні.',
+		bulkCancelSuccessUnavailable:
+			'Скасовано бронювань: {n}. Години прибрано з доступності.',
+		bulkCancelConfirmTitle: 'Скасувати майбутні бронювання ({n})?',
+		bulkCancelConfirmMessage:
+			'Кожен клієнт з акаунтом отримає сповіщення про скасування. Walk-in скасовуються без сповіщення.',
+		bulkCancelAvailabilityLegend: 'Після скасування',
+		bulkCancelKeepAvailable: 'Залишити години доступними для нових записів',
+		bulkCancelMakeUnavailable: 'Прибрати години з доступності',
+		bulkCancelCancel: 'Залишити бронювання',
+		bulkCancelConfirmAction: 'Скасувати всі',
 		complaintDialogTitle: 'Поскаржитися на користувача',
 		complaintDialogSupport:
 			'Скаргу бачать лише адміністратори. Інша сторона її не побачить.',

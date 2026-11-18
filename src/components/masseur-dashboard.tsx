@@ -24,6 +24,7 @@ import {
 import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
+import { MasseurBulkCancel } from '@/components/masseur-bulk-cancel';
 import { MasseurRecentCancellations } from '@/components/masseur-recent-cancellations';
 import { NotificationNavLink } from '@/components/notification-nav-link';
 import { CityAutocomplete } from '@/components/city-autocomplete';
@@ -968,6 +969,12 @@ export function DashboardView({ profile }: { profile: Profile }) {
 				</section>
 
 				<MasseurGallery editable />
+
+				<MasseurBulkCancel
+					onCancelled={() => {
+						void availabilityRef.current?.reload();
+					}}
+				/>
 
 				<MasseurAvailabilityCalendar
 					ref={availabilityRef}
