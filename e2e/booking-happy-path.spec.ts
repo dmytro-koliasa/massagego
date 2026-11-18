@@ -1,53 +1,9 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { signInAsClient } from "./helpers/client-auth";
 import { ensureBookingFixture } from "./helpers/ensure-booking-fixture";
 
-async function waitForClientSession(page: Page) {
-  const sessionReady = page.waitForResponse(
-    (res) =>
-      res.url().includes("/api/auth/client/session") && res.status() < 500,
-  );
-  await page.goto("/client/login");
-  await sessionReady;
-}
-
-async function switchToClientLoginTab(page: Page) {
-  const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
-  });
-  await expect(loginTab).toBeVisible();
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    await loginTab.click();
-    if ((await loginTab.getAttribute("aria-selected")) === "true") {
-      return;
-    }
-    await page.waitForTimeout(250);
-  }
-  await expect(loginTab).toHaveAttribute("aria-selected", "true");
-}
-
-async function signInAsClient(
-  page: Page,
-  phone: string,
-  password: string,
-) {
-  await waitForClientSession(page);
-  await switchToClientLoginTab(page);
-
-  await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
-  ).toBeVisible();
-
-  const phoneInput = page.locator('input[type="tel"]').first();
-  await phoneInput.fill("");
-  await phoneInput.fill(phone);
-  await page.locator('input[type="password"]').first().fill(password);
-  await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
-
-  await expect(page).toHaveURL(/\/client\/?$/, { timeout: 15_000 });
-}
-
 test("client can book a free masseur slot", async ({ page }) => {
-  const fixture = await ensureBookingFixture();
+  const fixture = await ensureBookingFixture("book");
 
   await signInAsClient(page, fixture.clientPhone, fixture.clientPassword);
 
