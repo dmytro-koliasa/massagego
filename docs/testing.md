@@ -84,7 +84,11 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
 - Config: `playwright.config.ts`
 - Starts `next dev` on port **3001** via `webServer` (or reuses an already running server when not in CI)
 - Uses `TEST_DATABASE_URL` as `DATABASE_URL` for the app process when set
-- Smoke specs: home brand visible; `/admin/login` heading + form fields
+- Smoke / public specs:
+  - home brand visible (`e2e/home.spec.ts`)
+  - `/admin/login` heading + form fields (`e2e/admin-login.spec.ts`)
+  - `/client/login` and `/masseur/login` headings + form fields
+  - `/privacy` and `/terms` headings (`e2e/legal.spec.ts`)
 
 `BASE_URL` overrides the default `http://127.0.0.1:3001`.  
 `E2E_PORT` overrides the port used by `webServer`.
