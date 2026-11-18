@@ -27,7 +27,9 @@ export type BookingFixtureSuite =
   | "inbox"
   | "inboxDual"
   | "bulkCancel"
-  | "slotDeepLink";
+  | "slotDeepLink"
+  | "slotDeepLinkPulse"
+  | "slotDeepLinkMissing";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -168,6 +170,20 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000036",
     slug: "e2e-slot-deeplink-masseur",
   },
+  slotDeepLinkPulse: {
+    clientEmail: "e2e-client-slot-deeplink-pulse@test.local",
+    clientPhone: "+380501000039",
+    masseurEmail: "e2e-masseur-slot-deeplink-pulse@test.local",
+    masseurPhone: "+380501000040",
+    slug: "e2e-slot-deeplink-pulse-masseur",
+  },
+  slotDeepLinkMissing: {
+    clientEmail: "e2e-client-slot-deeplink-missing@test.local",
+    clientPhone: "+380501000041",
+    masseurEmail: "e2e-masseur-slot-deeplink-missing@test.local",
+    masseurPhone: "+380501000042",
+    slug: "e2e-slot-deeplink-missing-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -186,6 +202,10 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "inboxDual") return "E2E Inbox Dual Masseur";
   if (suite === "bulkCancel") return "E2E Bulk Cancel Masseur";
   if (suite === "slotDeepLink") return "E2E Slot Deep Link Masseur";
+  if (suite === "slotDeepLinkPulse") return "E2E Slot Deep Link Pulse Masseur";
+  if (suite === "slotDeepLinkMissing") {
+    return "E2E Slot Deep Link Missing Masseur";
+  }
   return "E2E Booking Masseur";
 }
 
@@ -374,7 +394,8 @@ export function pickThaiCutoffPairStarts(
  * Suite `inbox` seeds a free published slot for the in-app notification happy path.
  * Suite `inboxDual` same free-slot seed for dual client+masseur cookie / `X-Portal` E2E.
  * Suite `bulkCancel` seeds a confirmed booking for masseur bulk-cancel (X-4).
- * Suite `slotDeepLink` seeds a client-cancelled booking + free slot for AR-24 deep-link.
+ * Suite `slotDeepLink` / `slotDeepLinkPulse` seed a client-cancelled booking + free slot for AR-24.
+ * Suite `slotDeepLinkMissing` seeds a client-cancelled booking with no availability at that hour.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -515,19 +536,24 @@ export async function ensureBookingFixture(
       },
     });
 
-    const slotRows = [
-      { masseurId: masseur.id, start, end },
-      ...(neighborStart
-        ? [
-            {
-              masseurId: masseur.id,
-              start: neighborStart,
-              end: new Date(neighborStart.getTime() + SLOT_MS),
-            },
-          ]
-        : []),
-    ];
-    await prisma.availabilitySlot.createMany({ data: slotRows });
+    const slotRows =
+      suite === "slotDeepLinkMissing"
+        ? []
+        : [
+            { masseurId: masseur.id, start, end },
+            ...(neighborStart
+              ? [
+                  {
+                    masseurId: masseur.id,
+                    start: neighborStart,
+                    end: new Date(neighborStart.getTime() + SLOT_MS),
+                  },
+                ]
+              : []),
+          ];
+    if (slotRows.length > 0) {
+      await prisma.availabilitySlot.createMany({ data: slotRows });
+    }
 
     let bookingId: string | undefined;
     if (seedsConfirmedBooking(suite)) {
@@ -562,7 +588,11 @@ export async function ensureBookingFixture(
       });
     }
 
-    if (suite === "slotDeepLink") {
+    if (
+      suite === "slotDeepLink" ||
+      suite === "slotDeepLinkPulse" ||
+      suite === "slotDeepLinkMissing"
+    ) {
       const booking = await prisma.booking.create({
         data: {
           masseurId: masseur.id,

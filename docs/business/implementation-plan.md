@@ -374,14 +374,15 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Three sequential PRs (same cadence as [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60)), not one mega-spec.
 - **PR 1 — in-app inbox:** ([#65](https://github.com/dmytro-koliasa/massagego/pull/65)).
 - **PR 2 — bulk-cancel (X-4):** ([#66](https://github.com/dmytro-koliasa/massagego/pull/66)).
-- **PR 3 — Recent cancellations → `?slot=`:** ([#67](https://github.com/dmytro-koliasa/massagego/pull/67)) seed cancelled client booking + available slot on same `slotStart` (suite `slotDeepLink`) → masseur clicks Recent cancellations row → slot details dialog open + URL without `slot`. Not covered: missing-slot toast-only path; pulse CSS assert; raw `goto ?slot=` without the list.
+- **PR 3 — Recent cancellations → `?slot=`:** ([#67](https://github.com/dmytro-koliasa/massagego/pull/67)) seed cancelled client booking + available slot on same `slotStart` (suite `slotDeepLink`) → masseur clicks Recent cancellations row → slot details dialog open + URL without `slot`.
+- **Follow-up E2E — missing-slot + pulse:** suites `slotDeepLinkMissing` / `slotDeepLinkPulse` (implemented locally, PR pending); raw `goto ?slot=` without the list still out of scope.
 
 **Scope (PR 3):** one Playwright happy-path for AR-24 list deep-link; update [testing.md](../testing.md).
 
 **Acceptance criteria (PR 3):**
 - Spec passes locally with `npm run test:e2e` against suite `slotDeepLink`.
 - Clicking the list row opens the calendar slot dialog; after consume, URL is `/masseur/dashboard` without `slot`.
-- Missing-slot / pulse deferred.
+- Missing-slot toast (no dialog) and pulse CSS covered by follow-up suites above.
 
 ## 5. Risks and notes
 
