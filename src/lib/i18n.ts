@@ -131,10 +131,14 @@ export const dictionaries = {
 		availabilityLastCancellation: 'Last cancellation',
 		recentCancellationsTitle: 'Recent cancellations',
 		recentCancellationsSupport:
-			'Client cancellations from the last 7 days (up to 20).',
+			'Client cancellations from the last 7 days (up to 20). Open a row to jump to that hour on the calendar.',
 		recentCancellationsEmpty: 'No client cancellations in the last 7 days.',
 		recentCancellationsLoadError: 'Could not load recent cancellations.',
 		recentCancellationsCancelledAt: 'Cancelled: {when}',
+		recentCancellationsOpenSlot: 'Open {when} on the calendar',
+		recentCancellationsSlotMissing:
+			'That hour is no longer on the calendar. Showing the week instead.',
+		recentCancellationsSlotInvalid: 'Could not open that cancellation on the calendar.',
 		bookingThaiMultiSlotHint:
 			'Thai massage usually needs more than one consecutive hour. Consider selecting neighbouring slots.',
 		bookingThaiCancelNeighborHint:
@@ -670,10 +674,15 @@ export const dictionaries = {
 		availabilityLastCancellation: 'Останнє скасування',
 		recentCancellationsTitle: 'Недавні скасування',
 		recentCancellationsSupport:
-			'Скасування клієнтами за останні 7 днів (до 20).',
+			'Скасування клієнтами за останні 7 днів (до 20). Відкрийте рядок, щоб перейти до цієї години в календарі.',
 		recentCancellationsEmpty: 'За останні 7 днів скасувань клієнтами немає.',
 		recentCancellationsLoadError: 'Не вдалося завантажити недавні скасування.',
 		recentCancellationsCancelledAt: 'Скасовано: {when}',
+		recentCancellationsOpenSlot: 'Відкрити {when} у календарі',
+		recentCancellationsSlotMissing:
+			'Цієї години вже немає в календарі. Показано тиждень.',
+		recentCancellationsSlotInvalid:
+			'Не вдалося відкрити це скасування в календарі.',
 		bookingThaiMultiSlotHint:
 			'Для тайського масажу зазвичай потрібно більше однієї години підряд. Оберіть сусідні слоти.',
 		bookingThaiCancelNeighborHint:

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, Suspense, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import PhoneInput, { type Country } from 'react-phone-number-input/max';
@@ -26,6 +26,7 @@ import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
 import { MasseurBulkCancel } from '@/components/masseur-bulk-cancel';
 import { MasseurRecentCancellations } from '@/components/masseur-recent-cancellations';
+import { MasseurSlotDeepLink } from '@/components/masseur-slot-deep-link';
 import { NotificationNavLink } from '@/components/notification-nav-link';
 import { CityAutocomplete } from '@/components/city-autocomplete';
 import {
@@ -980,6 +981,9 @@ export function DashboardView({ profile }: { profile: Profile }) {
 					ref={availabilityRef}
 					massageTypes={massageTypes}
 				/>
+				<Suspense fallback={null}>
+					<MasseurSlotDeepLink calendarRef={availabilityRef} />
+				</Suspense>
 
 				<MasseurRecentCancellations timeZone={timezone} />
 

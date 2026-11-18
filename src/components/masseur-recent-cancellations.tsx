@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -79,34 +80,44 @@ export function MasseurRecentCancellations({ timeZone }: Props) {
       ) : (
         <ul className="divide-y divide-surface-border">
           {rows.map((row) => (
-            <li key={row.id} className="py-3 text-left first:pt-0 last:pb-0">
-              <p className="text-sm font-medium text-foreground">
-                {formatSlotDateTime(row.slotStart, locale, zone)}
-              </p>
-              <p className="mt-0.5 text-sm text-muted">
-                {displayBookingClientName(
-                  row.clientName,
-                  locale === "uk" ? "uk" : "en",
-                )}
-                {" · "}
-                {reasonLabel(row)}
-              </p>
-              <p className="mt-0.5 text-xs text-muted">
-                {t.recentCancellationsCancelledAt.replaceAll(
+            <li key={row.id} className="first:pt-0 last:pb-0">
+              <Link
+                href={`/masseur/dashboard?slot=${encodeURIComponent(row.slotStart)}`}
+                scroll={false}
+                className="block rounded-lg py-3 text-left transition hover:bg-accent-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                aria-label={t.recentCancellationsOpenSlot.replaceAll(
                   "{when}",
-                  new Intl.DateTimeFormat(
-                    locale === "uk" ? "uk-UA" : "en-GB",
-                    {
-                      timeZone: zone,
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    },
-                  ).format(new Date(row.cancelledAt)),
+                  formatSlotDateTime(row.slotStart, locale, zone),
                 )}
-              </p>
+              >
+                <p className="text-sm font-medium text-foreground">
+                  {formatSlotDateTime(row.slotStart, locale, zone)}
+                </p>
+                <p className="mt-0.5 text-sm text-muted">
+                  {displayBookingClientName(
+                    row.clientName,
+                    locale === "uk" ? "uk" : "en",
+                  )}
+                  {" · "}
+                  {reasonLabel(row)}
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {t.recentCancellationsCancelledAt.replaceAll(
+                    "{when}",
+                    new Intl.DateTimeFormat(
+                      locale === "uk" ? "uk-UA" : "en-GB",
+                      {
+                        timeZone: zone,
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      },
+                    ).format(new Date(row.cancelledAt)),
+                  )}
+                </p>
+              </Link>
             </li>
           ))}
         </ul>

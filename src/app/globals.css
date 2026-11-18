@@ -414,6 +414,23 @@ select:not(.PhoneInputCountrySelect):disabled {
   background-color: color-mix(in srgb, var(--accent) 70%, black) !important;
 }
 
+@keyframes fc-deep-link-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, white);
+    filter: brightness(1.12);
+  }
+}
+
+.AvailabilityCalendar .fc .fc-event.fc-event-deep-link-pulse {
+  z-index: 6;
+  animation: fc-deep-link-pulse 0.85s ease-in-out 3;
+}
+
 .AvailabilityCalendar .fc .fc-event.fc-event-booked {
   z-index: 1;
   cursor: pointer !important;

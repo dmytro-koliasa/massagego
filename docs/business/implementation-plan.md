@@ -329,6 +329,25 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Empty set is refused clearly; rate limit returns a clear error; texts EN/UK.
 - Delete-account blocked banner offers the same flow; single-slot resolve unchanged.
 
+### Follow-up — Recent cancellations → calendar deep-link (AR-24 / BR-004)
+
+**Status:** groomed 2026-11-18; **implemented locally** (PR pending).
+
+**Groomed decisions** (see [BR-004](decisions.md#br-004)):
+- List rows link to `/masseur/dashboard?slot=<ISO>` (cancellation `slotStart`), not hash (hash kept for `#bulk-cancel`).
+- Calendar: `gotoDate` to that week; open slot details when the hour exists.
+- Missing/unavailable slot: still jump to the week + toast; no details modal.
+- Brief ~2–3 s pulse/highlight on the target cell when found.
+- Strip `slot` from the URL after consume so refresh does not re-open.
+
+**Scope:** deep-link from Recent cancellations into the existing masseur week calendar (no new API).
+
+**Acceptance criteria:**
+- Clicking a recent-cancellation row lands on the matching week; details open when the slot is present.
+- Missing slot shows toast and the week still; no bogus modal.
+- Pulse is temporary; `?slot=` is removed after handling; EN/UK toast copy.
+- `#bulk-cancel` behaviour unchanged.
+
 ## 5. Risks and notes
 
 - **Production state is unknown** (P-1). Until it is checked, nothing here should be deployed to real data.

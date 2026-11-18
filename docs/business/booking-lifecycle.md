@@ -91,7 +91,7 @@ Idempotency: cancelling one's own already-cancelled booking succeeds. Missing or
 | Customer data | From account profile | Free-text per walk-in |
 | Ownership link | `clientUserId` set | `clientUserId = null` |
 | Cancel | Before cutoff + reason | Before start only, with availability choice |
-| Visibility of own bookings | Sessions calendar + booking calendar (own booked hours) | Weekly calendar with name, phone, type; recent cancellations list (7 days) |
+| Visibility of own bookings | Sessions calendar + booking calendar (own booked hours) | Weekly calendar with name, phone, type; recent cancellations list (7 days; deep-link to calendar via `?slot=` — AR-24) |
 
 ## 7. Past bookings - Implemented
 
