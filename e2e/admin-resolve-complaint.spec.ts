@@ -6,7 +6,7 @@ import { ensureOpenComplaint } from "./helpers/ensure-open-complaint";
 test("admin can resolve an open complaint", async ({ page }) => {
   test.setTimeout(90_000);
   const admin = await ensureAdminForE2E();
-  const complaint = await ensureOpenComplaint();
+  const complaint = await ensureOpenComplaint("resolve");
 
   await signInAsAdmin(page, admin.email, admin.password);
 

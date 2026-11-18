@@ -3,12 +3,43 @@ import { hash } from "bcryptjs";
 import { DateTime } from "luxon";
 
 const ZONE = "Europe/Kyiv";
-const CLIENT_EMAIL = "e2e-client-admin-complaint@test.local";
-const CLIENT_PHONE = "+380501000027";
-const MASSEUR_EMAIL = "e2e-masseur-admin-complaint@test.local";
-const MASSEUR_PHONE = "+380501000028";
-const MASSEUR_SLUG = "e2e-admin-complaint-masseur";
-const BODY = "E2E open complaint for admin resolve.";
+
+type ComplaintSuite = "resolve" | "dismiss";
+
+const SUITE: Record<
+  ComplaintSuite,
+  {
+    clientEmail: string;
+    clientPhone: string;
+    masseurEmail: string;
+    masseurPhone: string;
+    slug: string;
+    clientName: string;
+    masseurName: string;
+    body: string;
+  }
+> = {
+  resolve: {
+    clientEmail: "e2e-client-admin-complaint@test.local",
+    clientPhone: "+380501000027",
+    masseurEmail: "e2e-masseur-admin-complaint@test.local",
+    masseurPhone: "+380501000028",
+    slug: "e2e-admin-complaint-masseur",
+    clientName: "E2E Admin Complaint Client",
+    masseurName: "E2E Admin Complaint Masseur",
+    body: "E2E open complaint for admin resolve.",
+  },
+  dismiss: {
+    clientEmail: "e2e-client-admin-dismiss@test.local",
+    clientPhone: "+380501000029",
+    masseurEmail: "e2e-masseur-admin-dismiss@test.local",
+    masseurPhone: "+380501000030",
+    slug: "e2e-admin-dismiss-masseur",
+    clientName: "E2E Admin Dismiss Client",
+    masseurName: "E2E Admin Dismiss Masseur",
+    body: "E2E open complaint for admin dismiss.",
+  },
+};
 
 function testPrisma() {
   const databaseUrl =
@@ -21,10 +52,13 @@ function testPrisma() {
 }
 
 /** Seeds an open client→masseur complaint linked to a confirmed booking. */
-export async function ensureOpenComplaint(): Promise<{
+export async function ensureOpenComplaint(
+  suite: ComplaintSuite = "resolve",
+): Promise<{
   complaintId: string;
   body: string;
 }> {
+  const ids = SUITE[suite];
   const prisma = testPrisma();
   const passwordHash = await hash("E2eClient123!", 12);
   const slotStart = DateTime.now()
@@ -36,12 +70,12 @@ export async function ensureOpenComplaint(): Promise<{
 
   try {
     const client = await prisma.user.upsert({
-      where: { email_portal: { email: CLIENT_EMAIL, portal: "client" } },
+      where: { email_portal: { email: ids.clientEmail, portal: "client" } },
       create: {
-        email: CLIENT_EMAIL,
+        email: ids.clientEmail,
         portal: "client",
-        name: "E2E Admin Complaint Client",
-        phone: CLIENT_PHONE,
+        name: ids.clientName,
+        phone: ids.clientPhone,
         passwordHash,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
@@ -51,8 +85,8 @@ export async function ensureOpenComplaint(): Promise<{
         preferredLocale: "en",
       },
       update: {
-        name: "E2E Admin Complaint Client",
-        phone: CLIENT_PHONE,
+        name: ids.clientName,
+        phone: ids.clientPhone,
         passwordHash,
         deletedAt: null,
         blockedAt: null,
@@ -61,14 +95,14 @@ export async function ensureOpenComplaint(): Promise<{
     });
 
     const masseur = await prisma.user.upsert({
-      where: { email_portal: { email: MASSEUR_EMAIL, portal: "masseur" } },
+      where: { email_portal: { email: ids.masseurEmail, portal: "masseur" } },
       create: {
-        email: MASSEUR_EMAIL,
+        email: ids.masseurEmail,
         portal: "masseur",
-        slug: MASSEUR_SLUG,
-        nameEn: "E2E Admin Complaint Masseur",
-        nameUk: "E2E Admin Complaint Masseur",
-        phone: MASSEUR_PHONE,
+        slug: ids.slug,
+        nameEn: ids.masseurName,
+        nameUk: ids.masseurName,
+        phone: ids.masseurPhone,
         emailVerified: new Date(),
         cityPlaceId: "e2e-place-kyiv",
         cityCountryCode: "UA",
@@ -79,10 +113,10 @@ export async function ensureOpenComplaint(): Promise<{
         preferredLocale: "en",
       },
       update: {
-        slug: MASSEUR_SLUG,
-        nameEn: "E2E Admin Complaint Masseur",
-        nameUk: "E2E Admin Complaint Masseur",
-        phone: MASSEUR_PHONE,
+        slug: ids.slug,
+        nameEn: ids.masseurName,
+        nameUk: ids.masseurName,
+        phone: ids.masseurPhone,
         deletedAt: null,
         blockedAt: null,
       },
@@ -114,8 +148,8 @@ export async function ensureOpenComplaint(): Promise<{
       data: {
         masseurId: masseur.id,
         clientUserId: client.id,
-        clientName: client.name ?? "E2E Client",
-        clientPhone: client.phone ?? CLIENT_PHONE,
+        clientName: client.name ?? ids.clientName,
+        clientPhone: client.phone ?? ids.clientPhone,
         slotStart: start,
         status: "confirmed",
       },
@@ -128,13 +162,13 @@ export async function ensureOpenComplaint(): Promise<{
         targetId: masseur.id,
         bookingId: booking.id,
         category: "rude",
-        body: BODY,
+        body: ids.body,
         status: "open",
       },
       select: { id: true },
     });
 
-    return { complaintId: complaint.id, body: BODY };
+    return { complaintId: complaint.id, body: ids.body };
   } finally {
     await prisma.$disconnect();
   }
