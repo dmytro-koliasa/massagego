@@ -4,23 +4,31 @@ import { DateTime } from "luxon";
 
 const ZONE = "Europe/Kyiv";
 const LEAD_HOURS = 1;
+const CUTOFF_HOURS = 24;
 const SLOT_MS = 60 * 60 * 1000;
 const CLIENT_PASSWORD = "E2eClient123!";
 
-export type BookingFixtureSuite = "book" | "cancel";
+export type BookingFixtureSuite = "book" | "cancel" | "cutoff";
 
 export type BookingFixture = {
   clientPhone: string;
   clientPassword: string;
   masseurSlug: string;
   masseurName: string;
+  masseurPhone: string;
   slotStartIso: string;
   needsNextWeek: boolean;
 };
 
 const SUITE_IDS: Record<
   BookingFixtureSuite,
-  { clientEmail: string; clientPhone: string; masseurEmail: string; masseurPhone: string; slug: string }
+  {
+    clientEmail: string;
+    clientPhone: string;
+    masseurEmail: string;
+    masseurPhone: string;
+    slug: string;
+  }
 > = {
   book: {
     clientEmail: "e2e-client@test.local",
@@ -36,7 +44,20 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000004",
     slug: "e2e-cancel-masseur",
   },
+  cutoff: {
+    clientEmail: "e2e-client-cutoff@test.local",
+    clientPhone: "+380501000005",
+    masseurEmail: "e2e-masseur-cutoff@test.local",
+    masseurPhone: "+380501000006",
+    slug: "e2e-cutoff-masseur",
+  },
 };
+
+function suiteMasseurName(suite: BookingFixtureSuite) {
+  if (suite === "cancel") return "E2E Cancel Masseur";
+  if (suite === "cutoff") return "E2E Cutoff Masseur";
+  return "E2E Booking Masseur";
+}
 
 function testPrisma() {
   const databaseUrl =
@@ -48,22 +69,28 @@ function testPrisma() {
   );
 }
 
+function normalizeWorkingHour(candidate: DateTime): DateTime {
+  let next = candidate;
+  if (next.hour < 5) {
+    next = next.set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
+  }
+  if (next.hour >= 23) {
+    next = next
+      .plus({ days: 1 })
+      .set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
+  }
+  return next;
+}
+
 /** Next hour-aligned slot past lead time, preferably still in the current ISO week. */
 export function pickBookableSlotStart(now = DateTime.now().setZone(ZONE)): {
   start: Date;
   needsNextWeek: boolean;
 } {
   const weekEnd = now.endOf("week");
-  let candidate = now.plus({ hours: LEAD_HOURS + 1 }).startOf("hour");
-
-  if (candidate.hour < 5) {
-    candidate = candidate.set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
-  }
-  if (candidate.hour >= 23) {
-    candidate = candidate
-      .plus({ days: 1 })
-      .set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
-  }
+  let candidate = normalizeWorkingHour(
+    now.plus({ hours: LEAD_HOURS + 1 }).startOf("hour"),
+  );
 
   let needsNextWeek = false;
   if (candidate > weekEnd) {
@@ -76,12 +103,42 @@ export function pickBookableSlotStart(now = DateTime.now().setZone(ZONE)): {
 
   const earliest = now.plus({ hours: LEAD_HOURS });
   while (candidate <= earliest) {
-    candidate = candidate.plus({ hours: 1 });
-    if (candidate.hour >= 23) {
-      candidate = candidate
-        .plus({ days: 1 })
-        .set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
+    candidate = normalizeWorkingHour(candidate.plus({ hours: 1 }));
+  }
+
+  return { start: candidate.toUTC().toJSDate(), needsNextWeek };
+}
+
+/**
+ * Slot still in the visible week, but already inside the cancel cutoff window
+ * (seeded booking only — UI book would refuse lead time).
+ */
+export function pickCutoffSlotStart(now = DateTime.now().setZone(ZONE)): {
+  start: Date;
+  needsNextWeek: boolean;
+} {
+  const weekEnd = now.endOf("week");
+  let candidate = normalizeWorkingHour(now.plus({ hours: 2 }).startOf("hour"));
+
+  let needsNextWeek = false;
+  if (candidate > weekEnd) {
+    needsNextWeek = true;
+    // Still keep it close enough that CUTOFF_HOURS=24 blocks cancel.
+    candidate = now
+      .plus({ weeks: 1 })
+      .startOf("week")
+      .set({ hour: 10, minute: 0, second: 0, millisecond: 0 });
+    if (candidate.diff(now, "hours").hours >= CUTOFF_HOURS) {
+      candidate = normalizeWorkingHour(now.plus({ hours: 3 }).startOf("hour"));
+      needsNextWeek = candidate > weekEnd;
     }
+  }
+
+  // Guarantee we are inside the cutoff window: now > start - cutoff.
+  const cancelDeadline = candidate.minus({ hours: CUTOFF_HOURS });
+  if (now <= cancelDeadline) {
+    candidate = normalizeWorkingHour(now.plus({ hours: 2 }).startOf("hour"));
+    needsNextWeek = candidate > weekEnd;
   }
 
   return { start: candidate.toUTC().toJSDate(), needsNextWeek };
@@ -90,6 +147,7 @@ export function pickBookableSlotStart(now = DateTime.now().setZone(ZONE)): {
 /**
  * Upserts a complete client + listed masseur + one free slot on massage_test.
  * Pass a suite key so parallel Playwright workers do not share the same rows.
+ * Suite `cutoff` also seeds a confirmed booking already past cancel cutoff.
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
@@ -97,10 +155,12 @@ export async function ensureBookingFixture(
   const ids = SUITE_IDS[suite];
   const prisma = testPrisma();
   const passwordHash = await hash(CLIENT_PASSWORD, 12);
-  const { start, needsNextWeek } = pickBookableSlotStart();
+  const picked =
+    suite === "cutoff" ? pickCutoffSlotStart() : pickBookableSlotStart();
+  const { start, needsNextWeek } = picked;
   const end = new Date(start.getTime() + SLOT_MS);
-  const masseurName =
-    suite === "cancel" ? "E2E Cancel Masseur" : "E2E Booking Masseur";
+  const masseurName = suiteMasseurName(suite);
+  const cancelCutoffHours = suite === "cutoff" ? CUTOFF_HOURS : LEAD_HOURS;
 
   try {
     const client = await prisma.user.upsert({
@@ -131,7 +191,7 @@ export async function ensureBookingFixture(
         blockedAt: null,
         preferredLocale: "en",
       },
-      select: { id: true },
+      select: { id: true, name: true, phone: true },
     });
 
     const masseur = await prisma.user.upsert({
@@ -151,8 +211,7 @@ export async function ensureBookingFixture(
         address: "1 E2E Street",
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
-        // Match lead so bookable slots stay inside the client cancel window.
-        cancelCutoffHours: LEAD_HOURS,
+        cancelCutoffHours,
         massageTypes: "[]",
         preferredLocale: "en",
       },
@@ -169,7 +228,7 @@ export async function ensureBookingFixture(
         address: "1 E2E Street",
         timezone: ZONE,
         bookingLeadHours: LEAD_HOURS,
-        cancelCutoffHours: LEAD_HOURS,
+        cancelCutoffHours,
         massageTypes: "[]",
         deletedAt: null,
         blockedAt: null,
@@ -194,11 +253,25 @@ export async function ensureBookingFixture(
       },
     });
 
+    if (suite === "cutoff") {
+      await prisma.booking.create({
+        data: {
+          masseurId: masseur.id,
+          clientUserId: client.id,
+          clientName: client.name ?? "E2E Client",
+          clientPhone: client.phone ?? ids.clientPhone,
+          slotStart: start,
+          status: "confirmed",
+        },
+      });
+    }
+
     return {
       clientPhone: ids.clientPhone,
       clientPassword: CLIENT_PASSWORD,
       masseurSlug: ids.slug,
       masseurName,
+      masseurPhone: ids.masseurPhone,
       slotStartIso: start.toISOString(),
       needsNextWeek,
     };
