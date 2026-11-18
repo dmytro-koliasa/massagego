@@ -57,6 +57,18 @@ Product decisions are **not** legal advice. Before real users, have counsel revi
 
 Cross-cutting requirement: [XR-1](../business/decisions.md#cross-cutting-requirements).
 
+## Local retention cleanup (BR-011 / BR-018)
+
+Vercel Cron is not used locally. With Docker Postgres and `npm run dev` running:
+
+```bash
+npm run cron:cleanup
+```
+
+That calls `GET http://localhost:3000/api/cron/cleanup` (override base with `CRON_BASE_URL` or `AUTH_URL`). If `CRON_SECRET` is set in `.env`, the script sends `Authorization: Bearer …`.
+
+The job hard-deletes cancelled bookings older than ~7 days (`cancelledAt`) and completed bookings older than ~3 months (`slotStart`), skipping rows with `hasRetentionHold`. Response JSON includes delete counts — useful to verify retention windows before a production host cron is configured.
+
 ## Related local ops
 
 - Email without Vercel: [email-local.md](email-local.md)
