@@ -1,7 +1,7 @@
 # User Roles and Permissions
 
 > **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
-> **Status:** descriptive snapshot refreshed 2026-11-18 after track-2 docs closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); E2E through [#48](https://github.com/dmytro-koliasa/massagego/pull/48)). It records the access rules the code **enforces today**, not approved requirements.
+> **Status:** descriptive snapshot refreshed 2026-11-18 after track-2 docs closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); E2E through [#55](https://github.com/dmytro-koliasa/massagego/pull/55)). It records the access rules the code **enforces today**, not approved requirements.
 > Classification tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)). Decision ids (`BR-xxx`) refer to [decisions.md](decisions.md).
 
 ## 1. Roles
