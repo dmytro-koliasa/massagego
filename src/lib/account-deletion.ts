@@ -119,6 +119,7 @@ export async function deleteOwnAccount(options: {
     prisma.account.deleteMany({ where: { userId: user.id } }),
     prisma.notificationPreference.deleteMany({ where: { userId: user.id } }),
     prisma.notificationOutbox.deleteMany({ where: { userId: user.id } }),
+    prisma.inAppNotification.deleteMany({ where: { userId: user.id } }),
     prisma.verificationToken.deleteMany({
       where: {
         OR: [

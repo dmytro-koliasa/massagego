@@ -69,6 +69,7 @@ model User {
   galleryImages  GalleryImage[]
   notificationPreferences NotificationPreference[]
   notificationOutbox      NotificationOutbox[]
+  inAppNotifications      InAppNotification[]
   adminAuditLogsAsActor AdminAuditLog[] @relation("AdminAuditActor")
   complaintsFiled    Complaint[] @relation("ComplaintReporter")
   complaintsReceived Complaint[] @relation("ComplaintTarget")
@@ -195,6 +196,7 @@ model Booking {
   masseur User  @relation("MasseurBookings", fields: [masseurId], references: [id], onDelete: Cascade)
   client  User? @relation("ClientBookings", fields: [clientUserId], references: [id], onDelete: SetNull)
   notificationOutbox NotificationOutbox[]
+  inAppNotifications InAppNotification[]
   complaints         Complaint[]
 
   @@index([masseurId])
@@ -306,6 +308,27 @@ model NotificationOutbox {
 
   @@index([status, nextAttemptAt])
   @@index([userId, createdAt])
+  @@index([bookingId])
+}
+
+/// In-app inbox for client/masseur (BR-009); not a delivery queue.
+model InAppNotification {
+  id        String                @id @default(cuid())
+  userId    String
+  bookingId String?
+  eventType NotificationEventType
+  title     String                @db.VarChar(200)
+  body      String                @db.VarChar(1000)
+  href      String                @db.VarChar(200)
+  readAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([createdAt])
   @@index([bookingId])
 }
 

@@ -61,6 +61,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | email [#17](https://github.com/dmytro-koliasa/massagego/pull/17); Telegram [#18](https://github.com/dmytro-koliasa/massagego/pull/18); event 4 [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
 | 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
+| 2026-11-18 | BR-009 | In-app notification list (client + masseur): events 1–6, separate inbox table, read/unread + mark-all, deep links, nav badge + poll, ~30-day retention; no in-app prefs, no web push, no admin feed | Implemented locally (PR pending) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
@@ -95,7 +96,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6), [#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
-| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
+| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** email/Telegram/reminder ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19), [#27](https://github.com/dmytro-koliasa/massagego/pull/27)); **in-app list implemented locally** (PR pending) |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** ([#16](https://github.com/dmytro-koliasa/massagego/pull/16)) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)); completed retention via [BR-018](#br-018) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
@@ -321,7 +322,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** new provider integration, API hooks, possibly `Booking`/`User` contact fields; clients register by phone only, so SMS or a collected email is needed.
 
-**Owner note (2026-11-16, historical):** notifications were to cover **all relevant events**, not only cancellations (starting from the masseur notice when a client cancels, [BR-004](#br-004)). First-version channels, events and prefs were groomed below and **Implemented** (see Status). Remaining product open items: optional **in-app notification list**; production Resend domain/sender (P-3); Telegram webhook on a public host (P-4).
+**Owner note (2026-11-16, historical):** notifications were to cover **all relevant events**, not only cancellations (starting from the masseur notice when a client cancels, [BR-004](#br-004)). First-version channels, events and prefs were groomed below and **Implemented** (see Status). **In-app notification list** was groomed and implemented 2026-11-18 (see decision 12; PR pending). Remaining ops open items: production Resend domain/sender (P-3); Telegram webhook on a public host (P-4).
 
 **Decisions (groomed; first version Implemented):**
 
@@ -345,7 +346,19 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Reminders (groomed 2026-11-17):** one client reminder event `booking_reminder` (not critical). Masseur sets `reminderHours` to Off or `2|4|12|24` (default 24). Cron via `/api/cron/notifications` claims due bookings with `reminderSentAt`; skip walk-ins and bookings created inside the reminder window. Changing the masseur setting affects not-yet-sent bookings.
 
-**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); whether an in-app notification list is added later (not decided); legal review of privacy/terms (P-2 / XR-1).
+12. **In-app notification list (groomed 2026-11-18; Implemented locally — PR pending):**
+    1. **Ship a v1 in-app feed** for **client and masseur** (not admin).
+    2. **Events:** the same set already delivered externally — events **1–6** including `booking_reminder` (no new event types in v1).
+    3. **Storage:** a dedicated inbox table (e.g. `InAppNotification`: recipient user, event type, entity ids for deep links, `readAt`, `createdAt`). Do **not** reuse `NotificationOutbox` as the feed (outbox is a delivery queue) and do not derive the feed only from live Booking/Session rows.
+    4. **UI:** on the existing `/client|/masseur/notifications` pages — **feed above**, channel prefs below.
+    5. **Read model:** unread / read; mark read on **item click** (deep link); **mark all read**; nav **badge with capped unread count**; light **poll** of the badge (~30–60 s) while the portal session is open.
+    6. **Deep links:** each item opens the related booking/session (or equivalent existing portal page).
+    7. **Retention:** keep ~**30 days**; older rows removed by the existing cleanup cron path.
+    8. **Prefs:** no separate in-app channel toggles — inbox rows are always written; email/Telegram prefs stay as today.
+    9. **Content:** same informative copy rules as email/Telegram — **no phone numbers** in the feed text.
+    10. **Out of v1:** admin inbox, web/browser push, SSE/WebSockets, extra event types, in-app mute prefs.
+
+**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); legal review of privacy/terms (P-2 / XR-1). In-app list is implemented locally (PR pending).
 
 ### BR-010
 

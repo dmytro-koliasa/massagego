@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Follow-ups: product [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); tests/ops/CI [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#33](https://github.com/dmytro-koliasa/massagego/pull/33); local Playwright E2E [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60) (public/auth smoke, client book/cancel/cutoff/Thai/sessions/complaints, masseur resolve/walk-in/report/slot, admin block/unblock/complaints/dismiss; password-reset + client login; catalogue in [testing.md](../testing.md)); docs closeout [#49](https://github.com/dmytro-koliasa/massagego/pull/49); docs hygiene [#39](https://github.com/dmytro-koliasa/massagego/pull/39), [#42](https://github.com/dmytro-koliasa/massagego/pull/42), [#43](https://github.com/dmytro-koliasa/massagego/pull/43). Remaining work: deferred product items (e.g. prices, payments, courses), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Follow-ups: product [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); tests/ops/CI [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#33](https://github.com/dmytro-koliasa/massagego/pull/33); local Playwright E2E [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60) (public/auth smoke, client book/cancel/cutoff/Thai/sessions/complaints, masseur resolve/walk-in/report/slot, admin block/unblock/complaints/dismiss; password-reset + client login; catalogue in [testing.md](../testing.md)); docs closeout [#49](https://github.com/dmytro-koliasa/massagego/pull/49); docs hygiene [#39](https://github.com/dmytro-koliasa/massagego/pull/39), [#42](https://github.com/dmytro-koliasa/massagego/pull/42), [#43](https://github.com/dmytro-koliasa/massagego/pull/43). Remaining work: **in-app notification list** (BR-009 groomed 2026-11-18; see follow-up PR below); deferred product items (e.g. prices, payments, courses); P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`); later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -290,6 +290,24 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 **Scope:** a minimal panel for an administrator: the list of users, blocking and unblocking; a protected administrator sign-in; an audit log of administrator actions. Complaints are out of scope for this PR.
 
 **Acceptance criteria:** only an administrator can open the panel; a blocked user cannot sign in or be booked; every administrator action is logged; the data an administrator can see is limited to what is needed for moderation.
+
+### Follow-up — In-app notification list (BR-009)
+
+**Status:** groomed 2026-11-18; **implemented locally** (PR pending).
+
+**Groomed decisions** (see [BR-009](decisions.md#br-009) decision 12):
+- Client + masseur only; events **1–6** (same as email/Telegram, including `booking_reminder`).
+- New inbox table (not `NotificationOutbox`); write rows at the same enqueue points as external delivery.
+- `/client|/masseur/notifications`: feed above prefs; read on item click + mark-all; deep links to booking/session; nav badge with capped unread count; poll badge ~30–60 s.
+- Retention ~**30 days** via cleanup cron; no in-app channel prefs; no phones in copy; no web push / SSE / admin feed / new event types.
+
+**Scope:** durable in-app inbox + list UI + badge for client and masseur, wired to existing notification events.
+
+**Acceptance criteria:**
+- Creating/cancelling/confirming/reminding a booking creates the matching inbox row for the recipient(s).
+- Unread badge reflects unread count; mark-all and click-to-open clear unread as specified.
+- Deep link opens the related portal page; walk-ins still create no client-facing notice.
+- Rows older than ~30 days are removed by cleanup; texts EN/UK without phone numbers.
 
 ## 5. Risks and notes
 

@@ -75,3 +75,9 @@ export const MAX_ACTIVE_FUTURE_BOOKINGS_PER_CLIENT = 30;
 /** Retention of bookings without obligations (BR-011, BR-018). */
 export const CANCELLED_BOOKING_RETENTION_DAYS = 7;
 export const COMPLETED_BOOKING_RETENTION_MONTHS = 3;
+
+/** In-app inbox retention and UX (BR-009). */
+export const IN_APP_NOTIFICATION_RETENTION_DAYS = 30;
+export const IN_APP_NOTIFICATION_PAGE_SIZE = 20;
+export const IN_APP_NOTIFICATION_BADGE_CAP = 9;
+export const IN_APP_NOTIFICATION_POLL_MS = 45_000;

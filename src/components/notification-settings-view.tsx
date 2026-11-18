@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BackNavLink } from '@/components/back-nav-link';
 import { useLanguage } from '@/components/language-provider';
+import { NotificationInboxSection } from '@/components/notification-inbox-section';
 import type { NotificationEventType } from '@/lib/notifications/types';
 
 type PrefRow = {
@@ -203,6 +204,8 @@ export function NotificationSettingsView({ backHref }: Props) {
 					</h1>
 					<p className='text-sm text-muted'>{t.notifPageSupport}</p>
 				</div>
+
+				<NotificationInboxSection />
 
 				<section className='mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6'>
 					<h2 className='text-base font-semibold text-foreground'>
