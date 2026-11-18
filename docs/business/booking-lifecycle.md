@@ -95,7 +95,7 @@ Multi-hour client requests create **one booking row per hour**, atomically; ther
 - Client booking calendar: past hours are not returned (availability is clipped to "now").
 - Client sessions list (`GET /api/bookings`): returns any non-cancelled booking, so past bookings remain visible and can be cancelled.
 - Masseur API: cannot resolve/cancel started hours.
-- **Needs Decision:** whether past bookings should be immutable, and whether sessions should be marked completed - [BR-004](decisions.md#br-004), [BR-005](decisions.md#br-005).
+- **Implemented:** client cancel cutoff + no post-session statuses ([BR-004](decisions.md#br-004), [BR-005](decisions.md#br-005) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8)–[#9](https://github.com/dmytro-koliasa/massagego/pull/9)).
 
 ## 8. Slot availability after cancellation - Implemented
 

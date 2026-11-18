@@ -1,25 +1,25 @@
 # Decisions and Findings
 
-> **Status:** working register created from the as-is analysis of `master` at commit `f29ca32` (2026-11-15).
+> **Status:** working register created from the as-is analysis of `master` at commit `f29ca32` (2026-11-15). Track-2 product implementation is **complete through [#20](https://github.com/dmytro-koliasa/massagego/pull/20)** (follow-ups [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); ops/CI/E2E [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#38](https://github.com/dmytro-koliasa/massagego/pull/38)).
 > Nothing in this file is approved until its status says **Approved** or **Implemented**.
-> Current as-is behavior is described in [business-rules.md](business-rules.md); approved rules move there (section "Approved rules").
+> Binding implemented rules live in [business-rules.md](business-rules.md) (Approved rules); §§1–9 there are historical as-is notes.
 >
-> **Data note (owner, 2026-11-16):** the current database holds **test data only** and will be **wiped and refilled** before real use. Track 2 questions about handling or migrating existing data (for example default values for existing masseurs, renaming `pending`, existing clients without a city, cities in excluded countries) are therefore **not blockers**. This note applies to those questions only; schema changes and migrations are still needed, and the production state of the migration `20261115120000_booking_no_overlap` has not been verified.
+> **Data note (owner, 2026-11-16):** the current database holds **test data only** and will be **wiped and refilled** before real use. Track 2 questions about handling or migrating existing data (for example default values for existing masseurs, renaming `pending`, existing clients without a city, cities in excluded countries) are therefore **not blockers**. This note applies to those questions only; schema changes and migrations are still needed, and the production state of the migration `20261115120000_booking_no_overlap` has not been verified (P-1).
 
 ## Workflow
 
 Work is split into two tracks. Every item (a `BR-xxx` decision or a `C-x` inconsistency) goes through them in order.
 
-### Track 1 - documentation (current)
+### Track 1 - documentation (done for approved track-2 scope)
 
 No application code, migration or schema change happens in this track.
 
 1. **Groom** - the options are discussed with the product owner; one is marked *Recommended*.
 2. **Approve** - the owner picks an option. The item becomes **Approved**, with the date and the chosen option recorded in the log below.
 
-### Track 2 - implementation (later, separate)
+### Track 2 - implementation (product track complete through #20)
 
-Started only when the owner decides to implement approved items. Each item gets its own branch and pull request.
+Each approved item got its own branch and pull request.
 
 3. **Groom the implementation** - technical details are confirmed with the owner before any change is made.
 4. **Implement** - code, migration (if any) and tests.
@@ -33,7 +33,7 @@ Started only when the owner decides to implement approved items. Each item gets 
 | **Rejected** | Owner decided to keep current behavior or drop the item |
 | **Deferred** | A future idea recorded as a to-do. Not decided, not to be implemented yet |
 
-Suggested order: BR-006 and BR-001 first (they underpin availability maths and the database constraint), then BR-002 / BR-004 / BR-005, then BR-007 / BR-008 / BR-010, then the rest.
+Historical suggested order (all shipped): BR-006 and BR-001 first, then BR-002 / BR-004 / BR-005, then BR-007 / BR-008 / BR-010, then the rest.
 
 ## Cross-cutting requirements
 
@@ -53,27 +53,27 @@ Features that already touch personal data and must be reviewed against XR-1 when
 |---|---|---|---|
 | 2026-11-16 | BR-006 | B: per-masseur IANA timezone; clients see masseur time with a label; DST keeps the local clock time | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (server); [#6](https://github.com/dmytro-koliasa/massagego/pull/6) (calendars); choosing the zone in PR 8 |
 | 2026-11-16 | BR-001 | A: fixed 60-minute sessions (45 min massage + 15 min rest) | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) (one shared constant) |
-| 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | PR 4 (`feat/booking-lead-window-cutoff`) |
-| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | settings in PR 4; cancel enforcement + reason UI in PR 5 |
-| 2026-11-17 | BR-004 | Masseur slot details: `lastCancellation` on availability (latest client cancel per hour within 7 days); EN/UK labels including `client_account_deleted` | `feat/masseur-last-cancellation` |
+| 2026-11-16 | BR-002 | C: per-masseur client lead time (1/2/3/4 h, default 1 h), strict boundary; masseur walk-ins allowed until slot start | [#8](https://github.com/dmytro-koliasa/massagego/pull/8) |
+| 2026-11-16 | BR-004 | Per-masseur client cancellation cutoff (1-72 h list, default 24 h), not shorter than the lead time; no grace after booking; masseur phone required and public; payment/fee and notifications excluded; mandatory cancellation reason (dropdown; text required only for "Other") for client cancellations; no cancellation requests; masseur cancellation unchanged | settings [#8](https://github.com/dmytro-koliasa/massagego/pull/8); cancel + reason [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| 2026-11-17 | BR-004 | Masseur slot details: `lastCancellation` on availability (latest client cancel per hour within 7 days); EN/UK labels including `client_account_deleted` | [#25](https://github.com/dmytro-koliasa/massagego/pull/25) |
 | 2026-11-16 | BR-005 | A: no masseur confirmation, `pending` renamed to `confirmed`; no post-session statuses (time-derived); `cancelledBy` and `cancelledAt` stored on cancelled bookings | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
 | 2026-11-16 | BR-007 | A: global 05:00-23:00 window (masseur timezone) enforced on every write path; no explicit days off; server rejects past availability edits | [#7](https://github.com/dmytro-koliasa/massagego/pull/7) (implemented) |
-| 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | PR 5 (`feat/client-booking-cancel-rules`) |
-| 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | PR 12 (`feat/email-notifications`) email + outbox; Telegram in PR 13; event-4 enqueue in PR 14 |
-| 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | `feat/booking-reminders` |
-| 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | PR 13 (`feat/telegram-phone-confirm`) |
-| 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | PR 10 (`feat/image-upload-checks`) |
-| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | PR 15 (`feat/admin-panel`); complaints on `feat/complaints` |
-| 2026-11-17 | BR-021 | Complaints: client↔masseur via booking; categories; admin inbox + note; rate limit 5/h | `feat/complaints` |
-| 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | PR 9 (`feat/password-reset-rate-limits`) |
-| 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | PR 9 (`feat/password-reset-rate-limits`) |
-| 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | PR 14 (`feat/account-deletion-cleanup`) |
-| 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | PR 14 (`feat/account-deletion-cleanup`) |
+| 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | email [#17](https://github.com/dmytro-koliasa/massagego/pull/17); Telegram [#18](https://github.com/dmytro-koliasa/massagego/pull/18); event 4 [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
+| 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
+| 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
+| 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
+| 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
+| 2026-11-17 | BR-021 | Complaints: client↔masseur via booking; categories; admin inbox + note; rate limit 5/h | [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
+| 2026-11-16 | BR-020 | Basic rate limits per IP and per account on sign-in, registration, password reset, booking creation and cancellation | [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
+| 2026-11-16 | BR-019 | Password reset by a one-time email link for both roles; the client keeps signing in by phone and password only | [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
+| 2026-11-16 | BR-018 | C: completed bookings hard-deleted 3 months after the session unless financial or legal obligations exist (extendable to payments) | [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
+| 2026-11-16 | BR-011 | Self-service anonymising account deletion; client deletion auto-cancels future bookings, masseur deletion blocked while future bookings exist; cancelled bookings without obligations hard-deleted 7 days after cancellation; completed-booking retention left to BR-018 | [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
 | 2026-11-16 | BR-013 | B with exclusions: any valid international phone except African countries, Russia and Belarus; the same single shared blocklist also removes those countries from the city search | [#11](https://github.com/dmytro-koliasa/massagego/pull/11) |
-| 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | PR 4 (`feat/booking-lead-window-cutoff`) |
+| 2026-11-16 | BR-003 | B: fixed 120-day booking window for clients, same for every masseur | [#8](https://github.com/dmytro-koliasa/massagego/pull/8) |
 | 2026-11-16 | BR-017 | A: client chooses a city at registration (required, editable in profile); the masseur list defaults to the client's city | [#12](https://github.com/dmytro-koliasa/massagego/pull/12) |
-| 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | PR 11 (`feat/masseur-catalog`) |
-| 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | PR 6 (`feat/thai-massage-hints`) |
+| 2026-11-16 | BR-010 | Listed: complete profile and at least one availability record ever; green/red card label with nearest free time; free-time masseurs first, then newest; unlisted profiles open by link but cannot be booked; masseur email removed from the list API | [#16](https://github.com/dmytro-koliasa/massagego/pull/16) |
+| 2026-11-16 | BR-014 | Thai massage: persistent toast hints when choosing the type, when selecting a slot, and when cancelling one of consecutive slots; no enforcement or grouping | [#10](https://github.com/dmytro-koliasa/massagego/pull/10) |
 | 2026-11-16 | C-8 | A: remove `preferredDate`, `preferredTime`, `clientEmail`; correct the `clientUserId` comment | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) (implemented) |
 | 2026-11-16 | BR-005, BR-004, C-8 (implementation details) | Database enums for status, `cancelledBy` and the cancellation reason; reason keys `cant_make_it`, `circumstances_changed`, `changed_mind`, `wrong_slot`, `other`, `client_account_deleted`; "Other" text `VARCHAR(200)`; no consistency `CHECK`; the reason is not accepted by the API until PR 5 of the plan; indexes on (`status`, `cancelledAt`) and (`status`, `slotStart`); existing non-cancelled rows become `confirmed`, existing cancelled rows get `cancelledAt` = `updatedAt` and an empty `cancelledBy`; the one-off `scripts/migrate-sqlite-to-postgres.js` is removed | [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
 | 2026-11-16 | BR-006, BR-001 (implementation details) | `User.timezone` (IANA name, default `Europe/Kyiv`, validated with a fallback to the default), no UI to choose it until PR 8 (where X-2 is groomed); time-zone maths with the `luxon` library; the three calendars move to the masseur's zone in a new PR 2a (inserted into the plan); label format "Kyiv, UTC+2" from the IANA city and the offset of the shown instant, the same in both languages | [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
@@ -88,20 +88,20 @@ Priority reflects impact on booking correctness, customer experience and availab
 | ID | Topic | Priority | Recommended (proposal) | Status |
 |---|---|---|---|---|
 | [BR-001](#br-001) | Session duration | High | A: keep fixed 60 min, document as requirement | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) |
-| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Implemented** (PR 4) |
-| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Implemented** (PR 4) |
+| [BR-002](#br-002) | Minimum advance booking / started slots | High | B: single configurable lead time, same on every path (owner chose C: per-masseur setting) | **Implemented** ([#8](https://github.com/dmytro-koliasa/massagego/pull/8)) |
+| [BR-003](#br-003) | Maximum advance booking horizon | Medium | B: fixed booking window (owner chose 120 days) | **Implemented** ([#8](https://github.com/dmytro-koliasa/massagego/pull/8)) |
 | [BR-004](#br-004) | Cancellation policy | High | B: client cutoff (e.g. 24 h) + masseur always allowed pre-start (owner chose a per-masseur cutoff) | **Implemented** ([#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
 | [BR-005](#br-005) | Booking statuses and confirmation | High | A for now: stay at `pending`/`cancelled` but rename `pending`->`confirmed`; defer new states | **Implemented** ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)) |
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6), [#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
 | [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
-| [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** (PR 11, `feat/masseur-catalog`) |
+| [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** ([#16](https://github.com/dmytro-koliasa/massagego/pull/16)) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)); completed retention via [BR-018](#br-018) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
 | [BR-019](#br-019) | Password reset and account recovery | Medium | A: email link; client signs in by phone only | **Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)) |
 | [BR-020](#br-020) | Abuse protection (rate limiting) | Medium | A: basic limits per IP and per account | **Implemented** ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)) |
-| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints on `feat/complaints` |
+| [BR-021](#br-021) | Administrator or support role | Low | A: no admin role for now (owner chose a minimal admin panel) | **Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
 | [BR-022](#br-022) | Image upload rules | Low | A: check real content, compute size, re-save without metadata | **Implemented** ([#14](https://github.com/dmytro-koliasa/massagego/pull/14)) |
 | [BR-023](#br-023) | Phone number verification | Low | A: no verification for now (owner chose optional confirmation through the Telegram bot) | **Implemented** ([#18](https://github.com/dmytro-koliasa/massagego/pull/18)) |
 | [BR-012](#br-012) | Pricing and per-type duration | Low | A: out of scope for now | **Deferred** (2026-11-16) |
@@ -205,9 +205,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Masseur slot details (Implemented):** `GET /api/masseur/availability` attaches `lastCancellation` (reason, reasonText, cancelledAt) per slot — the latest **client** cancellation for that `slotStart` with `cancelledAt` inside the 7-day retention window; masseur cancellations (no reason) are omitted. The masseur calendar slot modal shows a "Last cancellation" line on free and booked hours. Consecutive cancelled hours each carry their own last cancellation. Existing cancelled rows without a reason stay empty in the UI.
 
-**Recent cancellations list (Implemented on `feat/masseur-recent-cancellations`):** masseur dashboard section lists up to 20 client cancellations from the last 7 days (slot time, client name, reason); read-only, no jump-to-calendar.
+**Recent cancellations list (Implemented, [#28](https://github.com/dmytro-koliasa/massagego/pull/28)):** masseur dashboard section lists up to 20 client cancellations from the last 7 days (slot time, client name, reason); read-only, no jump-to-calendar.
 
-**Open sub-questions for track 2 (remaining):** default cutoff for existing masseurs and related cutoff/phone/privacy copy items already largely addressed in later PRs — re-check only if product copy still gaps.
+**Open sub-questions for track 2:** none remaining (defaults and cutoff/phone copy shipped in [#8](https://github.com/dmytro-koliasa/massagego/pull/8)/[#9](https://github.com/dmytro-koliasa/massagego/pull/9); legal copy review stays under P-2).
 
 ### BR-005
 
@@ -268,7 +268,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Timezone UI (PR 8):** masseur can set IANA timezone in the profile; choosing a city suggests a zone via `geo-tz` (confirmable); change is always allowed (UTC instants unchanged); device≠profile warning is shown.
 
-**Open sub-questions (for PR 8):** how a masseur sets or changes the timezone and whether it may change once bookings exist; what happens to existing and walk-in bookings if the timezone changes; whether to warn when the device zone differs from the profile. — **groomed above.**
+**Open sub-questions (for plan PR 8):** resolved in [#12](https://github.com/dmytro-koliasa/massagego/pull/12) (timezone editable with geo-tz suggestion + device mismatch warning; existing bookings keep stored UTC instants).
 
 ### BR-007
 
@@ -310,7 +310,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 3. **No separate limit per request:** the only cap is the total of 30. A course can be booked in one request.
 4. **Client name and phone come from the account (option A):** for a booking made by a client, the server takes the **client's name and phone from the account** and ignores any `clientName` / `clientPhone` sent in the request; the booking form shows them but does not let the client edit them. The name used is the **main name entered at registration** (not the English/Ukrainian profile variants). The phone is the account's phone (it is the login and is not editable in the profile). The values are **copied into the booking at the time of booking**: a later name change affects new bookings only, existing bookings keep their name. **Masseur walk-in bookings are unchanged:** the masseur still enters the walk-in client's name and phone by hand.
 
-**Open sub-questions for track 2 (not yet groomed):** error codes and messages for "you already have a booking at this time" and "booking limit reached"; whether the overlap rule is also protected in the database (an exclusion constraint on the client account, excluding rows without a client, built the same way as the masseur one) in addition to the application check and the lock; how existing data is checked before enforcement (existing overlapping client bookings, if any); whether the limit value of 30 is stored as a constant or a setting.
+**Open sub-questions for track 2:** none remaining — codes `CLIENT_SLOT_OVERLAP` / `CLIENT_BOOKING_LIMIT`, client exclusion constraint, and constant cap of 30 shipped in [#9](https://github.com/dmytro-koliasa/massagego/pull/9).
 
 ### BR-009
 
@@ -556,7 +556,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Business question:** Is there an administrator or support role, and what can it do (view, block or delete accounts, handle complaints, edit the country blocklist)?
 **Current implementation:** Minimal admin portal with user list, block/unblock, audit log, and complaints inbox (`/admin/complaints`).
 **Why:** Account deletion ([BR-011](#br-011)), complaints and abuse ([BR-020](#br-020)) need someone to act.
-**Status: Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints added on `feat/complaints`. Added 2026-11-16.
+**Status: Implemented** ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26). Added 2026-11-16.
 
 **Decision (option B):** a **minimal administration panel** with a list of users, **blocking and unblocking** accounts, and a view of complaints. Considered and not chosen: no admin role with everything done by hand (A), and an external database tool without our own panel (C).
 
