@@ -1,46 +1,45 @@
 # Booking Lifecycle
 
-> **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
-> **Status:** descriptive snapshot of `master` at commit `f29ca32` (2026-11-15). It documents the lifecycle the code **implements today**; it is not an approved product flow.
+> **As-is:** documents the lifecycle the code **implements today**. Binding product rules live in [business-rules.md](business-rules.md#approved-rules) (AR-*) and [decisions.md](decisions.md).
+> **Status:** refreshed 2026-11-18 after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); cancel/book E2E through [#41](https://github.com/dmytro-koliasa/massagego/pull/41)).
 > Tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)).
->
-> **Superseded in part ([#4](https://github.com/dmytro-koliasa/massagego/pull/4)):** `status` is now the enum `BookingStatus` with `confirmed` (formerly `pending`) and `cancelled`, and a cancelled booking records `cancelledBy` and `cancelledAt` (approved rules AR-1 to AR-3 in [business-rules.md](business-rules.md#approved-rules)). The sections below still describe the snapshot.
 
 ## 1. Statuses - Implemented
 
-`Booking.status` is a **free string** (default `"pending"`); the database does not restrict its values. The code writes exactly two:
+`Booking.status` is the database enum `BookingStatus` with exactly two values ([AR-1](business-rules.md#approved-rules) / [#4](https://github.com/dmytro-koliasa/massagego/pull/4)):
 
 | Status | Meaning today | Written by |
 |---|---|---|
-| `pending` | The booking exists and **occupies the hour**. It is never advanced; there is no confirmation step | Creation (both routes) |
-| `cancelled` | The booking no longer occupies the hour | Client cancel, masseur resolve |
+| `confirmed` | The booking exists and **occupies the hour** from creation. There is no masseur approval step | Client `POST /api/bookings`; masseur walk-in `POST /api/masseur/bookings` |
+| `cancelled` | The booking no longer occupies the hour | Client cancel; masseur resolve; client account deletion (system reason) |
 
-Every other string is unknown to the code. Because all "is this hour taken?" checks and the DB constraint use `status <> 'cancelled'`, **any additional status would be treated as occupying the hour**. See [BR-005](decisions.md#br-005).
+A cancelled row also stores `cancelledBy` (`client` \| `masseur`), `cancelledAt`, `cancelReason` (fixed list), and optional `cancelReasonText` for `other` ([AR-2](business-rules.md#approved-rules), [AR-10](business-rules.md#approved-rules)).
 
-The name `pending` suggests awaiting approval, but no approval exists: the booked hour is shown as booked immediately, to both parties.
+Every non-`cancelled` status occupies the hour in application checks and in the exclusion constraints ([AR-3](business-rules.md#approved-rules)). There are no `completed`, `no_show`, or archive statuses — whether a session took place is derived from time.
 
 ## 2. State diagram (implemented behavior)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> pending: Client POST /api/bookings<br/>(slot must be published and free)
-    [*] --> pending: Masseur POST /api/masseur/bookings<br/>(walk-in, clientUserId = null)
+    [*] --> confirmed: Client POST /api/bookings<br/>(published free slot, lead + 120d window)
+    [*] --> confirmed: Masseur POST /api/masseur/bookings<br/>(walk-in, clientUserId = null)
 
-    pending --> cancelled: Client POST /api/bookings/cancel<br/>(own booking, no time limit)
-    pending --> cancelled: Masseur POST /api/masseur/bookings/resolve<br/>(own calendar, only before slot start)
+    confirmed --> cancelled: Client POST /api/bookings/cancel<br/>(own booking, before cutoff, reason required)
+    confirmed --> cancelled: Masseur POST /api/masseur/bookings/resolve<br/>(own calendar, only before slot start)
+    confirmed --> cancelled: Client account deletion<br/>(future bookings, reason client_account_deleted)
 
-    cancelled --> [*]: terminal - hour can be booked again<br/>as a NEW pending row
+    cancelled --> [*]: terminal - hour can be booked again<br/>as a NEW confirmed row
 
-    note right of pending
+    note right of confirmed
         Never changes by itself.
-        Stays pending after the session
-        time has passed.
+        Stays confirmed after the session
+        time has passed (no completed state).
     end note
 
     note right of cancelled
-        Row is kept. No reason, actor
-        or timestamp besides updatedAt.
-        No transition back to pending.
+        Keeps cancelledBy, cancelledAt,
+        cancelReason (+ text for other).
+        No transition back to confirmed.
     end note
 ```
 
@@ -48,54 +47,59 @@ stateDiagram-v2
 
 | From | To | Trigger | Constraints |
 |---|---|---|---|
-| (none) | `pending` | Client creates booking | Authenticated client; slot published (`AvailabilitySlot`) and free; massage type valid; not older than 60 min past start |
-| (none) | `pending` | Masseur creates walk-in booking | Slot not started; no active booking; availability row created if missing |
-| `pending` | `cancelled` | Client cancels own booking | `clientUserId` matches; status not already `cancelled`; **no time restriction** |
-| `pending` | `cancelled` | Masseur resolves a booking | Booking on own calendar for that exact hour; slot start strictly in the future |
-| `cancelled` | any | - | **Not possible.** There is no reactivation; rebooking inserts a new row |
-| `pending` | `pending`/other | - | No endpoint edits time, note, type or status |
-
-A second cancellation of an already-cancelled booking is rejected (client: `403 forbidden`; masseur: `404 not_found`).
+| (none) | `confirmed` | Client creates booking | Authenticated client with complete profile; masseur listed; slot published and free; outside lead time and within 120 days (masseur TZ); no client overlap; ≤30 active future bookings; name/phone from account |
+| (none) | `confirmed` | Masseur creates walk-in | Slot not started; within working hours 05:00–23:00 (masseur TZ); no active booking; availability row created if missing |
+| `confirmed` | `cancelled` | Client cancels own booking | `clientUserId` matches; reason from list (`other` needs text ≤200); `now ≤ slotStart − cancelCutoffHours`; own already-cancelled → success; missing/foreign → same `404` |
+| `confirmed` | `cancelled` | Masseur resolves a booking | Own calendar; `slotStart > now`; chooses keep availability or remove it |
+| `confirmed` | `cancelled` | Client deletes account | Future bookings only; reason `client_account_deleted`; masseurs notified (event 4) |
+| `cancelled` | any | - | **Not possible.** Rebooking inserts a new row |
+| `confirmed` | other fields | - | No endpoint edits time, note, type, or status after create |
 
 ## 4. Creation - Implemented
 
-1. Authenticate and authorise the actor (client or masseur).
-2. Validate input with Zod (name, EU/UA phone, note, massage type, ISO start times).
-3. Align each start to the hour; reject slots that already started (client API tolerance: 60 min).
-4. In one transaction: take the per-masseur advisory lock; check availability (client route) and absence of an active booking; insert `pending`.
-5. A conflicting concurrent request is rejected with `409 slot_taken` (the exclusion constraint is the last line of defence).
+1. Authenticate and authorise the actor (client or masseur portal).
+2. Validate input with Zod (slots, massage type when required, note).
+3. Align each start to the hour in the **masseur time zone**; reject lead-time / window / working-hours / past violations with stable codes (`BOOKING_LEAD_TIME`, `BOOKING_WINDOW_EXCEEDED`, `out_of_hours`, `slot_in_past`, …).
+4. Client path: copy `name` + `phone` from the account; refuse incomplete profile (`CLIENT_PROFILE_INCOMPLETE`); refuse unlisted masseur (`MASSEUR_NOT_READY`).
+5. In one transaction: take the per-masseur advisory lock; check availability and absence of an active booking; enforce client overlap + cap 30; insert `confirmed`.
+6. Conflicts surface as `409 slot_taken` (masseur exclusion constraint) or client codes (`CLIENT_SLOT_OVERLAP`, `CLIENT_BOOKING_LIMIT`).
+7. Notifications: enqueue event 1 (new booking → masseur) and confirmation to the client when applicable ([AR-14](business-rules.md#approved-rules)).
 
-Multi-hour client requests create **one booking row per hour**, atomically; there is no booking "group" id, so rows are independent afterwards and are cancelled one by one.
+Multi-hour client requests create **one booking row per hour**, atomically; there is no booking group id — rows cancel independently. Thai multi-slot is a UX hint only ([BR-014](decisions.md#br-014)), not enforcement.
 
 ## 5. Cancellation behavior - Implemented
 
 | | Client cancel | Masseur cancel (`resolve`) |
 |---|---|---|
-| Endpoint | `POST /api/bookings/cancel` (by `bookingId`, or by `masseurId` + `slotStart`) | `POST /api/masseur/bookings/resolve` (by `slotStart`) |
+| Endpoint | `POST /api/bookings/cancel` (by `bookingId`) | `POST /api/masseur/bookings/resolve` (by `slotStart`) |
 | Who | Booking's own client | Calendar's own masseur |
-| Allowed when | Any time, including past and in-progress sessions | Only if `slotStart > now` |
-| Effect on booking | `status = 'cancelled'` | `status = 'cancelled'` |
-| Effect on availability | None: the `AvailabilitySlot` remains, so the hour is bookable again | Masseur chooses: `available` (slot upserted) or `unavailable` (slot deleted) |
-| Walk-in bookings | Cannot be cancelled by a client (no owner) | Can be cancelled by the masseur |
-| Notification / reason / fee | None | None |
+| Allowed when | Before cancel cutoff; listed reason required | Only if `slotStart > now` |
+| After cutoff | Refused (`CANCEL_CUTOFF_PASSED`); UI shows masseur phone when known | n/a |
+| Effect on booking | `cancelled` + `cancelledBy=client` + reason fields | `cancelled` + `cancelledBy=masseur` |
+| Effect on availability | None — `AvailabilitySlot` remains, hour bookable again | Masseur chooses: `available` (upsert) or `unavailable` (delete) |
+| Walk-in bookings | Cannot be cancelled by a client (no `clientUserId`) | Can be cancelled by the masseur |
+| Thai neighbour (X-1) | After success, optional `neighborHint` (`thai_neighbor` or `thai_cutoff` + phone) | n/a |
+| Notification | Event 2 (client cancel + reason) to masseur | Event 3 (masseur cancel) to client when linked |
+
+Idempotency: cancelling one's own already-cancelled booking succeeds. Missing or someone else's booking returns the same `404 not_found` (C-7).
 
 ## 6. Differences between client and masseur workflows
 
 | Aspect | Client | Masseur |
 |---|---|---|
-| Create | From published slots only; several hours at once | Any future hour, one at a time; creates the slot if absent |
-| Customer data | Entered per booking (may differ from the profile) | Entered per walk-in booking |
+| Create | From published free slots outside lead / inside 120 days; several hours at once | Any future in-window hour, one at a time; may create the availability slot |
+| Customer data | From account profile | Free-text per walk-in |
 | Ownership link | `clientUserId` set | `clientUserId = null` |
-| Cancel | Anytime | Before start only, with an availability choice |
-| Visibility of own bookings | Session calendar (non-cancelled, any range) | Weekly calendar with name, phone and type |
+| Cancel | Before cutoff + reason | Before start only, with availability choice |
+| Visibility of own bookings | Sessions calendar + booking calendar (own booked hours) | Weekly calendar with name, phone, type; recent cancellations list (7 days) |
 
 ## 7. Past bookings - Implemented
 
-- Nothing changes status when the session time passes: a past booking stays `pending` forever. There is no `completed`, `no_show` or archive state.
-- Client booking calendar: past hours are not returned (availability is clipped to "now").
-- Client sessions list (`GET /api/bookings`): returns any non-cancelled booking, so past bookings remain visible and can be cancelled.
+- Nothing changes status when the session time passes: a past booking stays `confirmed`. There is no `completed` / `no_show` state ([BR-005](decisions.md#br-005)).
+- Client booking calendar: free past hours are not offered; **own** booked hours remain visible for cancel attempts (cutoff still applies — past sessions are past cutoff).
+- Client sessions list (`GET /api/bookings`): non-cancelled bookings in range; history older than ~3 months may be hard-deleted by cleanup ([AR-16](business-rules.md#approved-rules)).
 - Masseur API: cannot resolve/cancel started hours.
-- **Implemented:** client cancel cutoff + no post-session statuses ([BR-004](decisions.md#br-004), [BR-005](decisions.md#br-005) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8)–[#9](https://github.com/dmytro-koliasa/massagego/pull/9)).
+- Cancelled bookings without a retention hold are hard-deleted ~7 days after `cancelledAt`.
 
 ## 8. Slot availability after cancellation - Implemented
 
@@ -103,24 +107,30 @@ Multi-hour client requests create **one booking row per hour**, atomically; ther
 |---|---|
 | Client | Immediately `available` again (availability row untouched) |
 | Masseur, choosing "available" | Immediately `available` again |
-| Masseur, choosing "unavailable" | Removed from the calendar until re-added |
+| Masseur, choosing "unavailable" | Removed until re-added |
 
-All checks and the PostgreSQL constraint ignore `cancelled` rows, so the same masseur/hour can hold any number of cancelled rows plus **at most one** active row.
+All checks and the PostgreSQL constraints ignore `cancelled` rows, so the same masseur/hour can hold any number of cancelled rows plus **at most one** active row. The same client cannot hold overlapping active hours across masseurs ([BR-008](decisions.md#br-008) / [#9](https://github.com/dmytro-koliasa/massagego/pull/9)).
 
 ## 9. Concurrency guarantees - Implemented
 
 - Booking creation takes `pg_advisory_xact_lock(hashtextextended(masseurId, 0))`, serialising writers per masseur.
-- `EXCLUDE USING gist (masseurId WITH =, tsrange(slotStart, slotStart + 1 hour) WITH &&) WHERE (slotStart IS NOT NULL AND status <> 'cancelled')` forbids two overlapping active bookings for one masseur.
-- Locally verified with 12 concurrent requests and with mixed client/masseur races: exactly one succeeds, the rest receive `slot_taken`.
-- **Not verified:** production. Migration `20261115120000_booking_no_overlap` needs the `btree_gist` extension and fails if overlapping active bookings exist; the production state is unknown.
+- Masseur exclusion: `Booking_no_overlapping_active_slots` on `(masseurId, hour-range)` where `status <> cancelled`.
+- Client exclusion: `Booking_no_overlapping_active_client_slots` on `(clientUserId, hour-range)` where `clientUserId IS NOT NULL` and `status <> cancelled`.
+- Locally verified with concurrent races: exactly one succeeds where required.
+- **Not verified on production** (P-1): migration needs `btree_gist`; production `DATABASE_URL` has not been checked in the local-only phase.
 
-## 10. Open points
+## 10. Related decisions (shipped)
+
+Former “open points” for this lifecycle are **Implemented**:
 
 | Topic | Reference |
 |---|---|
-| Is a booking confirmed immediately, or does the masseur approve it? Are `completed`/`no_show` needed? | [BR-005](decisions.md#br-005) |
-| Cancellation cutoff, past-booking cancellation, reasons | [BR-004](decisions.md#br-004) |
-| Minimum lead time and the 60-minute grace on started slots | [BR-002](decisions.md#br-002) |
-| Client overlapping bookings and request size | [BR-008](decisions.md#br-008) |
-| Notifications on creation and cancellation | [BR-009](decisions.md#br-009) |
-| Session duration | [BR-001](decisions.md#br-001) |
+| Immediate confirm, no post-session statuses | [BR-005](decisions.md#br-005) / AR-1–AR-3 / [#4](https://github.com/dmytro-koliasa/massagego/pull/4) |
+| Cancel cutoff, reasons, phone after cutoff | [BR-004](decisions.md#br-004) / AR-10 / [#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| Lead time and 120-day window (no 60-min past grace) | [BR-002](decisions.md#br-002), [BR-003](decisions.md#br-003) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8) |
+| Client overlap and cap of 30 | [BR-008](decisions.md#br-008) / [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| Notifications on create/cancel (+ reminder, Telegram) | [BR-009](decisions.md#br-009) / AR-14, AR-20 / [#17](https://github.com/dmytro-koliasa/massagego/pull/17)–[#19](https://github.com/dmytro-koliasa/massagego/pull/19), [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
+| Fixed 60-minute sessions | [BR-001](decisions.md#br-001) / AR-5 / [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
+| Thai consecutive-slot hints (no enforcement) | [BR-014](decisions.md#br-014) / [#10](https://github.com/dmytro-koliasa/massagego/pull/10); E2E [#40](https://github.com/dmytro-koliasa/massagego/pull/40), [#41](https://github.com/dmytro-koliasa/massagego/pull/41) |
+
+Still outside this lifecycle doc: deferred prices/payments/courses ([BR-012](decisions.md#br-012), [BR-015](decisions.md#br-015), [BR-016](decisions.md#br-016)); P-1 prod DB verify; P-2 legal.
