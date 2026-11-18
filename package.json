@@ -20,7 +20,8 @@
     "db:studio": "prisma studio",
     "db:up": "docker compose up -d db",
     "db:verify-constraints": "node scripts/db-verify-constraints.mjs",
-    "cron:notifications": "node scripts/cron-notifications.mjs"
+    "cron:notifications": "node scripts/cron-notifications.mjs",
+    "cron:cleanup": "node scripts/cron-cleanup.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
