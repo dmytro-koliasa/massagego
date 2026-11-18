@@ -63,6 +63,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
 | 2026-11-18 | BR-009 | In-app notification list (client + masseur): events 1–6, separate inbox table, read/unread + mark-all, deep links, nav badge + poll, ~30-day retention; no in-app prefs, no web push, no admin feed | [#62](https://github.com/dmytro-koliasa/massagego/pull/62) |
 | 2026-11-18 | BR-011 / X-4 | Masseur bulk-cancel all future confirmed bookings (incl. walk-ins); one availability choice; event 3 + inbox per client booking; atomic DB then notify; dashboard + delete-banner CTA | Implemented locally (PR pending) |
+| 2026-11-18 | BR-004 | Recent cancellations list → calendar deep-link: row opens `/masseur/dashboard?slot=<ISO>`; week view + slot details when present; missing slot → week + toast; brief pulse; strip `slot` after consume | Implemented locally (PR pending) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
@@ -207,7 +208,9 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Masseur slot details (Implemented):** `GET /api/masseur/availability` attaches `lastCancellation` (reason, reasonText, cancelledAt) per slot — the latest **client** cancellation for that `slotStart` with `cancelledAt` inside the 7-day retention window; masseur cancellations (no reason) are omitted. The masseur calendar slot modal shows a "Last cancellation" line on free and booked hours. Consecutive cancelled hours each carry their own last cancellation. Existing cancelled rows without a reason stay empty in the UI.
 
-**Recent cancellations list (Implemented, [#28](https://github.com/dmytro-koliasa/massagego/pull/28)):** masseur dashboard section lists up to 20 client cancellations from the last 7 days (slot time, client name, reason); read-only, no jump-to-calendar.
+**Recent cancellations list (Implemented, [#28](https://github.com/dmytro-koliasa/massagego/pull/28)):** masseur dashboard section lists up to 20 client cancellations from the last 7 days (slot time, client name, reason); read-only list content.
+
+**Deep-link from recent cancellations to calendar (Implemented locally 2026-11-18, PR pending):** each list row navigates to `/masseur/dashboard?slot=<ISO>` (UTC ISO of that cancellation’s `slotStart`). The masseur calendar goes to that week and opens slot details when the hour still exists in the loaded week; if the slot is gone/unavailable, still `gotoDate` to the week and show a toast (no fake details modal). Brief ~2–3 s pulse/highlight on the target cell when found. After consume, strip `slot` from the URL (`router.replace`) so refresh does not re-trigger. Hash remains reserved for `#bulk-cancel`.
 
 **Open sub-questions for track 2:** none remaining (defaults and cutoff/phone copy shipped in [#8](https://github.com/dmytro-koliasa/massagego/pull/8)/[#9](https://github.com/dmytro-koliasa/massagego/pull/9); legal copy review stays under P-2).
 

@@ -59,7 +59,27 @@ import {
 export type AvailabilityCalendarHandle = {
 	save: () => Promise<boolean>;
 	reload: () => Promise<void>;
+	/** Deep-link helper: goto week, open details if present, pulse. */
+	focusSlot: (slotIso: string) => Promise<'found' | 'missing' | 'invalid'>;
 };
+
+function waitUntil(predicate: () => boolean, timeoutMs: number): Promise<boolean> {
+	return new Promise(resolve => {
+		const started = Date.now();
+		const tick = () => {
+			if (predicate()) {
+				resolve(true);
+				return;
+			}
+			if (Date.now() - started >= timeoutMs) {
+				resolve(false);
+				return;
+			}
+			window.setTimeout(tick, 40);
+		};
+		tick();
+	});
+}
 
 type SlotStatus = 'available' | 'booked';
 
@@ -200,6 +220,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 		timeZoneRef.current = timeZone;
 		const [range, setRange] = useState<{ from: string; to: string } | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [highlightStartIso, setHighlightStartIso] = useState<string | null>(null);
 	const [repeating, setRepeating] = useState(false);
 	const [hoverTip, setHoverTip] = useState<{
 		text: string;
@@ -350,6 +371,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 					const classNames = [
 						booked ? 'fc-event-booked' : 'fc-event-available',
 						...(beyondClientWindow ? ['fc-event-beyond-window'] : []),
+						...(highlightStartIso === slot.start
+							? ['fc-event-deep-link-pulse']
+							: []),
 					];
 					return {
 						id: slot.id,
@@ -375,6 +399,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				slots,
 				locale,
 				timeZone,
+				highlightStartIso,
 				t.availabilitySlotLabel,
 				t.availabilityBookedSlotLabel,
 				t.availabilitySlotAvailableHint,
@@ -502,6 +527,81 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				clientUserId: slot?.clientUserId ?? null,
 				lastCancellation: slot?.lastCancellation ?? null,
 			});
+		}
+
+		function openSlotDetailsForDeepLink(startIso: string, slot: AvailabilitySlot) {
+			hideSlotTip();
+			if (slot.status === 'booked') {
+				setSlotAction({
+					startIso,
+					mode: 'booked',
+					clientName: slot.clientName ?? null,
+					clientPhone: slot.clientPhone ?? null,
+					clientPhoneConfirmed: Boolean(slot.clientPhoneConfirmed),
+					massageType: slot.massageType ?? null,
+					bookingId: slot.bookingId ?? null,
+					clientUserId: slot.clientUserId ?? null,
+					lastCancellation: slot.lastCancellation ?? null,
+				});
+				return;
+			}
+			setBookName('');
+			setBookPhone(undefined);
+			setBookPhoneCountry('UA');
+			setBookMassageType('');
+			setSlotAction({
+				startIso,
+				mode: 'choose',
+				lastCancellation: slot.lastCancellation ?? null,
+			});
+		}
+
+		async function focusSlot(
+			rawIso: string,
+		): Promise<'found' | 'missing' | 'invalid'> {
+			const parsed = Date.parse(rawIso);
+			if (Number.isNaN(parsed)) return 'invalid';
+
+			const ready = await waitUntil(
+				() => Boolean(calendarRef.current?.getApi()),
+				5000,
+			);
+			if (!ready) return 'invalid';
+
+			const startIso = alignToHourIso(new Date(parsed), timeZoneRef.current);
+			const api = calendarRef.current?.getApi();
+			if (!api) return 'invalid';
+
+			document
+				.getElementById('masseur-availability')
+				?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+			api.gotoDate(startIso);
+
+			const inRange = await waitUntil(() => {
+				const current = rangeRef.current;
+				if (!current) return false;
+				const time = Date.parse(startIso);
+				return (
+					time >= Date.parse(current.from) && time < Date.parse(current.to)
+				);
+			}, 8000);
+			if (!inRange || !rangeRef.current) return 'missing';
+
+			await loadSlots(rangeRef.current.from, rangeRef.current.to);
+
+			const slot = slotsRef.current.find(item => item.start === startIso);
+			if (!slot) return 'missing';
+
+			setHighlightStartIso(startIso);
+			window.setTimeout(() => {
+				setHighlightStartIso(current =>
+					current === startIso ? null : current,
+				);
+			}, 2500);
+
+			openSlotDetailsForDeepLink(startIso, slot);
+			return 'found';
 		}
 
 		function resolveSlotStartIso(date: Date) {
@@ -797,10 +897,14 @@ export const MasseurAvailabilityCalendar = forwardRef<
 					await loadSlots(currentRange.from, currentRange.to);
 				}
 			},
+			focusSlot,
 		}));
 
 		return (
-			<section className='mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6'>
+			<section
+				id='masseur-availability'
+				className='mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6'
+			>
 				<div className='mb-4 text-left'>
 					<h2 className='text-xl font-bold tracking-[-0.02em] text-foreground'>
 						{t.availabilityTitle}
@@ -1046,6 +1150,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 										month: 'short',
 									},
 								).format(start);
+								const slotExpiredNotice = isSlotExpired(slotAction.startIso);
 								return (
 									<>
 										<p
@@ -1064,6 +1169,11 @@ export const MasseurAvailabilityCalendar = forwardRef<
 										{!isWithinClientBookingWindow(start, timeZone) ? (
 											<p className='mt-2 text-sm text-muted'>
 												{t.availabilityNotYetVisibleToClients}
+											</p>
+										) : null}
+										{slotExpiredNotice ? (
+											<p className='mt-2 text-sm text-muted'>
+												{t.availabilityBookSlotPast}
 											</p>
 										) : null}
 										{slotAction.mode === 'booked' ? (
@@ -1127,7 +1237,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 								<div className='mt-5 flex flex-col gap-2'>
 									<button
 										type='button'
-										disabled={resolvePending}
+										disabled={
+											resolvePending || isSlotExpired(slotAction.startIso)
+										}
 										onClick={() => void resolveBookedSlot('available')}
 										className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
 									>
@@ -1137,7 +1249,9 @@ export const MasseurAvailabilityCalendar = forwardRef<
 									</button>
 									<button
 										type='button'
-										disabled={resolvePending}
+										disabled={
+											resolvePending || isSlotExpired(slotAction.startIso)
+										}
 										onClick={() => void resolveBookedSlot('unavailable')}
 										className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
 									>
@@ -1171,19 +1285,21 @@ export const MasseurAvailabilityCalendar = forwardRef<
 								<div className='mt-5 flex flex-col gap-2'>
 									<button
 										type='button'
+										disabled={isSlotExpired(slotAction.startIso)}
 										onClick={makeSlotUnavailable}
-										className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40'
+										className='flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
 									>
 										{t.availabilityMakeUnavailable}
 									</button>
 									<button
 										type='button'
+										disabled={isSlotExpired(slotAction.startIso)}
 										onClick={() =>
 											setSlotAction(current =>
 												current ? { ...current, mode: 'book' } : current,
 											)
 										}
-										className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90'
+										className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
 									>
 										{t.availabilityBookForClient}
 									</button>
