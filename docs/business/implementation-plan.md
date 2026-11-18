@@ -1,6 +1,6 @@
 # Implementation Plan
 
-> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17); test skeleton [#22](https://github.com/dmytro-koliasa/massagego/pull/22); local Resend ops [#23](https://github.com/dmytro-koliasa/massagego/pull/23). Remaining work: deferred product items (e.g. prices, payments, courses), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
+> **Status:** plan created 2026-11-16 from the **Approved** decisions in [decisions.md](decisions.md) and the changes listed in [data-model-changes.md](data-model-changes.md). **Track-2 pull requests 1–15 are merged** (through [#20](https://github.com/dmytro-koliasa/massagego/pull/20), 2026-11-17). Follow-ups: product [#25](https://github.com/dmytro-koliasa/massagego/pull/25)–[#28](https://github.com/dmytro-koliasa/massagego/pull/28); tests/ops/CI [#22](https://github.com/dmytro-koliasa/massagego/pull/22)–[#24](https://github.com/dmytro-koliasa/massagego/pull/24), [#29](https://github.com/dmytro-koliasa/massagego/pull/29)–[#33](https://github.com/dmytro-koliasa/massagego/pull/33); local Playwright E2E [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#38](https://github.com/dmytro-koliasa/massagego/pull/38). Remaining work: deferred product items (e.g. prices, payments, courses), P-1 prod DB + P-2 legal before real users (local tooling in `docs/ops/pre-release.md`), and later Vercel/Telegram when chosen. CI (P-6) is on GitHub Actions — see [testing.md](../testing.md).
 > The current database holds test data only and will be wiped; schema migrations are still required.
 
 ## 1. How the work is organised
@@ -27,9 +27,9 @@
 |---|---|---|
 | P-1 | Verify the production database: the migration `20261115120000_booking_no_overlap` (needs the `btree_gist` extension), overlapping active bookings, and the production server timezone. **Local tooling:** `npm run db:verify-constraints` + [pre-release.md](../ops/pre-release.md). **Still a gate:** production `DATABASE_URL` has not been verified (no prod DB in local-only phase). | the first deployment to production |
 | P-2 | Legal review under XR-1: retention periods (7 days, 3 months), the excluded-country list, the public masseur phone, consent texts, the privacy policy. **Checklist:** [pre-release.md](../ops/pre-release.md) (not a substitute for counsel). | the first release to real users |
-| P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (PR 12):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`). **Local ops:** free-tier Resend + `docs/ops/email-local.md` + `npm run cron:notifications` (no Vercel). **Deferred:** production domain/sender and host cron. | PR 8 (verification), PR 9, PR 12 |
-| P-4 | Create the Telegram bot and decide how its token is stored. **Deferred** until a public URL exists (no paid tunnel/host required during local-only development). | PR 13 |
-| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (PR 14). | PR 9, PR 12, PR 14 |
+| P-3 | Choose the email provider and set up sending (domain, sender, templates). **Addressed (plan PR 12 = [#17](https://github.com/dmytro-koliasa/massagego/pull/17)):** Resend (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`). **Local ops:** free-tier Resend + `docs/ops/email-local.md` + `npm run cron:notifications` (no Vercel). **Deferred:** production domain/sender and host cron. | plan PR 8/9/12 (shipped) |
+| P-4 | Create the Telegram bot and decide how its token is stored. **Deferred** until a public URL exists (no paid tunnel/host required during local-only development). Telegram product code is in [#18](https://github.com/dmytro-koliasa/massagego/pull/18). | plan PR 13 (shipped; host webhook still deferred) |
+| P-5 | Decide where scheduled jobs run on the hosting platform and where the rate-limit counters are stored (an in-memory counter does not work across serverless instances). **Addressed:** Postgres `RateLimitBucket` + `NotificationOutbox`; Vercel Cron `*/5` notifications + daily `0 3 * * *` `/api/cron/cleanup` (plan PR 14 = [#19](https://github.com/dmytro-koliasa/massagego/pull/19); local `npm run cron:cleanup`). | plan PR 9/12/14 (shipped) |
 | P-6 | Decide how the shared test database is provided in continuous integration. **Addressed:** GitHub Actions (free `ubuntu-latest`) with a Postgres 16 service → `massage_test`; triggers `pull_request` + `push` to `master`; `lint` + unit + integration (`npm test`). E2E stays local. See [testing.md](../testing.md). | PR 1 onwards (recommended) |
 
 ## 3. Order and dependencies
@@ -40,20 +40,20 @@
 | 2 | Masseur timezone and shared constants ([#5](https://github.com/dmytro-koliasa/massagego/pull/5)) | BR-006, BR-001, C-6 | none |
 | 2a | Calendars in the masseur's timezone ([#6](https://github.com/dmytro-koliasa/massagego/pull/6)) | BR-006, C-2 | 2 |
 | 3 | Availability rules ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) | BR-007, C-3, C-4 | 2, 2a |
-| 4 | Booking lead time, 120-day window, cancellation cutoff | BR-002, BR-003, BR-004, C-1 | 1, 2, 2a |
-| 5 | Client booking and cancellation rules | BR-008, BR-004, C-5, C-7, X-1 | 1, 4 |
-| 6 | Thai massage hints | BR-014 | 5 |
-| 7 | Shared excluded-country list | BR-013 | none |
-| 8 | Registration and profile fields | BR-017, BR-009 (fields), BR-004 (phone) | 7 |
-| 9 | Password reset and rate limits | BR-019, BR-020 | 8 |
-| 10 | Image upload checks | BR-022 | none |
+| 4 | Booking lead time, 120-day window, cancellation cutoff ([#8](https://github.com/dmytro-koliasa/massagego/pull/8)) | BR-002, BR-003, BR-004, C-1 | 1, 2, 2a |
+| 5 | Client booking and cancellation rules ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) | BR-008, BR-004, C-5, C-7, X-1 | 1, 4 |
+| 6 | Thai massage hints ([#10](https://github.com/dmytro-koliasa/massagego/pull/10)) | BR-014 | 5 |
+| 7 | Shared excluded-country list ([#11](https://github.com/dmytro-koliasa/massagego/pull/11)) | BR-013 | none |
+| 8 | Registration and profile fields ([#12](https://github.com/dmytro-koliasa/massagego/pull/12)) | BR-017, BR-009 (fields), BR-004 (phone) | 7 |
+| 9 | Password reset and rate limits ([#13](https://github.com/dmytro-koliasa/massagego/pull/13)) | BR-019, BR-020 | 8 |
+| 10 | Image upload checks ([#14](https://github.com/dmytro-koliasa/massagego/pull/14)) | BR-022 | none |
 | 11 | Masseur catalog ([#16](https://github.com/dmytro-koliasa/massagego/pull/16)) | BR-010, BR-017, C-9 | 2, 4, 8 |
-| 12 | Email notifications | BR-009 | 1, 2, 8 |
-| 13 | Telegram and phone confirmation | BR-009, BR-023 | 12 |
-| 14 | Account deletion and data cleanup | BR-011, BR-018 | 1, 12 |
-| 15 | Administration panel | BR-021 | 14 |
+| 12 | Email notifications ([#17](https://github.com/dmytro-koliasa/massagego/pull/17)) | BR-009 | 1, 2, 8 |
+| 13 | Telegram and phone confirmation ([#18](https://github.com/dmytro-koliasa/massagego/pull/18)) | BR-009, BR-023 | 12 |
+| 14 | Account deletion and data cleanup ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)) | BR-011, BR-018 | 1, 12 |
+| 15 | Administration panel ([#20](https://github.com/dmytro-koliasa/massagego/pull/20)) | BR-021 | 14 |
 
-PRs 1, 2, 7 and 10 have no dependencies and can start in any order or in parallel.
+Plan PRs 1, 2, 7 and 10 had no dependencies and could start in any order or in parallel (all merged).
 
 ## 4. Pull requests
 
@@ -106,7 +106,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 4 - Booking lead time, 120-day window, cancellation cutoff
 
-**Status:** implementing on branch `feat/booking-lead-window-cutoff` (groomed 2026-11-16).
+**Status:** merged ([#8](https://github.com/dmytro-koliasa/massagego/pull/8), 2026-11-16).
 
 **Groomed decisions:** weekly copy max = **17**; raising lead above cutoff **auto-raises cutoff** with message; 120-day copy as in BR-003; auto-raise copy as groomed; beyond-window slots are **dimmed** with "Not yet visible to clients" / "Ще не видно клієнтам" in slot details; API codes `BOOKING_LEAD_TIME`, `BOOKING_WINDOW_EXCEEDED`, `CUTOFF_TOO_LOW`; changing settings does **not** alter existing bookings (cutoff enforcement on cancel stays PR 5).
 
@@ -121,7 +121,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 5 - Client booking and cancellation rules
 
-**Status:** implementing on branch `feat/client-booking-cancel-rules` (groomed 2026-11-16).
+**Status:** merged ([#9](https://github.com/dmytro-koliasa/massagego/pull/9), 2026-11-16).
 
 **Groomed decisions:** client overlap also guarded by exclusion constraint `Booking_no_overlapping_active_client_slots` (walk-ins excluded); error codes `CLIENT_SLOT_OVERLAP`, `CLIENT_BOOKING_LIMIT`, `CANCEL_CUTOFF_PASSED`, `CANCEL_REASON_REQUIRED`, `CLIENT_PROFILE_INCOMPLETE`; post-cutoff and X-1 messages with/without phone + `tel:`-ready copy; pre-book notice when a selected slot is already inside cutoff; cancel reason labels as groomed; copy `User.name` + `User.phone` only (else refuse).
 
@@ -138,7 +138,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 6 - Thai massage hints
 
-**Status:** implementing on branch `feat/thai-massage-hints` (groomed 2026-11-17).
+**Status:** merged ([#10](https://github.com/dmytro-koliasa/massagego/pull/10), 2026-11-17).
 
 **Groomed decisions:** suppress slot-selection toast when ≥2 consecutive hours are already selected (type-change toast always); consecutive = same masseur/client/Thai type, ±1 h, no one-click neighbour cancel; shared booking hint + cancel-neighbour wording as groomed; client-only (not masseur walk-in/cancel).
 
@@ -220,7 +220,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 12 - Email notifications
 
-**Status:** implementing on branch `feat/email-notifications` (groomed 2026-11-17).
+**Status:** merged ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), 2026-11-17).
 
 **Groomed decisions:**
 - Provider: **Resend** (`EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`); local default remains `log`.
@@ -237,7 +237,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 13 - Telegram and phone confirmation
 
-**Status:** implementing on branch `feat/telegram-phone-confirm` (groomed 2026-11-17).
+**Status:** merged ([#18](https://github.com/dmytro-koliasa/massagego/pull/18), 2026-11-17).
 
 **Groomed decisions:**
 - One bot (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`); webhook `POST /api/telegram/webhook`.
@@ -257,7 +257,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### PR 14 - Account deletion and data cleanup
 
-**Status:** implementing on branch `feat/account-deletion-cleanup` (groomed 2026-11-17).
+**Status:** merged ([#19](https://github.com/dmytro-koliasa/massagego/pull/19), 2026-11-17).
 
 **Groomed decisions:**
 - Cron `GET /api/cron/cleanup` daily `0 3 * * *` UTC with `CRON_SECRET`.
@@ -296,6 +296,6 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - **Production state is unknown** (P-1). Until it is checked, nothing here should be deployed to real data.
 - **Legal review is a release prerequisite** (P-2): the decisions are product decisions, not legal opinions.
 - **Hard deletion is irreversible:** a wrongly cancelled booking cannot be restored after 7 days, and history older than 3 months is gone ([BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018)).
-- **Dependencies on providers:** email, Telegram and the hosting scheduler affect PRs 9, 12, 13 and 14; their cost and limits are not yet known.
+- **Dependencies on providers:** email, Telegram and the hosting scheduler were designed into plan PRs 9/12/13/14 ([#13](https://github.com/dmytro-koliasa/massagego/pull/13), [#17](https://github.com/dmytro-koliasa/massagego/pull/17)–[#19](https://github.com/dmytro-koliasa/massagego/pull/19)); remaining production cost/limits for Resend domain (P-3) and Telegram webhook host (P-4) are not yet known.
 - **Deferred items stay out of scope:** prices ([BR-012](decisions.md#br-012)), late-cancellation fee and payment ([BR-015](decisions.md#br-015)), courses ([BR-016](decisions.md#br-016)). When payments arrive, the obligation flag and the separate payment records must be designed (see [BR-011](decisions.md#br-011) and [BR-018](decisions.md#br-018)).
 - **Notes carried from the review:** X-2 (timezone from the city), X-3 (long registration form), X-4 (a masseur cancels many bookings by hand before deleting an account).

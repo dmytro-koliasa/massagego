@@ -1,7 +1,7 @@
 # Business Rules
 
-> **Status:** **as-is snapshot** of `master` at commit `f29ca32` (2026-11-15).
-> This document records what the code **does today**. Sections 1-9 are **not approved product requirements**; only the section "Approved rules" below is binding.
+> **Status:** refreshed after track-2 closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); follow-ups through [#38](https://github.com/dmytro-koliasa/massagego/pull/38)).
+> The section **Approved rules** below is binding. Sections 1–9 below are a **historical pre-track-2 as-is snapshot** (originally `f29ca32`, 2026-11-15) and may contradict current code — prefer AR-* / [decisions.md](decisions.md) for behaviour today.
 > Nothing here was verified against production data or a production deployment.
 > Open decisions (`BR-xxx`) and inconsistencies (`C-x`) are tracked in [decisions.md](decisions.md).
 
@@ -31,7 +31,7 @@ Rules the product owner has approved **and** that are implemented. A rule is add
 | AR-6 | Each masseur has an IANA time zone (default `Europe/Kyiv`). The server aligns slot starts to the hour, checks the 05:00-23:00 window and copies weeks in the masseur's zone, never in the server's local time; a copied week keeps the same local clock time across daylight-saving changes. Instants are stored in UTC. | [BR-006](decisions.md#br-006) (server side) | `prisma/schema.prisma` (`User.timezone`); `src/lib/masseur-time.ts`, `src/lib/masseur-time.server.ts`; `src/app/api/masseur/availability/route.ts`; `src/app/api/bookings/route.ts`; `src/app/api/bookings/cancel/route.ts`; `src/app/api/masseur/bookings/route.ts`; `src/app/api/masseur/bookings/resolve/route.ts`; `tests/masseur-time.test.ts`, `tests/masseur-timezone-routes.test.ts`; [#5](https://github.com/dmytro-koliasa/massagego/pull/5) |
 | AR-7 | The masseur availability calendar and the client booking calendar show days and hours in the masseur's time zone with the line "Times in {label}" / "Час: {label}". The client sessions calendar stays in the browser's zone and labels each event with that masseur's zone. Availability and bookings APIs return `timezone`. | [BR-006](decisions.md#br-006) (display) | `src/lib/calendar-time.ts`; `src/components/masseur-availability-calendar.tsx`; `src/components/client-booking-calendar.tsx`; `src/components/client-sessions-calendar.tsx`; `src/app/api/masseur/availability/route.ts`; `src/app/api/masseurs/[id]/availability/route.ts`; `src/app/api/bookings/route.ts`; [#6](https://github.com/dmytro-koliasa/massagego/pull/6) |
 | AR-8 | The global working window 05:00–23:00 (masseur time zone) is enforced on every write path: manual availability changes, weekly copy (including a supplied template) and masseur walk-in bookings. Adding or removing a started availability slot is rejected by the server (`slot_in_past`). | [BR-007](decisions.md#br-007) | `src/app/api/masseur/availability/route.ts`; `src/app/api/masseur/bookings/route.ts`; `src/lib/masseur-time.ts` (`isSlotStarted`); `tests/availability-rules.test.ts`; [#7](https://github.com/dmytro-koliasa/massagego/pull/7) |
-| AR-9 | Clients only see masseurs with a complete profile (name in at least one language, canonical city, address, phone) and at least one availability record ever. Cards show a green/red nearest-free-time plaque; free-time masseurs sort first; unlisted profiles open by link but cannot be booked; the list API does not return masseur email. | [BR-010](decisions.md#br-010), C-9 | `src/lib/masseur-catalog.ts`; `src/app/api/masseurs/route.ts`; `src/components/client-masseurs-view.tsx`; `src/app/client/masseur/[slug]/page.tsx`; `tests/masseur-catalog.test.ts`; PR 11 (`feat/masseur-catalog`) |
+| AR-9 | Clients only see masseurs with a complete profile (name in at least one language, canonical city, address, phone) and at least one availability record ever. Cards show a green/red nearest-free-time plaque; free-time masseurs sort first; unlisted profiles open by link but cannot be booked; the list API does not return masseur email. | [BR-010](decisions.md#br-010), C-9 | `src/lib/masseur-catalog.ts`; `src/app/api/masseurs/route.ts`; `src/components/client-masseurs-view.tsx`; `src/app/client/masseur/[slug]/page.tsx`; `tests/masseur-catalog.test.ts`; [#16](https://github.com/dmytro-koliasa/massagego/pull/16) |
 | AR-10 | Client cancellation requires a listed reason ("Other" needs text ≤200); the per-masseur cancel cutoff is enforced; own already-cancelled booking succeeds; missing or foreign booking returns the same `404 not_found`. | [BR-004](decisions.md#br-004), C-7 | `src/app/api/bookings/cancel/route.ts`; [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
 | AR-11 | Password reset is a one-time email link (1 h); clients request by phone, masseurs by email; clients still sign in with phone + password only. | [BR-019](decisions.md#br-019) | `src/app/api/auth/password-reset/*`; [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
 | AR-12 | Sensitive auth and booking endpoints use Postgres sliding-window rate limits per IP and per account. | [BR-020](decisions.md#br-020) | `src/lib/rate-limit.ts`; `RateLimitBucket`; [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
@@ -40,10 +40,10 @@ Rules the product owner has approved **and** that are implemented. A rule is add
 | AR-15 | Optional phone confirmation via Telegram contact share sets `phoneConfirmedAt` (not required to register or book). | [BR-023](decisions.md#br-023) | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
 | AR-16 | Self-service account deletion anonymises the user; client deletion auto-cancels future bookings (event 4); masseur deletion refused while future bookings exist; cancelled bookings without a retention hold are hard-deleted ~7 days after `cancelledAt`; completed bookings without a hold ~3 months after `slotStart`. | [BR-011](decisions.md#br-011), [BR-018](decisions.md#br-018) | `src/lib/account-deletion.ts`; `src/app/api/cron/cleanup/route.ts`; [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
 | AR-17 | Separate `admin` portal: env bootstrap of one super-admin; user list with Active/Blocked/Deleted filters; block/unblock client and masseur only; blocked users cannot sign in or create bookings (existing bookings stay); `AdminAuditLog` + `/admin/audit`. | [BR-021](decisions.md#br-021) | `src/app/admin/*`; `src/app/api/admin/*`; [#20](https://github.com/dmytro-koliasa/massagego/pull/20) |
-| AR-18 | Masseur slot details show the latest client cancellation reason for that hour within 7 days (`lastCancellation` on availability slots); masseur cancels without a reason are not shown; consecutive hours each have their own last cancellation. | [BR-004](decisions.md#br-004) | `src/lib/last-cancellation.ts`; `src/app/api/masseur/availability/route.ts`; `src/components/masseur-availability-calendar.tsx` |
-| AR-19 | Clients and masseurs may file a complaint about each other only when linked by an account booking; walk-ins excluded; admin reviews at `/admin/complaints` (status + note); target does not see the complaint; rate-limited. | [BR-021](decisions.md#br-021) | `Complaint` model; `src/lib/complaints.ts`; `src/app/api/complaints`; `src/app/admin/complaints` |
-| AR-20 | Clients may receive one session reminder (`booking_reminder`) at the masseur's offset (Off or 2/4/12/24 h, default 24); not critical; skipped for walk-ins and bookings created inside the reminder window; claimed via `reminderSentAt` on cron. | [BR-009](decisions.md#br-009) | `User.reminderHours`; `Booking.reminderSentAt`; `src/lib/booking-reminder.ts`; cron notifications |
-| AR-21 | Masseur dashboard shows a read-only list of up to 20 client cancellations from the last 7 days (slot, name, reason). | [BR-004](decisions.md#br-004) | `GET /api/masseur/cancellations`; `MasseurRecentCancellations` |
+| AR-18 | Masseur slot details show the latest client cancellation reason for that hour within 7 days (`lastCancellation` on availability slots); masseur cancels without a reason are not shown; consecutive hours each have their own last cancellation. | [BR-004](decisions.md#br-004) | `src/lib/last-cancellation.ts`; `src/app/api/masseur/availability/route.ts`; `src/components/masseur-availability-calendar.tsx`; [#25](https://github.com/dmytro-koliasa/massagego/pull/25) |
+| AR-19 | Clients and masseurs may file a complaint about each other only when linked by an account booking; walk-ins excluded; admin reviews at `/admin/complaints` (status + note); target does not see the complaint; rate-limited. | [BR-021](decisions.md#br-021) | `Complaint` model; `src/lib/complaints.ts`; `src/app/api/complaints`; `src/app/admin/complaints`; [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
+| AR-20 | Clients may receive one session reminder (`booking_reminder`) at the masseur's offset (Off or 2/4/12/24 h, default 24); not critical; skipped for walk-ins and bookings created inside the reminder window; claimed via `reminderSentAt` on cron. | [BR-009](decisions.md#br-009) | `User.reminderHours`; `Booking.reminderSentAt`; `src/lib/booking-reminder.ts`; cron notifications; [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
+| AR-21 | Masseur dashboard shows a read-only list of up to 20 client cancellations from the last 7 days (slot, name, reason). | [BR-004](decisions.md#br-004) | `GET /api/masseur/cancellations`; `MasseurRecentCancellations`; [#28](https://github.com/dmytro-koliasa/massagego/pull/28) |
 
 Timezone choice for masseurs and related profile fields were delivered with registration/profile work (PR 8 / [#12](https://github.com/dmytro-koliasa/massagego/pull/12)).
 
@@ -137,17 +137,17 @@ For each slot, inside one transaction (client route: `prisma.$transaction`):
 - It is enforced **only** when a masseur edits availability (`POST /api/masseur/availability`, error `out_of_hours`). It is **not** enforced by the weekly-copy template (`PUT`) or by the masseur walk-in booking route.
 - The server evaluates the window with `Date.getHours()` (server-local time) while the UI evaluates it in the browser's local time. See [timezone](#7-timezone-handling) and inconsistency C-2. *(Superseded on the server: the window is evaluated in the masseur's time zone, AR-6; the UI still uses the browser's time zone.)*
 
-### 4.2 Days off - Needs Decision
+### 4.2 Days off — Implemented policy ([BR-007](decisions.md#br-007) / AR-8)
 
-- There is **no** days-off or time-off concept, no recurring schedule, and no holiday calendar. A day is "off" only because no `AvailabilitySlot` rows exist for it.
-- Availability is edited hour by hour, or copied forward from the current week (section 4.3). See [BR-007](decisions.md#br-007).
+- There is **no** explicit days-off or holiday calendar. A day is "off" only because no `AvailabilitySlot` rows exist for it.
+- Availability is edited hour by hour, or copied forward from the current week (section 4.3).
 
 ### 4.3 Weekly copy — Implemented
 
 `PUT /api/masseur/availability`:
 
 - Only allowed while "now" is inside the source week (`not_current_week` otherwise).
-- Copies the week's slots (or a client-supplied template) forward by 1-52 weeks (default 12; `weeksAhead`).
+- Copies the week's slots (or a client-supplied template) forward by 1–17 weeks (default 12; `weeksAhead`) — historical note said 1–52; cap is now 17 ([#8](https://github.com/dmytro-koliasa/massagego/pull/8)).
 - First **deletes** existing future availability in the target range, except hours that already have an active booking; then inserts the copy. Booked hours are skipped when copying.
 - Dates are shifted with `setDate(+7 days)` in server-local time (see C-6). *(Superseded: weeks are added in the masseur's time zone keeping the local clock time, AR-6.)*
 
@@ -174,7 +174,7 @@ Three layers, all keyed on "active" = `status <> 'cancelled'`:
 Notes:
 
 - Conflicts surface as `409 slot_taken` (`isBookingConflictError`).
-- The constraint applies **per masseur only**. Nothing stops the same **client** from holding overlapping bookings with different masseurs. See [BR-008](decisions.md#br-008).
+- The masseur constraint applies **per masseur**. Client overlap across masseurs is also blocked ([BR-008](decisions.md#br-008) / [#9](https://github.com/dmytro-koliasa/massagego/pull/9), `Booking_no_overlapping_active_client_slots`).
 - Rows with `slotStart IS NULL` (legacy pre-slot bookings) are outside the constraint. No code path creates them any more.
 - **Operational status:** the migration was verified only against local Docker PostgreSQL 16. Production migration status is **unknown** and must not be assumed. The migration requires the `btree_gist` extension and aborts if overlapping active bookings already exist.
 
@@ -182,30 +182,26 @@ Notes:
 
 ## 6. Time restrictions
 
-### 6.1 Minimum advance booking - Needs Decision ([BR-002](decisions.md#br-002))
+### 6.1 Minimum advance booking — Implemented ([BR-002](decisions.md#br-002) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8))
 
-There is **no** configurable lead time. Actual behavior:
+Per-masseur client lead time (1/2/3/4 h, default 1). Client availability hides slots inside the lead window; booking create rejects them (`BOOKING_LEAD_TIME`). Masseur walk-ins remain allowed until slot start. The old 60-minute past grace is removed.
 
-- Client UI/availability endpoint: slots whose hour has already started are hidden.
-- Client API: accepts a start up to **60 minutes in the past** (`slotStart.getTime() < now - SLOT_MS` is the rejection test).
-- Masseur API: rejects any slot with `start <= now`.
+### 6.2 Maximum advance booking — Implemented ([BR-003](decisions.md#br-003) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8))
 
-### 6.2 Maximum advance booking - Needs Decision ([BR-003](decisions.md#br-003))
+Fixed **120-day** client booking window (masseur timezone, end of day). Weekly copy is capped at **17** weeks. Masseurs may still create availability / walk-ins beyond the client window (dimmed in the masseur calendar).
 
-There is **no** upper limit. A client may book any existing future availability row. Availability itself can be created up to 52 weeks ahead via weekly copy; individual hours can be toggled for any future week the calendar navigates to.
-
-### 6.3 Cancellation restrictions - Needs Decision ([BR-004](decisions.md#br-004))
+### 6.3 Cancellation restrictions — Implemented ([BR-004](decisions.md#br-004) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9))
 
 | Actor | Time restriction | Source |
 |---|---|---|
-| Client | **None.** May cancel any own non-cancelled booking, including a session already in progress or in the past | `src/app/api/bookings/cancel/route.ts` |
+| Client | Cancel only while `now <= slotStart − cancelCutoffHours`; reason required; after cutoff → refuse + masseur phone | `src/app/api/bookings/cancel/route.ts` |
 | Masseur | Cancellation (`resolve`) rejected when `slotStart <= now` | `src/app/api/masseur/bookings/resolve/route.ts` |
 
-No cancellation window, fee, reason, or notification exists. See [booking-lifecycle.md](booking-lifecycle.md).
+See AR-10 and [booking-lifecycle.md](booking-lifecycle.md) for the current flow.
 
-### 6.4 Editing availability in the past - Implemented (UI only)
+### 6.4 Editing availability in the past — Implemented ([#7](https://github.com/dmytro-koliasa/massagego/pull/7) / AR-8)
 
-The masseur UI blocks changes to started hours (`isSlotExpired`). `POST /api/masseur/availability` has **no** past-time check. See C-4.
+The masseur UI and server both reject changes to started hours (`slot_in_past`). C-4 is closed.
 
 ---
 
@@ -247,7 +243,7 @@ Source: `src/auth/*`, `src/lib/validation/auth.ts`, `src/app/api/auth/register/r
 
 - City and address are **required** to save a profile; names and descriptions are optional, per language (`en`, `uk`). Description max 200 characters.
 - A public `slug` is assigned once and then kept stable; client links work by slug or legacy id.
-- Gallery: max **3** images, JPEG/PNG only, max 5 MB each (`src/app/api/masseur/gallery/route.ts`).
+- Gallery: max **3** images, JPEG/PNG/WebP (content-checked), max 5 MB each (`src/app/api/masseur/gallery/route.ts`; [#14](https://github.com/dmytro-koliasa/massagego/pull/14)).
 - City search uses OpenStreetMap Nominatim (masseur-only endpoint).
 
 ### 9.3 Masseur discovery - Implemented ([BR-010](decisions.md#br-010); see AR-9)

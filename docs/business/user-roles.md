@@ -1,7 +1,7 @@
 # User Roles and Permissions
 
 > **As-is only:** this document is not an approved requirement; decisions are tracked in [decisions.md](decisions.md).
-> **Status:** descriptive snapshot refreshed 2026-11-17 after track-2 closeout. It records the access rules the code **enforces today**, not approved requirements.
+> **Status:** descriptive snapshot refreshed 2026-11-18 after track-2 docs closeout (product through [#20](https://github.com/dmytro-koliasa/massagego/pull/20); E2E through [#38](https://github.com/dmytro-koliasa/massagego/pull/38)). It records the access rules the code **enforces today**, not approved requirements.
 > Classification tags: **Implemented**, **Needs Decision**, **Proposed** (see [business-rules.md](business-rules.md#how-to-read-this-document)). Decision ids (`BR-xxx`) refer to [decisions.md](decisions.md).
 
 ## 1. Roles
@@ -39,10 +39,10 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 |---|---|---|---|---|
 | Create booking for a masseur's free slot | - | **Y** (any masseur) | **own** (walk-in for self only) | `api/bookings`, `api/masseur/bookings` |
 | Create booking for a slot the masseur has **not** published | - | - | **Y** (walk-in; slot is created) | `api/masseur/bookings` |
-| Book several hours in one request | - | **Y** (atomic, no maximum) | - (one per request) | `api/bookings` |
+| Book several hours in one request | - | **Y** (atomic; max **30** active future bookings) | - (one per request) | `api/bookings` |
 | List bookings | - | **own** (non-cancelled; any time range) | **own** (as masseur, by week) | `api/bookings` GET, `api/masseur/availability` GET |
 | See another client's booking details | - | - (shown only as "booked") | **Y** for bookings on own calendar (name, phone, type) | `api/masseurs/[id]/availability`, `api/masseur/availability` |
-| Cancel a booking | - | **own** (any time, incl. past) | **own calendar** (before start only) | `api/bookings/cancel`, `api/masseur/bookings/resolve` |
+| Cancel a booking | - | **own** (before cancel cutoff; reason required) | **own calendar** (before start only) | `api/bookings/cancel`, `api/masseur/bookings/resolve` |
 | Edit a booking (time, note, type) | - | - | - | no endpoint exists |
 | Confirm / complete / mark no-show | - | - | - | no such status or endpoint ([BR-005](decisions.md#br-005)) |
 
@@ -50,16 +50,16 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 
 | Action | Anonymous | Client | Masseur | Source |
 |---|---|---|---|---|
-| View a masseur's availability | - | **Y** (any masseur; future hours only) | **own** | `api/masseurs/[id]/availability`, `api/masseur/availability` |
+| View a masseur's availability | - | **Y** (any masseur; outside lead time and within 120 days) | **own** | `api/masseurs/[id]/availability`, `api/masseur/availability` |
 | Add/remove availability hours | - | - | **own** (05:00-23:00, not on booked hours) | `api/masseur/availability` POST |
-| Copy a week forward (1-52 weeks) | - | - | **own** (current week only) | `api/masseur/availability` PUT |
+| Copy a week forward (1-17 weeks) | - | - | **own** (current week only) | `api/masseur/availability` PUT |
 | Make a booked hour unavailable | - | - | **own** (cancels the booking first; before start only) | `api/masseur/bookings/resolve` |
 
 ### 2.3 Profiles and data
 
 | Action | Anonymous | Client | Masseur | Source |
 |---|---|---|---|---|
-| Browse the masseur list and a masseur profile (name, photo, description, massage types, city, address, gallery) | - | **Y** (all masseurs) | **own** profile only | `api/masseurs`, `client/masseur/[slug]/page.tsx` |
+| Browse the masseur list and a masseur profile (name, photo, description, massage types, city, address, gallery) | - | **Y** (listed masseurs; unlisted open by link but not bookable) | **own** profile only | `api/masseurs`, `client/masseur/[slug]/page.tsx` |
 | Edit masseur profile, massage types, gallery (max 3 images) | - | - | **own** | `api/masseur/profile`, `api/masseur/gallery*` |
 | Edit client profile (en/uk names) and avatar | - | **own** | - | `api/client/profile` |
 | Edit masseur avatar | - | - | **own** | `api/masseur/profile` |
@@ -83,7 +83,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 - A booking may belong to one **client account** (`Booking.clientUserId`, nullable, `SetNull` on delete).
   - Client-created bookings: `clientUserId` = the logged-in client.
   - Masseur-created walk-ins: `clientUserId = null`. The client contact is only the free-text `clientName` / `clientPhone`.
-- `clientName` and `clientPhone` are **entered per booking**, not read from the client profile. A client may therefore book on behalf of someone else.
+- For client-created bookings, `clientName` and `clientPhone` are **copied from the account** (request body fields are ignored). Masseur walk-ins still use free-text name/phone.
 - A client can cancel only bookings where `clientUserId` equals their id. Own already-cancelled booking succeeds; missing or someone else's booking returns the same `404 not_found` so ownership cannot be probed (C-7).
 - A masseur can cancel only bookings of their own calendar (`masseurId` = session user).
 - Walk-in bookings cannot be seen or cancelled by any client, because they have no `clientUserId`.
@@ -98,7 +98,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | Other people's bookings on a masseur's calendar | n/a | Only "booked" (no name, phone or type) |
 | Client phone number | Yes, for bookings on their calendar | Only their own |
 | Masseur address and city | Own | Yes, for every masseur |
-| Masseur email | Own | No (removed from `GET /api/masseurs`; C-9 closed in PR 11) |
+| Masseur email | Own | No (removed from `GET /api/masseurs`; C-9 closed in [#16](https://github.com/dmytro-koliasa/massagego/pull/16)) |
 | Client account list | No | No |
 
 Client phone numbers are visible to a masseur only through bookings on their own calendar.
@@ -112,17 +112,21 @@ Client phone numbers are visible to a masseur only through bookings on their own
 - The city-search proxy and gallery endpoints are masseur-only.
 - Password policy: 8-64 characters containing a letter, a digit and a symbol.
 - Phone numbers must be valid international numbers except African countries, Russia and Belarus ([BR-013](decisions.md#br-013)).
-- Uploads: JPEG/PNG only for the gallery, 5 MB maximum, 3 images per masseur.
+- Uploads: JPEG/PNG/WebP (content-checked), 5 MB maximum, 3 images per masseur ([BR-022](decisions.md#br-022) / [#14](https://github.com/dmytro-koliasa/massagego/pull/14)).
 
 ## 6. Gaps and open points
 
+Former “gaps” that are now shipped (track 2):
+
 | Topic | Status |
 |---|---|
-| No rate limiting on registration, login or booking creation | **Proposed** (not approved) |
-| No email/phone verification, no password reset | **Needs Decision** (not covered by a `BR-xxx` item yet) |
-| No admin or support role | **Needs Decision** (not covered by a `BR-xxx` item yet) |
-| Masseur email returned to every client by `GET /api/masseurs` although not displayed | **Needs Decision** - see C-9 in [decisions.md](decisions.md#code-inconsistencies) |
-| Which masseurs are visible to clients | **Implemented** - [BR-010](decisions.md#br-010) (complete profile + availability history; see AR-9) |
-| Who may cancel, and when | **Needs Decision** - [BR-004](decisions.md#br-004) |
-| Notifying the counterpart of changes | **Implemented** (email, PR 12) - [BR-009](decisions.md#br-009); Telegram in PR 13 |
-| Account deletion and retention | **Needs Decision** - [BR-011](decisions.md#br-011) |
+| Rate limiting on auth and booking | **Implemented** — [BR-020](decisions.md#br-020) / [#13](https://github.com/dmytro-koliasa/massagego/pull/13) |
+| Email verification and password reset | **Implemented** — [BR-017](decisions.md#br-017) / [#12](https://github.com/dmytro-koliasa/massagego/pull/12), [BR-019](decisions.md#br-019) / [#13](https://github.com/dmytro-koliasa/massagego/pull/13); optional phone confirm [BR-023](decisions.md#br-023) / [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
+| Admin / support role | **Implemented** — [BR-021](decisions.md#br-021) / [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
+| Masseur email on list API | **Implemented / closed** — C-9 / [#16](https://github.com/dmytro-koliasa/massagego/pull/16) |
+| Which masseurs are visible to clients | **Implemented** — [BR-010](decisions.md#br-010) (see AR-9) |
+| Who may cancel, and when | **Implemented** — [BR-004](decisions.md#br-004) / [#8](https://github.com/dmytro-koliasa/massagego/pull/8), [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
+| Notifying the counterpart of changes | **Implemented** — email [#17](https://github.com/dmytro-koliasa/massagego/pull/17), Telegram [#18](https://github.com/dmytro-koliasa/massagego/pull/18), event 4 [#19](https://github.com/dmytro-koliasa/massagego/pull/19); reminders [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
+| Account deletion and retention | **Implemented** — [BR-011](decisions.md#br-011) / [BR-018](decisions.md#br-018) / [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
+
+Still open outside track-2 product code: P-1 prod DB verify, P-2 legal review, production Resend domain (P-3), Telegram webhook on a public host (P-4), deferred BR-012/015/016.
