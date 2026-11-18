@@ -173,7 +173,7 @@ export function ClientMasseursView() {
 						{t.clientPageTitle}
 					</h1>
 					<p>
-						<NotificationNavLink href='/client/notifications' />
+						<NotificationNavLink href='/client/notifications' portal='client' />
 					</p>
 				</div>
 

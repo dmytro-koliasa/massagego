@@ -481,7 +481,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 						{t.masseurPageTitle}
 					</h1>
 					<p>
-						<NotificationNavLink href='/masseur/notifications' />
+						<NotificationNavLink href='/masseur/notifications' portal='masseur' />
 					</p>
 				</div>
 

@@ -9,5 +9,5 @@ export default async function ClientNotificationsPage() {
     redirect(portalHomePath("client"));
   }
 
-  return <NotificationSettingsView backHref="/client" />;
+  return <NotificationSettingsView backHref="/client" portal="client" />;
 }

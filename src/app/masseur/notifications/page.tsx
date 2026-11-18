@@ -9,5 +9,7 @@ export default async function MasseurNotificationsPage() {
     redirect(portalHomePath("masseur"));
   }
 
-  return <NotificationSettingsView backHref="/masseur/dashboard" />;
+  return (
+    <NotificationSettingsView backHref="/masseur/dashboard" portal="masseur" />
+  );
 }

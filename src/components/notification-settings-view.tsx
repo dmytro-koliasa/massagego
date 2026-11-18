@@ -7,6 +7,7 @@ import { BackNavLink } from '@/components/back-nav-link';
 import { useLanguage } from '@/components/language-provider';
 import { NotificationInboxSection } from '@/components/notification-inbox-section';
 import type { NotificationEventType } from '@/lib/notifications/types';
+import { portalRequestHeaders, type PublicPortal } from '@/lib/portals';
 
 type PrefRow = {
 	eventType: NotificationEventType;
@@ -43,19 +44,23 @@ const EVENT_LABEL_KEYS: Record<
 
 type Props = {
 	backHref: string;
+	portal: PublicPortal;
 };
 
-export function NotificationSettingsView({ backHref }: Props) {
+export function NotificationSettingsView({ backHref, portal }: Props) {
 	const { t } = useLanguage();
 	const [preferences, setPreferences] = useState<PrefRow[]>([]);
 	const [telegram, setTelegram] = useState<TelegramState | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [pending, setPending] = useState(false);
+	const portalHeaders = portalRequestHeaders(portal);
 
 	async function load() {
 		setLoading(true);
 		try {
-			const response = await fetch('/api/notifications/preferences');
+			const response = await fetch('/api/notifications/preferences', {
+				headers: portalHeaders,
+			});
 			if (!response.ok) throw new Error('load_failed');
 			const data = (await response.json()) as {
 				preferences: PrefRow[];
@@ -101,7 +106,10 @@ export function NotificationSettingsView({ backHref }: Props) {
 		try {
 			const response = await fetch('/api/notifications/preferences', {
 				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
+				headers: {
+					...portalHeaders,
+					'Content-Type': 'application/json',
+				},
 				body: JSON.stringify({
 					preferences: [{ eventType, ...patch }],
 				}),
@@ -135,7 +143,10 @@ export function NotificationSettingsView({ backHref }: Props) {
 	async function connectTelegram() {
 		setPending(true);
 		try {
-			const response = await fetch('/api/telegram/link', { method: 'POST' });
+			const response = await fetch('/api/telegram/link', {
+				method: 'POST',
+				headers: portalHeaders,
+			});
 			const data = (await response.json().catch(() => null)) as {
 				url?: string;
 				error?: string;
@@ -162,6 +173,7 @@ export function NotificationSettingsView({ backHref }: Props) {
 		try {
 			const response = await fetch('/api/telegram/disconnect', {
 				method: 'POST',
+				headers: portalHeaders,
 			});
 			if (!response.ok) {
 				toast.error(t.telegramDisconnectError);
@@ -181,6 +193,7 @@ export function NotificationSettingsView({ backHref }: Props) {
 		try {
 			const response = await fetch('/api/telegram/confirm-phone', {
 				method: 'POST',
+				headers: portalHeaders,
 			});
 			if (!response.ok) {
 				toast.error(t.telegramConfirmError);
@@ -205,7 +218,7 @@ export function NotificationSettingsView({ backHref }: Props) {
 					<p className='text-sm text-muted'>{t.notifPageSupport}</p>
 				</div>
 
-				<NotificationInboxSection />
+				<NotificationInboxSection portal={portal} />
 
 				<section className='mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6'>
 					<h2 className='text-base font-semibold text-foreground'>

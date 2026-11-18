@@ -1,43 +1,77 @@
 import "server-only";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth as clientAuth } from "@/auth/client";
 import { auth as masseurAuth } from "@/auth/masseur";
 import { prisma } from "@/lib/prisma";
+import {
+  PORTAL_REQUEST_HEADER,
+  isPublicPortal,
+  type PublicPortal,
+} from "@/lib/portals";
 
-export async function requirePortalUser(): Promise<
-  | { ok: true; userId: string; portal: "client" | "masseur" }
-  | { ok: false; response: NextResponse }
-> {
-  const [clientSession, masseurSession] = await Promise.all([
-    clientAuth(),
-    masseurAuth(),
-  ]);
+type GateOk = { ok: true; userId: string; portal: PublicPortal };
+type GateFail = { ok: false; response: NextResponse };
+type GateResult = GateOk | GateFail;
 
-  const clientId = clientSession?.user?.id;
-  const masseurId = masseurSession?.user?.id;
-
-  if (clientId) {
-    const user = await prisma.user.findUnique({
-      where: { id: clientId },
-      select: { portal: true, deletedAt: true },
-    });
-    if (user?.portal === "client" && !user.deletedAt) {
-      return { ok: true, userId: clientId, portal: "client" };
-    }
+async function resolvePortalUser(
+  userId: string | undefined,
+  portal: PublicPortal,
+): Promise<GateOk | null> {
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { portal: true, deletedAt: true },
+  });
+  if (user?.portal === portal && !user.deletedAt) {
+    return { ok: true, userId, portal };
   }
+  return null;
+}
 
-  if (masseurId) {
-    const user = await prisma.user.findUnique({
-      where: { id: masseurId },
-      select: { portal: true, deletedAt: true },
-    });
-    if (user?.portal === "masseur" && !user.deletedAt) {
-      return { ok: true, userId: masseurId, portal: "masseur" };
-    }
-  }
-
+function unauthorized(): GateFail {
   return {
     ok: false,
     response: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
   };
+}
+
+function ambiguousPortal(): GateFail {
+  return {
+    ok: false,
+    response: NextResponse.json(
+      { error: "ambiguous_portal" },
+      { status: 409 },
+    ),
+  };
+}
+
+export async function requirePortalUser(): Promise<GateResult> {
+  const [clientSession, masseurSession, requestHeaders] = await Promise.all([
+    clientAuth(),
+    masseurAuth(),
+    headers(),
+  ]);
+
+  const hintRaw = requestHeaders.get(PORTAL_REQUEST_HEADER);
+  const hint = isPublicPortal(hintRaw) ? hintRaw : null;
+
+  const [client, masseur] = await Promise.all([
+    resolvePortalUser(clientSession?.user?.id, "client"),
+    resolvePortalUser(masseurSession?.user?.id, "masseur"),
+  ]);
+
+  if (hint === "client") {
+    return client ?? unauthorized();
+  }
+  if (hint === "masseur") {
+    return masseur ?? unauthorized();
+  }
+
+  if (client && masseur) {
+    return ambiguousPortal();
+  }
+  if (client) return client;
+  if (masseur) return masseur;
+  return unauthorized();
 }

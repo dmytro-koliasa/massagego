@@ -7,10 +7,15 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useLanguage } from '@/components/language-provider';
-import { portalHomePath, type Portal } from '@/lib/portals';
+import {
+	portalHomePath,
+	portalRequestHeaders,
+	type Portal,
+	type PublicPortal,
+} from '@/lib/portals';
 
 type Props = {
-	portal: Portal;
+	portal: Extract<Portal, PublicPortal>;
 };
 
 export function DeleteAccountSection({ portal }: Props) {
@@ -24,7 +29,10 @@ export function DeleteAccountSection({ portal }: Props) {
 		setPending(true);
 		setBlockedCount(null);
 		try {
-			const response = await fetch('/api/account/delete', { method: 'POST' });
+			const response = await fetch('/api/account/delete', {
+				method: 'POST',
+				headers: portalRequestHeaders(portal),
+			});
 			const data = (await response.json().catch(() => null)) as {
 				error?: string;
 				futureBookingCount?: number;

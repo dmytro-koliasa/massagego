@@ -7,9 +7,11 @@ import {
 	IN_APP_NOTIFICATION_BADGE_CAP,
 	IN_APP_NOTIFICATION_POLL_MS,
 } from '@/lib/booking-constants';
+import { portalRequestHeaders, type PublicPortal } from '@/lib/portals';
 
 type Props = {
 	href: string;
+	portal: PublicPortal;
 };
 
 function formatBadge(count: number): string {
@@ -20,7 +22,7 @@ function formatBadge(count: number): string {
 	return String(count);
 }
 
-export function NotificationNavLink({ href }: Props) {
+export function NotificationNavLink({ href, portal }: Props) {
 	const { t } = useLanguage();
 	const [count, setCount] = useState(0);
 
@@ -29,7 +31,10 @@ export function NotificationNavLink({ href }: Props) {
 
 		async function load() {
 			try {
-				const response = await fetch('/api/notifications/inbox/unread-count');
+				const response = await fetch(
+					'/api/notifications/inbox/unread-count',
+					{ headers: portalRequestHeaders(portal) },
+				);
 				if (!response.ok) return;
 				const data = (await response.json()) as { count?: number };
 				if (!cancelled && typeof data.count === 'number') {
@@ -49,7 +54,7 @@ export function NotificationNavLink({ href }: Props) {
 			cancelled = true;
 			window.clearInterval(timer);
 		};
-	}, []);
+	}, [portal]);
 
 	const badge = formatBadge(count);
 

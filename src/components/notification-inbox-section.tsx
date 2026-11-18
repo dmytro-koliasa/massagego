@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
 import type { NotificationEventType } from '@/lib/notifications/types';
+import { portalRequestHeaders, type PublicPortal } from '@/lib/portals';
 
 type InboxItem = {
 	id: string;
@@ -17,6 +18,10 @@ type InboxItem = {
 	bookingId: string | null;
 };
 
+type Props = {
+	portal: PublicPortal;
+};
+
 function formatWhen(iso: string, locale: string): string {
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return iso;
@@ -26,7 +31,7 @@ function formatWhen(iso: string, locale: string): string {
 	}).format(date);
 }
 
-export function NotificationInboxSection() {
+export function NotificationInboxSection({ portal }: Props) {
 	const { t, locale } = useLanguage();
 	const router = useRouter();
 	const [items, setItems] = useState<InboxItem[]>([]);
@@ -34,12 +39,13 @@ export function NotificationInboxSection() {
 	const [loading, setLoading] = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [pending, setPending] = useState(false);
+	const portalHeaders = portalRequestHeaders(portal);
 
 	async function load(cursor?: string | null) {
 		const url = cursor
 			? `/api/notifications/inbox?cursor=${encodeURIComponent(cursor)}`
 			: '/api/notifications/inbox';
-		const response = await fetch(url);
+		const response = await fetch(url, { headers: portalHeaders });
 		if (!response.ok) throw new Error('load_failed');
 		return (await response.json()) as {
 			items: InboxItem[];
@@ -87,6 +93,7 @@ export function NotificationInboxSection() {
 		try {
 			const response = await fetch('/api/notifications/inbox/mark-all-read', {
 				method: 'POST',
+				headers: portalHeaders,
 			});
 			if (!response.ok) throw new Error('mark_failed');
 			setItems(prev =>
@@ -109,6 +116,7 @@ export function NotificationInboxSection() {
 			try {
 				await fetch(`/api/notifications/inbox/${item.id}/read`, {
 					method: 'POST',
+					headers: portalHeaders,
 				});
 				setItems(prev =>
 					prev.map(row =>
