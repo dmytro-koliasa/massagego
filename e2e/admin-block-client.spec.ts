@@ -8,7 +8,7 @@ test("admin can block a client and the client cannot sign in", async ({
 }) => {
   test.setTimeout(90_000);
   const admin = await ensureAdminForE2E();
-  const client = await ensureBlockTargetClient();
+  const client = await ensureBlockTargetClient("block");
 
   await signInAsAdmin(page, admin.email, admin.password);
 
