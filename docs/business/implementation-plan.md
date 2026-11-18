@@ -331,7 +331,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 
 ### Follow-up — Recent cancellations → calendar deep-link (AR-24 / BR-004)
 
-**Status:** groomed 2026-11-18; **implemented locally** (PR pending).
+**Status:** groomed 2026-11-18; **merged** ([#64](https://github.com/dmytro-koliasa/massagego/pull/64)).
 
 **Groomed decisions** (see [BR-004](decisions.md#br-004)):
 - List rows link to `/masseur/dashboard?slot=<ISO>` (cancellation `slotStart`), not hash (hash kept for `#bulk-cancel`).
@@ -347,6 +347,23 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Missing slot shows toast and the week still; no bogus modal.
 - Pulse is temporary; `?slot=` is removed after handling; EN/UK toast copy.
 - `#bulk-cancel` behaviour unchanged.
+
+### Follow-up — Playwright E2E for #62–#64 (local)
+
+**Status:** groomed 2026-11-18; **PR 1 (inbox) implemented locally** (pending PR); then bulk-cancel; then `?slot=` deep-link.
+
+**Groomed decisions (series):**
+- Three sequential PRs (same cadence as [#34](https://github.com/dmytro-koliasa/massagego/pull/34)–[#60](https://github.com/dmytro-koliasa/massagego/pull/60)), not one mega-spec.
+- **PR 1 — in-app inbox:** client books via UI → masseur sees nav unread badge + inbox row → click → `/masseur/dashboard` + item no longer unread + badge cleared/hidden.
+- New `ensureBookingFixture` suite (dedicated phones/emails/slug); do not reuse `book`.
+- Later PRs (not this one): bulk-cancel smoke; recent-cancellations `?slot=` deep-link.
+
+**Scope (PR 1):** one Playwright happy-path for event-1 inbox enqueue + badge + click-to-read/deep-link; update [testing.md](../testing.md).
+
+**Acceptance criteria (PR 1):**
+- Spec passes locally with `npm run test:e2e` against the new suite.
+- Masseur badge and inbox reflect the new booking; click navigates to dashboard and clears unread for that item / badge.
+- No dependency on email delivery (`EMAIL_PROVIDER=log` as today).
 
 ## 5. Risks and notes
 
