@@ -89,6 +89,9 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - `/admin/login` heading + form fields (`e2e/admin-login.spec.ts`)
   - `/client/login` and `/masseur/login` headings + form fields
   - `/privacy` and `/terms` headings (`e2e/legal.spec.ts`)
+- Auth success:
+  - admin bootstrap login → `/admin` users list (`e2e/admin-login.spec.ts`; needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`; upserts admin on `massage_test` via `e2e/helpers/ensure-admin.ts`)
+- `next.config.ts` sets `allowedDevOrigins` for `127.0.0.1` / `localhost` so Playwright can hydrate against the `webServer` host
 
 `BASE_URL` overrides the default `http://127.0.0.1:3001`.  
 `E2E_PORT` overrides the port used by `webServer`.
