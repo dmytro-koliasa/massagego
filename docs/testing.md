@@ -94,6 +94,7 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - admin bootstrap login → `/admin` users list (`e2e/admin-login.spec.ts`; needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`; upserts admin on `massage_test` via `e2e/helpers/ensure-admin.ts`)
   - admin block client → status Blocked → client sign-in shows blocked toast (`e2e/admin-block-client.spec.ts`; target via `e2e/helpers/ensure-block-target.ts`; admin login helper `e2e/helpers/admin-auth.ts`)
   - admin unblock client (suite `unblock` seeds blocked) → Active → client sign-in reaches `/client` (`e2e/admin-unblock-client.spec.ts`)
+  - admin resolve open complaint → toast + Resolved filter (`e2e/admin-resolve-complaint.spec.ts`; seed `e2e/helpers/ensure-open-complaint.ts`)
 - Booking happy path:
   - seed client + listed masseur + one free slot (`e2e/helpers/ensure-booking-fixture.ts`) → client login → `/client/masseur/{slug}` → select slot → Request booking → success toast (`e2e/booking-happy-path.spec.ts`)
   - same fixture → book → click own slot → cancel reason → success toast (`e2e/booking-cancel.spec.ts`)
