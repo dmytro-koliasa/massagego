@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import PhoneInput, { type Country } from 'react-phone-number-input/max';
@@ -24,6 +24,7 @@ import {
 import { DeleteAccountSection } from '@/components/delete-account-section';
 import { GalleryCropModal } from '@/components/gallery-crop-modal';
 import { MasseurGallery } from '@/components/masseur-gallery';
+import { MasseurBulkCancel } from '@/components/masseur-bulk-cancel';
 import { MasseurRecentCancellations } from '@/components/masseur-recent-cancellations';
 import { NotificationNavLink } from '@/components/notification-nav-link';
 import { CityAutocomplete } from '@/components/city-autocomplete';
@@ -108,7 +109,15 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	const { t, locale } = useLanguage();
 	const { update: updateSession } = useSession();
 	const availabilityRef = useRef<AvailabilityCalendarHandle>(null);
+	const [bulkCancelAutoOpen, setBulkCancelAutoOpen] = useState(false);
 	const initialSettings = resolveBookingSettings(profile);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		if (window.location.hash === '#bulk-cancel') {
+			setBulkCancelAutoOpen(true);
+		}
+	}, []);
 	const initialCity = cityFromProfile(profile);
 	const initialCityLabel = cityLabelFromProfile(profile, locale);
 	const [nameEn, setNameEn] = useState(profile.nameEn ?? profile.name ?? '');
@@ -968,6 +977,13 @@ export function DashboardView({ profile }: { profile: Profile }) {
 				</section>
 
 				<MasseurGallery editable />
+
+				<MasseurBulkCancel
+					autoOpen={bulkCancelAutoOpen}
+					onCancelled={() => {
+						void availabilityRef.current?.reload();
+					}}
+				/>
 
 				<MasseurAvailabilityCalendar
 					ref={availabilityRef}

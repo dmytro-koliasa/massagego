@@ -65,10 +65,10 @@ export function DeleteAccountSection({ portal }: Props) {
 				<p className='mt-3 text-sm text-foreground'>
 					{t.deleteAccountMasseurBlocked.replace('{n}', String(blockedCount))}{' '}
 					<Link
-						href='/masseur/dashboard'
+						href='/masseur/dashboard#bulk-cancel'
 						className='text-accent underline-offset-2 hover:underline'
 					>
-						{t.deleteAccountOpenCalendar}
+						{t.deleteAccountBulkCancelCta}
 					</Link>
 				</p>
 			) : null}

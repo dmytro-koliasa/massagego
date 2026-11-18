@@ -61,7 +61,8 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-16 | BR-008 | B: no overlapping active bookings per client; max 30 active future bookings per client; no separate per-request limit; client bookings take name (main registration name) and phone from the account, not from the request | [#9](https://github.com/dmytro-koliasa/massagego/pull/9) |
 | 2026-11-16 | BR-009 | Notifications: email main, optional Telegram; events 1-5 (new booking, client cancel, masseur cancel, auto-cancel on client deletion, confirmation); per-event per-channel settings with at least one channel on for critical events; verified email; language from account; informative content without phones; retry for a day | email [#17](https://github.com/dmytro-koliasa/massagego/pull/17); Telegram [#18](https://github.com/dmytro-koliasa/massagego/pull/18); event 4 [#19](https://github.com/dmytro-koliasa/massagego/pull/19) |
 | 2026-11-17 | BR-009 | Client session reminder (`booking_reminder`); masseur Off/2/4/12/24 h; cron + `reminderSentAt` | [#27](https://github.com/dmytro-koliasa/massagego/pull/27) |
-| 2026-11-18 | BR-009 | In-app notification list (client + masseur): events 1–6, separate inbox table, read/unread + mark-all, deep links, nav badge + poll, ~30-day retention; no in-app prefs, no web push, no admin feed | Implemented locally (PR pending) |
+| 2026-11-18 | BR-009 | In-app notification list (client + masseur): events 1–6, separate inbox table, read/unread + mark-all, deep links, nav badge + poll, ~30-day retention; no in-app prefs, no web push, no admin feed | [#62](https://github.com/dmytro-koliasa/massagego/pull/62) |
+| 2026-11-18 | BR-011 / X-4 | Masseur bulk-cancel all future confirmed bookings (incl. walk-ins); one availability choice; event 3 + inbox per client booking; atomic DB then notify; dashboard + delete-banner CTA | Implemented locally (PR pending) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
@@ -96,7 +97,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 | [BR-006](#br-006) | Timezone model | High | B: per-masseur IANA timezone | **Implemented** ([#5](https://github.com/dmytro-koliasa/massagego/pull/5), [#6](https://github.com/dmytro-koliasa/massagego/pull/6), [#12](https://github.com/dmytro-koliasa/massagego/pull/12)) |
 | [BR-007](#br-007) | Working hours and days off | Medium | B: per-masseur hours, keep per-hour exceptions (owner chose a global window, see decision) | **Implemented** ([#7](https://github.com/dmytro-koliasa/massagego/pull/7)) |
 | [BR-008](#br-008) | Client double-booking across masseurs and limits | Medium | B: block overlapping own bookings (plus a cap on active future bookings) | **Implemented** ([#9](https://github.com/dmytro-koliasa/massagego/pull/9)) |
-| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** email/Telegram/reminder ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19), [#27](https://github.com/dmytro-koliasa/massagego/pull/27)); **in-app list implemented locally** (PR pending) |
+| [BR-009](#br-009) | Notifications | Medium | B: email/SMS on booking and cancellation (owner chose email main + optional Telegram, a defined first set of events) | **Implemented** email/Telegram/reminder/in-app ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#18](https://github.com/dmytro-koliasa/massagego/pull/18), [#19](https://github.com/dmytro-koliasa/massagego/pull/19), [#27](https://github.com/dmytro-koliasa/massagego/pull/27), [#62](https://github.com/dmytro-koliasa/massagego/pull/62)) |
 | [BR-010](#br-010) | Masseur discoverability | Medium | B: list only profiles that are complete and have availability (owner chose a variant, see decision) | **Implemented** ([#16](https://github.com/dmytro-koliasa/massagego/pull/16)) |
 | [BR-011](#br-011) | Data retention and account deletion | Low | B: soft-delete + anonymise (owner: self-service anonymising deletion; cancelled bookings hard-deleted after 7 days) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)); completed retention via [BR-018](#br-018) |
 | [BR-018](#br-018) | Retention of completed (held) bookings | Medium | C: hard delete after a fixed period unless obligations exist (owner chose 3 months) | **Implemented** ([#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
@@ -322,7 +323,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 **Recommendation: B.**
 **Impact:** new provider integration, API hooks, possibly `Booking`/`User` contact fields; clients register by phone only, so SMS or a collected email is needed.
 
-**Owner note (2026-11-16, historical):** notifications were to cover **all relevant events**, not only cancellations (starting from the masseur notice when a client cancels, [BR-004](#br-004)). First-version channels, events and prefs were groomed below and **Implemented** (see Status). **In-app notification list** was groomed and implemented 2026-11-18 (see decision 12; PR pending). Remaining ops open items: production Resend domain/sender (P-3); Telegram webhook on a public host (P-4).
+**Owner note (2026-11-16, historical):** notifications were to cover **all relevant events**, not only cancellations (starting from the masseur notice when a client cancels, [BR-004](#br-004)). First-version channels, events and prefs were groomed below and **Implemented** (see Status). **In-app notification list** shipped in [#62](https://github.com/dmytro-koliasa/massagego/pull/62) (see decision 12). Remaining ops open items: production Resend domain/sender (P-3); Telegram webhook on a public host (P-4).
 
 **Decisions (groomed; first version Implemented):**
 
@@ -346,7 +347,7 @@ Priority reflects impact on booking correctness, customer experience and availab
 
 **Reminders (groomed 2026-11-17):** one client reminder event `booking_reminder` (not critical). Masseur sets `reminderHours` to Off or `2|4|12|24` (default 24). Cron via `/api/cron/notifications` claims due bookings with `reminderSentAt`; skip walk-ins and bookings created inside the reminder window. Changing the masseur setting affects not-yet-sent bookings.
 
-12. **In-app notification list (groomed 2026-11-18; Implemented locally — PR pending):**
+12. **In-app notification list (groomed 2026-11-18; Implemented [#62](https://github.com/dmytro-koliasa/massagego/pull/62)):**
     1. **Ship a v1 in-app feed** for **client and masseur** (not admin).
     2. **Events:** the same set already delivered externally — events **1–6** including `booking_reminder` (no new event types in v1).
     3. **Storage:** a dedicated inbox table (e.g. `InAppNotification`: recipient user, event type, entity ids for deep links, `readAt`, `createdAt`). Do **not** reuse `NotificationOutbox` as the feed (outbox is a delivery queue) and do not derive the feed only from live Booking/Session rows.
@@ -358,7 +359,7 @@ Priority reflects impact on booking correctness, customer experience and availab
     9. **Content:** same informative copy rules as email/Telegram — **no phone numbers** in the feed text.
     10. **Out of v1:** admin inbox, web/browser push, SSE/WebSockets, extra event types, in-app mute prefs.
 
-**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); legal review of privacy/terms (P-2 / XR-1). In-app list is implemented locally (PR pending).
+**Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); legal review of privacy/terms (P-2 / XR-1).
 
 ### BR-010
 
@@ -395,6 +396,15 @@ Priority reflects impact on booking correctness, customer experience and availab
 *Future bookings on deletion (question 2, option C).*
 - **Client:** may delete the account at any time. Their future bookings are **cancelled automatically** (the cancellation cutoff of [BR-004](#br-004) does not apply), with the reason "client account deleted" (no free text) and `cancelledBy` = client; the hours become free; the masseur sees it in the calendar and is notified ([BR-009](#br-009) event 4).
 - **Masseur:** cannot delete the account while there are **active future bookings**. They must first cancel them under the normal masseur cancellation rules.
+
+**Masseur bulk-cancel (X-4, groomed 2026-11-18; Implemented locally — PR pending):**
+1. **Purpose:** a general calendar tool **and** a CTA from the delete-account blocked banner (so masseurs can clear future bookings before deletion without N manual resolves).
+2. **Scope:** one action cancels **all** of the masseur's future `confirmed` bookings whose slot has **not started** (including **walk-ins**). No multi-select in v1; single-slot cancel stays on the existing resolve path.
+3. **Availability:** one choice for the whole batch — `available` or `unavailable` — same semantics as single resolve.
+4. **Notifications:** each booking with a client account gets event **3** (masseur cancelled) via the normal outbox **and** in-app inbox; walk-ins send nothing. No mute toggle and no single “digest” message.
+5. **Atomicity:** cancel + availability updates run in **one DB transaction**; client notifications are **best-effort after** commit (notify failure does not roll back cancels). Endpoint is **rate-limited**.
+6. **UI:** primary control near the **availability calendar** on the masseur dashboard; blocked-delete banner links into the same flow. Confirm dialog shows the **count** and the availability choice. EN/UK.
+7. **Out of v1:** multi-select, per-slot availability in the batch, optional suppress-notifications.
 
 *Cancelled bookings (question 3, owner's modified option B).*
 1. A cancelled booking **without payment or open obligations** is **physically deleted** from the database (hard delete, no anonymisation and no soft delete) **7 days after the cancellation** (counted from `cancelledAt`, [BR-005](#br-005)). It applies to cancellations by the client, by the masseur and to automatic cancellations on account deletion.
@@ -660,8 +670,8 @@ A review of all **Approved** decisions against each other, made on 2026-11-16. T
 | X-1 | **Consecutive Thai slots at the cutoff boundary.** The toast recommends cancelling the neighbouring slot, but the neighbour may already be inside the cancellation cutoff, so the client can cancel one hour and not the other. | [BR-014](#br-014), [BR-004](#br-004) | Decide what the client sees when only one of the consecutive slots can still be cancelled (a message; or treat consecutive slots of one booking as cancellable by the earlier slot's cutoff) | **Approved** (2026-11-16): option A, see below |
 | X-2 | **Timezone could be derived from the city.** The masseur's city is chosen from the map service, which knows the location; the timezone could be proposed automatically instead of asked. | [BR-006](#br-006), [BR-017](#br-017) | Propose via `geo-tz` from city coordinates; masseur confirms/edits | Decided in PR 8 |
 | X-3 | **Registration becomes long for clients:** name, phone, email (verified), city and password. | [BR-008](#br-008), [BR-009](#br-009), [BR-017](#br-017) | Single-screen form (groomed PR 8) | Decided in PR 8 |
-| X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Accept for now; consider a bulk cancellation later | Note |
+| X-4 | **Masseur cancels many bookings by hand** before deleting an account; there is no bulk action and each cancellation notifies a client. | [BR-011](#br-011), [BR-009](#br-009) | Bulk-cancel all future bookings (see [BR-011](#br-011)) | **Implemented locally** (PR pending) |
 | X-5 | **Registration and login of the client:** the client signs in with the phone; with a verified email ([BR-009](#br-009)) password reset becomes possible, but the decision is not taken. | [BR-009](#br-009) | Decided in [BR-019](#br-019) | Decided in BR-019 |
 
-No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts. X-1 was decided on 2026-11-16 (option A, in [BR-014](#br-014)); X-2 to X-4 are notes for implementation; X-5 is decided in [BR-019](#br-019) when groomed.
+No contradiction between two approved decisions was found: the items above are gaps or notes, not conflicts. X-1 was decided on 2026-11-16 (option A, in [BR-014](#br-014)); X-2/X-3/X-5 are decided; **X-4** was groomed 2026-11-18 (implementation pending).
 
