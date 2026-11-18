@@ -65,6 +65,7 @@ Features that already touch personal data and must be reviewed against XR-1 when
 | 2026-11-18 | BR-011 / X-4 | Masseur bulk-cancel all future confirmed bookings (incl. walk-ins); one availability choice; event 3 + inbox per client booking; atomic DB then notify; dashboard + delete-banner CTA | [#63](https://github.com/dmytro-koliasa/massagego/pull/63) |
 | 2026-11-18 | BR-004 | Recent cancellations list → calendar deep-link: row opens `/masseur/dashboard?slot=<ISO>`; week view + slot details when present; missing slot → week + toast; brief pulse; strip `slot` after consume | [#64](https://github.com/dmytro-koliasa/massagego/pull/64) |
 | 2026-11-18 | E2E | Playwright series for #62–#64: inbox → bulk-cancel → `?slot=` | [#65](https://github.com/dmytro-koliasa/massagego/pull/65), [#66](https://github.com/dmytro-koliasa/massagego/pull/66), [#67](https://github.com/dmytro-koliasa/massagego/pull/67) |
+| 2026-11-18 | Auth / BR-009 | Shared portal APIs (`requirePortalUser`): `X-Portal` hint when client + masseur sessions coexist; dual session without hint → `409 ambiguous_portal` | Implemented locally (PR pending) |
 | 2026-11-16 | BR-023 | Optional phone confirmation through the Telegram bot ("phone confirmed" mark); not required to register or book | [#18](https://github.com/dmytro-koliasa/massagego/pull/18) |
 | 2026-11-16 | BR-022 | Check the real content of uploaded images, compute dimensions on the server, re-save without metadata (GPS) | [#14](https://github.com/dmytro-koliasa/massagego/pull/14) |
 | 2026-11-16 | BR-021 | Minimal administration panel: user list, block and unblock; complaints added later | [#20](https://github.com/dmytro-koliasa/massagego/pull/20); complaints [#26](https://github.com/dmytro-koliasa/massagego/pull/26) |
@@ -362,6 +363,8 @@ Priority reflects impact on booking correctness, customer experience and availab
     8. **Prefs:** no separate in-app channel toggles — inbox rows are always written; email/Telegram prefs stay as today.
     9. **Content:** same informative copy rules as email/Telegram — **no phone numbers** in the feed text.
     10. **Out of v1:** admin inbox, web/browser push, SSE/WebSockets, extra event types, in-app mute prefs.
+
+**Dual portal sessions (groomed 2026-11-18; Implemented locally — PR pending):** shared routes that use `requirePortalUser` (inbox, notification prefs, Telegram link/status/disconnect/confirm-phone, account delete) accept `X-Portal: client|masseur`. One active session still resolves without the header. When **both** client and masseur cookies are valid and the header is missing or invalid, the API returns **`409 ambiguous_portal`**. A header for a portal that has no valid session returns **`401 unauthorized`**. UI fetches always send the header for the page’s portal.
 
 **Open sub-questions remaining:** production Resend domain/sender setup (P-3); Telegram bot creation and webhook registration on the host (P-4); legal review of privacy/terms (P-2 / XR-1).
 

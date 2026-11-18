@@ -7,6 +7,16 @@ export const PUBLIC_PORTALS = ["masseur", "client"] as const;
 export const AUTH_PORTAL_COOKIE = "serein-auth-portal";
 export const AUTH_INTENT_COOKIE = "serein-auth-intent";
 
+/**
+ * Request header so shared APIs can pick the right portal session when both
+ * client and masseur cookies are present in the same browser.
+ */
+export const PORTAL_REQUEST_HEADER = "x-portal";
+
+export function portalRequestHeaders(portal: PublicPortal): Record<string, string> {
+  return { [PORTAL_REQUEST_HEADER]: portal };
+}
+
 export type AuthIntent = "login" | "register";
 
 export function isPortal(value: unknown): value is Portal {

@@ -309,6 +309,22 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Deep link opens the related portal page; walk-ins still create no client-facing notice.
 - Rows older than ~30 days are removed by cleanup; texts EN/UK without phone numbers.
 
+### Follow-up — Dual portal session hint (`requirePortalUser`)
+
+**Status:** groomed 2026-11-18; **implemented locally** (PR pending).
+
+**Groomed decisions:**
+- Shared APIs keep one path; UI always sends `X-Portal: client|masseur`.
+- One session resolves without the header; both sessions without a valid hint → `409 ambiguous_portal`; hint without matching session → `401`.
+- Covers inbox, prefs, Telegram link/disconnect/confirm-phone, account delete.
+
+**Scope:** disambiguate dual client+masseur cookies for shared portal APIs without splitting routes.
+
+**Acceptance criteria:**
+- With both cookies and `X-Portal: masseur`, masseur inbox/prefs/delete act as the masseur user (not the client).
+- Without a hint and with both cookies, APIs return `409 ambiguous_portal`.
+- Unit tests cover single session, hinted dual session, ambiguous dual session, and missing hinted session.
+
 ### Follow-up — Masseur bulk-cancel future bookings (X-4 / BR-011)
 
 **Status:** groomed 2026-11-18; **merged** ([#63](https://github.com/dmytro-koliasa/massagego/pull/63)).
