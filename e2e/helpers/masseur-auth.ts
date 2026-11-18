@@ -31,5 +31,10 @@ export async function signInAsMasseur(
   await page.locator('input[type="password"]').first().fill(password);
   await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
 
-  await expect(page).toHaveURL(/\/masseur\/dashboard\/?$/, { timeout: 20_000 });
+  // Auth can succeed while the login page still shows the redirect preloader.
+  await expect(
+    page.getByRole("button", { name: /Sign out|Вийти/ }),
+  ).toBeVisible({ timeout: 20_000 });
+  await page.goto("/masseur/dashboard", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/masseur\/dashboard\/?$/, { timeout: 10_000 });
 }

@@ -24,7 +24,8 @@ export type BookingFixtureSuite =
   | "sessionsCancel"
   | "masseurReport"
   | "slotUnavailable"
-  | "inbox";
+  | "inbox"
+  | "bulkCancel";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -144,6 +145,13 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000032",
     slug: "e2e-inbox-masseur",
   },
+  bulkCancel: {
+    clientEmail: "e2e-client-bulk-cancel@test.local",
+    clientPhone: "+380501000033",
+    masseurEmail: "e2e-masseur-bulk-cancel@test.local",
+    masseurPhone: "+380501000034",
+    slug: "e2e-bulk-cancel-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -159,6 +167,7 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "masseurReport") return "E2E Report Masseur";
   if (suite === "slotUnavailable") return "E2E Slot Unavailable Masseur";
   if (suite === "inbox") return "E2E Inbox Masseur";
+  if (suite === "bulkCancel") return "E2E Bulk Cancel Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -169,7 +178,8 @@ function seedsConfirmedBooking(suite: BookingFixtureSuite) {
     suite === "masseurUnavailable" ||
     suite === "complaint" ||
     suite === "sessionsCancel" ||
-    suite === "masseurReport"
+    suite === "masseurReport" ||
+    suite === "bulkCancel"
   );
 }
 
@@ -344,6 +354,7 @@ export function pickThaiCutoffPairStarts(
  * Suite `masseurWalkIn` / `slotUnavailable` seed a free published slot (no booking row).
  * Suites `complaint`, `sessionsCancel`, `masseurReport` seed a confirmed account booking.
  * Suite `inbox` seeds a free published slot for the in-app notification happy path.
+ * Suite `bulkCancel` seeds a confirmed booking for masseur bulk-cancel (X-4).
  */
 export async function ensureBookingFixture(
   suite: BookingFixtureSuite = "book",
