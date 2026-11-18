@@ -92,6 +92,7 @@ Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow 
   - `/privacy` and `/terms` headings (`e2e/legal.spec.ts`)
 - Auth success:
   - admin bootstrap login → `/admin` users list (`e2e/admin-login.spec.ts`; needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`; upserts admin on `massage_test` via `e2e/helpers/ensure-admin.ts`)
+  - client credentials login → `/client` (`e2e/client-login-success.spec.ts`)
   - admin block client → status Blocked → client sign-in shows blocked toast (`e2e/admin-block-client.spec.ts`; target via `e2e/helpers/ensure-block-target.ts`; admin login helper `e2e/helpers/admin-auth.ts`)
   - admin unblock client (suite `unblock` seeds blocked) → Active → client sign-in reaches `/client` (`e2e/admin-unblock-client.spec.ts`)
   - admin resolve open complaint → toast + Resolved filter (`e2e/admin-resolve-complaint.spec.ts`; seed `e2e/helpers/ensure-open-complaint.ts`)
