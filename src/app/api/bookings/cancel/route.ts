@@ -158,8 +158,14 @@ export async function POST(request: Request) {
       );
     }
 
-    await prisma.booking.update({
-      where: { id: booking.id },
+    // Atomic claim (#82): only transition confirmed → cancelled so a concurrent
+    // masseur cancel cannot be overwritten (and we notify only on success).
+    const claimed = await prisma.booking.updateMany({
+      where: {
+        id: booking.id,
+        clientUserId: client.userId,
+        status: "confirmed",
+      },
       data: {
         status: "cancelled",
         cancelledBy: "client",
@@ -168,6 +174,18 @@ export async function POST(request: Request) {
         cancelReasonText: reasonText,
       },
     });
+
+    if (claimed.count === 0) {
+      const current = await prisma.booking.findFirst({
+        where: { id: booking.id, clientUserId: client.userId },
+        select: { id: true, status: true },
+      });
+      if (!current) {
+        return NextResponse.json({ error: "not_found" }, { status: 404 });
+      }
+      // Already cancelled by a concurrent winner — idempotent, no notify/overwrite.
+      return NextResponse.json({ ok: true, bookingId: current.id });
+    }
 
     let neighborHint:
       | { type: "thai_cutoff"; masseurPhone: string | null }
