@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   formatRateLimitMessage,
+  hashRateLimitSubject,
   isWindowExpired,
   minutesFromRetryAfter,
+  rateLimitKey,
   retryAfterSec,
 } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -75,5 +77,18 @@ describe("hashPasswordResetToken", () => {
     expect(a).toBe(b);
     expect(a).toHaveLength(64);
     expect(a).not.toBe(c);
+  });
+});
+
+describe("rateLimitKey hashing (#81)", () => {
+  it("never embeds the raw subject in the key", () => {
+    const phone = "+380501112233";
+    const key = rateLimitKey("password-reset:id", `client:${phone}`);
+    expect(key.startsWith("password-reset:id:")).toBe(true);
+    expect(key.includes(phone)).toBe(false);
+    expect(key.endsWith(hashRateLimitSubject(`client:${phone}`))).toBe(true);
+    expect(rateLimitKey("signin:ip", "203.0.113.10")).toBe(
+      rateLimitKey("signin:ip", "203.0.113.10"),
+    );
   });
 });

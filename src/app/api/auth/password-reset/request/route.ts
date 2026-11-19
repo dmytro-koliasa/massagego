@@ -4,7 +4,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import {
   parseWithSchema,
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       portal === "client" ? parsed.data.phone : parsed.data.email;
 
     const ipLimit = await checkRateLimit(
-      `password-reset:ip:${ip}`,
+      rateLimitKey("password-reset:ip", ip),
       RATE_LIMITS.passwordReset.limit,
       RATE_LIMITS.passwordReset.windowMs,
     );
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     const idLimit = await checkRateLimit(
-      `password-reset:id:${portal}:${identifier}`,
+      rateLimitKey("password-reset:id", `${portal}:${identifier}`),
       RATE_LIMITS.passwordReset.limit,
       RATE_LIMITS.passwordReset.windowMs,
     );

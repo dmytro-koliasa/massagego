@@ -8,7 +8,7 @@ import {
 } from "@/lib/http/rate-limit-response";
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { parseWithSchema } from "@/lib/validation";
 import { complaintCreateSchema } from "@/lib/validation/complaints";
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(
-      `complaint-create:ip:${getClientIp(request)}`,
+      rateLimitKey("complaint-create:ip", getClientIp(request)),
       RATE_LIMITS.complaintCreate.limit,
       RATE_LIMITS.complaintCreate.windowMs,
     );
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       return rateLimitJsonResponse(ipLimit.retryAfterSec, locale);
     }
     const accountLimit = await checkRateLimit(
-      `complaint-create:account:${reporter.userId}`,
+      rateLimitKey("complaint-create:account", reporter.userId),
       RATE_LIMITS.complaintCreate.limit,
       RATE_LIMITS.complaintCreate.windowMs,
     );

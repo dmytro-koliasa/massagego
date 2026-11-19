@@ -9,7 +9,7 @@ import {
   countMasseurFutureBookings,
 } from "@/lib/masseur-bulk-cancel";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import {
   masseurBulkCancelSchema,
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(
-      `masseur-bulk-cancel:ip:${getClientIp(request)}`,
+      rateLimitKey("masseur-bulk-cancel:ip", getClientIp(request)),
       RATE_LIMITS.masseurBulkCancel.limit,
       RATE_LIMITS.masseurBulkCancel.windowMs,
     );
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const accountLimit = await checkRateLimit(
-      `masseur-bulk-cancel:account:${gate.userId}`,
+      rateLimitKey("masseur-bulk-cancel:account", gate.userId),
       RATE_LIMITS.masseurBulkCancel.limit,
       RATE_LIMITS.masseurBulkCancel.windowMs,
     );

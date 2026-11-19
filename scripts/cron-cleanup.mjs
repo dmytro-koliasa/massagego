@@ -1,6 +1,8 @@
 /**
- * Local stand-in for Vercel Cron: hard-deletes expired bookings via
- * GET /api/cron/cleanup (cancelled ~7 days, completed ~3 months).
+ * Local stand-in for Vercel Cron: hard-deletes expired rows via
+ * GET /api/cron/cleanup (cancelled bookings ~7d, completed ~3mo,
+ * in-app inbox ~30d, outbox terminal ~7d / abandoned live ~48h,
+ * idle rate-limit buckets ~25h — #81).
  *
  * Usage (with `next dev` running):
  *   npm run cron:cleanup

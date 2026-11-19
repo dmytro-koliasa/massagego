@@ -81,3 +81,18 @@ export const IN_APP_NOTIFICATION_RETENTION_DAYS = 30;
 export const IN_APP_NOTIFICATION_PAGE_SIZE = 20;
 export const IN_APP_NOTIFICATION_BADGE_CAP = 9;
 export const IN_APP_NOTIFICATION_POLL_MS = 45_000;
+
+/**
+ * Notification outbox retention (#81 / XR-1).
+ * Terminal `sent`/`dead` rows keep a short ops log; live rows are only
+ * safety-net deleted after the 24h retry window plus grace.
+ */
+export const OUTBOX_TERMINAL_RETENTION_DAYS = 7;
+/** Extra idle time after `NOTIFICATION_RETRY_MAX_AGE_MS` before purging stuck live rows. */
+export const OUTBOX_ABANDONED_GRACE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Rate-limit bucket retention (#81): longest window (1h) + 1 day grace so
+ * idle keys (which embed hashed subjects) do not linger indefinitely.
+ */
+export const RATE_LIMIT_BUCKET_GRACE_MS = 24 * 60 * 60 * 1000;

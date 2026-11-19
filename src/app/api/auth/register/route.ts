@@ -11,7 +11,7 @@ import {
   findPortalUserByPhone,
 } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import {
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     );
 
     const ipLimit = await checkRateLimit(
-      `register:ip:${getClientIp(request)}`,
+      rateLimitKey("register:ip", getClientIp(request)),
       RATE_LIMITS.register.limit,
       RATE_LIMITS.register.windowMs,
     );
