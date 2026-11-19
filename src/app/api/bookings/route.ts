@@ -224,6 +224,7 @@ export async function POST(request: Request) {
         cityPlaceId: true,
         address: true,
         phone: true,
+        emailVerified: true,
         massageTypes: true,
         timezone: true,
         bookingLeadHours: true,

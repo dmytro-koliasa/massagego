@@ -228,6 +228,10 @@ export const dictionaries = {
 		authPhoneCountryExcluded: 'This country code is not supported.',
 		authPasswordMismatch: 'Passwords do not match.',
 		authVerifyEmailSent: 'We sent a confirmation link to your email.',
+		masseurEmailVerifyBannerTitle: 'Confirm your email',
+		masseurEmailVerifyBannerSupport:
+			'Your profile stays private in the client catalog until you confirm this email. You can still sign in and edit your dashboard.',
+		masseurEmailVerifyResend: 'Resend confirmation email',
 		citySearchEmpty: 'No cities found.',
 		authAccountCreatedSignIn:
 			'Account created. Please sign in with your phone and password.',
@@ -775,6 +779,10 @@ export const dictionaries = {
 		authPhoneCountryExcluded: 'Цей код країни не підтримується.',
 		authPasswordMismatch: 'Паролі не збігаються.',
 		authVerifyEmailSent: 'Ми надіслали посилання для підтвердження на вашу електронну пошту.',
+		masseurEmailVerifyBannerTitle: 'Підтвердіть email',
+		masseurEmailVerifyBannerSupport:
+			'Профіль не з’явиться в каталозі клієнтів, доки ви не підтвердите цю пошту. Увійти й редагувати кабінет можна вже зараз.',
+		masseurEmailVerifyResend: 'Надіслати лист ще раз',
 		citySearchEmpty: 'Міст не знайдено.',
 		authAccountCreatedSignIn:
 			'Акаунт створено. Увійдіть за телефоном і паролем.',

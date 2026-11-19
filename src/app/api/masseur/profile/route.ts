@@ -24,6 +24,7 @@ const profileSelect = {
   nameUk: true,
   slug: true,
   email: true,
+  emailVerified: true,
   phone: true,
   image: true,
   descriptionEn: true,
@@ -51,6 +52,7 @@ function toProfileResponse(
     nameUk: string | null;
     slug: string | null;
     email: string;
+    emailVerified: Date | null;
     phone: string | null;
     image: string | null;
     descriptionEn: string | null;
@@ -74,6 +76,7 @@ function toProfileResponse(
   const settings = resolveBookingSettings(user);
   return {
     ...user,
+    emailVerified: Boolean(user.emailVerified),
     cityLabel: cityDisplayName(user, locale),
     massageTypes: parseMassageTypes(user.massageTypes),
     bookingLeadHours: settings.bookingLeadHours,

@@ -25,6 +25,7 @@ const masseurSelect = {
   cityPlaceId: true,
   address: true,
   phone: true,
+  emailVerified: true,
   galleryImages: {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     select: {
@@ -70,13 +71,15 @@ export default async function MasseurBookingPage({ params }: PageProps) {
     redirect(`/client/masseur/${masseur.slug}`);
   }
 
-  const { galleryImages, _count, cityPlaceId, phone, ...profile } = masseur;
+  const { galleryImages, _count, cityPlaceId, phone, emailVerified, ...profile } =
+    masseur;
   const listed = isMasseurListed({
     nameEn: masseur.nameEn,
     nameUk: masseur.nameUk,
     cityPlaceId,
     address: masseur.address,
     phone,
+    emailVerified,
     _count,
   });
 

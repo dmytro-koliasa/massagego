@@ -235,6 +235,7 @@ export function ClientProfileCard() {
 		try {
 			const response = await fetch('/api/auth/verify-email/resend', {
 				method: 'POST',
+				headers: { 'x-portal': 'client' },
 			});
 			if (!response.ok) {
 				toast.error(t.profileSaveError);

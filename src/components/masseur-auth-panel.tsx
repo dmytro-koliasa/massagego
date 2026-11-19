@@ -281,6 +281,10 @@ export function MasseurAuthPanel({
           toast.error(mapRegisterError(data.error, t));
           return;
         }
+
+        if (resolvedPortal === "masseur") {
+          toast.success(t.authVerifyEmailSent);
+        }
       } else {
         const parsed = loginSchema.safeParse({ email, password });
         if (!parsed.success) {

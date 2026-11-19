@@ -14,6 +14,7 @@ const complete = {
   cityPlaceId: "place-1",
   address: "Khreshchatyk 1",
   phone: "+380501112233",
+  emailVerified: new Date("2030-01-01T00:00:00.000Z"),
 };
 
 describe("listed masseur predicate", () => {
@@ -43,7 +44,7 @@ describe("listed masseur predicate", () => {
     expect(isCompleteMasseurProfile({ ...complete, phone: "" })).toBe(false);
   });
 
-  it("lists only when complete and has availability history", () => {
+  it("lists only when complete, email verified, and has availability history", () => {
     expect(isMasseurListed({ ...complete, hasAvailability: true })).toBe(true);
     expect(isMasseurListed({ ...complete, hasAvailability: false })).toBe(
       false,
@@ -58,6 +59,13 @@ describe("listed masseur predicate", () => {
       isMasseurListed({
         ...complete,
         _count: { availabilitySlots: 0 },
+      }),
+    ).toBe(false);
+    expect(
+      isMasseurListed({
+        ...complete,
+        emailVerified: null,
+        hasAvailability: true,
       }),
     ).toBe(false);
   });
