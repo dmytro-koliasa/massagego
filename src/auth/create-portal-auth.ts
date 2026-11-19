@@ -19,6 +19,7 @@ import { getClientIp } from "@/lib/request-ip";
 import { clientLoginSchema, loginSchema, NAME_MAX } from "@/lib/validation";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import { decideGoogleSignIn } from "@/lib/auth/google-account-linking";
+import { applyPasswordVersionToJwt } from "@/lib/auth/password-credential-version";
 
 /** Surfaced to the client as `signIn` result `code` (e.g. rate_limited_5). */
 class RateLimitedSignIn extends CredentialsSignin {
@@ -331,10 +332,21 @@ export function createPortalAuth(portal: Portal) {
             nameUk: true,
             email: true,
             image: true,
+            passwordChangedAt: true,
           },
         });
 
         if (!existing) {
+          return {};
+        }
+
+        // Server-side credential check: JWT claim alone is not enough (#79).
+        const version = applyPasswordVersionToJwt({
+          token,
+          dbPasswordChangedAt: existing.passwordChangedAt,
+          isInitialSignIn: Boolean(user),
+        });
+        if (version === "stale") {
           return {};
         }
 

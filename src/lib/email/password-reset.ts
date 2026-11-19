@@ -92,8 +92,8 @@ export type ConsumeResetTokenResult =
   | { ok: false; error: "invalid_token" | "password_mismatch" };
 
 /**
- * Sets a new passwordHash, deletes all Session rows for the user, and removes
- * password-reset tokens for that identifier.
+ * Sets a new passwordHash, bumps `passwordChangedAt` (JWT invalidation #79),
+ * deletes all Session rows for the user, and removes password-reset tokens.
  */
 export async function consumeResetToken(options: {
   rawToken: string;
@@ -123,11 +123,12 @@ export async function consumeResetToken(options: {
   if (!userId) return { ok: false, error: "invalid_token" };
 
   const passwordHash = await hash(options.password, 12);
+  const passwordChangedAt = new Date();
 
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash, passwordChangedAt },
     }),
     prisma.session.deleteMany({ where: { userId } }),
     prisma.verificationToken.deleteMany({ where: { identifier: row.identifier } }),

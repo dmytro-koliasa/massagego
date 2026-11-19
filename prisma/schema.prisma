@@ -48,6 +48,8 @@ model User {
   emailVerifySendWindowStart DateTime?
   emailVerifySendCount       Int       @default(0)
   passwordHash   String?
+  /// Bumped on password reset/change; JWT `pwdChangedAt` must match or be older (#79).
+  passwordChangedAt DateTime?
   /// Separate identity per portal: "masseur" | "client". Same email may exist once each.
   portal         String
   /// Telegram chat id for optional BR-009 notifications (same chat may link client+masseur when email/phone match).
