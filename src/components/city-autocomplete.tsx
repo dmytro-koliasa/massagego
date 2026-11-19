@@ -3,6 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useLanguage } from "@/components/language-provider";
 import type { CanonicalCity } from "@/lib/city";
+import {
+  portalRequestHeaders,
+  type PublicPortal,
+} from "@/lib/portals";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 type CitySuggestion = {
@@ -26,10 +30,14 @@ type CityAutocompleteProps = {
   label: string;
   lang: "en" | "uk";
   required?: boolean;
+  /** Dual-session hint for authenticated profile/dashboard fetches (#113). */
+  portal?: PublicPortal;
 };
 
-const DEBOUNCE_MS = 450;
-
+/**
+ * Explicit city search (#113 / H2).
+ * Does not call Nominatim on every keystroke — only Search / Enter.
+ */
 export function CityAutocomplete({
   value,
   onChange,
@@ -38,15 +46,16 @@ export function CityAutocomplete({
   label,
   lang,
   required = false,
+  portal,
 }: CityAutocompleteProps) {
   const { t } = useLanguage();
   const listId = useId();
-  const wrapRef = useRef<HTMLLabelElement>(null);
-  const skipFetchRef = useRef(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -54,71 +63,57 @@ export function CityAutocomplete({
         setOpen(false);
       }
     }
-
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
   const query = value.trim();
   const queryTooShort = query.length < CITY_QUERY_MIN;
-  const shownSuggestions = queryTooShort ? [] : suggestions;
-  const shownOpen = queryTooShort ? false : open;
-  const shownSearched = queryTooShort ? false : searched;
-  const shownLoading = queryTooShort ? false : loading;
 
-  useEffect(() => {
-    if (skipFetchRef.current) {
-      skipFetchRef.current = false;
-      return;
-    }
+  async function runSearch() {
+    if (queryTooShort || loading) return;
 
-    if (queryTooShort) return;
+    setLoading(true);
+    setSearched(false);
+    setError(null);
+    setOpen(true);
 
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setSearched(false);
-      void fetch(
+    try {
+      const headers = portal ? portalRequestHeaders(portal) : undefined;
+      const response = await fetch(
         `/api/geocode/city?q=${encodeURIComponent(query)}&lang=${lang}`,
-        { signal: controller.signal },
-      )
-        .then(async (response) => {
-          if (!response.ok) {
-            setSuggestions([]);
-            setSearched(true);
-            setOpen(true);
-            return;
-          }
-          const data = (await response.json()) as {
-            results?: CitySuggestion[];
-          };
-          setSuggestions(data.results ?? []);
-          setSearched(true);
-          setOpen(true);
-        })
-        .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") {
-            return;
-          }
-          setSuggestions([]);
-          setSearched(true);
-          setOpen(true);
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setLoading(false);
-          }
-        });
-    }, DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, queryTooShort, lang]);
+        { headers },
+      );
+      if (response.status === 429) {
+        const data = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setSuggestions([]);
+        setError(data?.message ?? t.citySearchRateLimited);
+        setSearched(true);
+        return;
+      }
+      if (!response.ok) {
+        setSuggestions([]);
+        setError(t.citySearchError);
+        setSearched(true);
+        return;
+      }
+      const data = (await response.json()) as {
+        results?: CitySuggestion[];
+      };
+      setSuggestions(data.results ?? []);
+      setSearched(true);
+    } catch {
+      setSuggestions([]);
+      setError(t.citySearchError);
+      setSearched(true);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function pickSuggestion(item: CitySuggestion) {
-    skipFetchRef.current = true;
     onChange(item.label);
     onSelectCity?.({
       placeId: item.placeId,
@@ -132,10 +127,11 @@ export function CityAutocomplete({
     setSuggestions([]);
     setOpen(false);
     setSearched(false);
+    setError(null);
   }
 
   return (
-    <label ref={wrapRef} className="relative block text-left">
+    <div ref={wrapRef} className="relative block text-left">
       <span className="mb-1.5 block text-sm text-muted">
         {label}
         {required ? (
@@ -145,40 +141,62 @@ export function CityAutocomplete({
           </span>
         ) : null}
       </span>
-      <input
-        type="text"
-        required={required}
-        role="combobox"
-        aria-expanded={shownOpen && shownSuggestions.length > 0}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        autoComplete="off"
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-          onSelectCity?.(null);
-        }}
-        onFocus={() => {
-          if (shownSuggestions.length > 0 || shownSearched) setOpen(true);
-        }}
-        placeholder={placeholder}
-        maxLength={CITY_MAX}
-        className="h-12 w-full rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          required={required}
+          role="combobox"
+          aria-expanded={open && suggestions.length > 0}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          autoComplete="off"
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+            onSelectCity?.(null);
+            setSuggestions([]);
+            setSearched(false);
+            setError(null);
+            setOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void runSearch();
+            }
+          }}
+          onFocus={() => {
+            if (suggestions.length > 0 || searched || error) setOpen(true);
+          }}
+          placeholder={placeholder}
+          maxLength={CITY_MAX}
+          className="h-12 min-w-0 flex-1 rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+        />
+        <button
+          type="button"
+          disabled={queryTooShort || loading}
+          onClick={() => void runSearch()}
+          className="h-12 shrink-0 rounded-lg border border-surface-border bg-background px-4 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent disabled:opacity-60"
+        >
+          {loading ? t.authPleaseWait : t.citySearchAction}
+        </button>
+      </div>
+      <p className="mt-1.5 text-xs text-muted">{t.citySearchHint}</p>
 
-      {shownOpen &&
-      (shownSuggestions.length > 0 || shownLoading || shownSearched) ? (
+      {open && (suggestions.length > 0 || loading || searched || error) ? (
         <ul
           id={listId}
           role="listbox"
           className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-surface-border bg-surface py-1 shadow-lg"
         >
-          {shownLoading && shownSuggestions.length === 0 ? (
+          {error ? (
+            <li className="px-3 py-2 text-sm text-muted">{error}</li>
+          ) : loading && suggestions.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">…</li>
-          ) : shownSuggestions.length === 0 ? (
+          ) : suggestions.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">{t.citySearchEmpty}</li>
           ) : (
-            shownSuggestions.map((item) => (
+            suggestions.map((item) => (
               <li
                 key={item.id}
                 role="option"
@@ -202,6 +220,6 @@ export function CityAutocomplete({
           )}
         </ul>
       ) : null}
-    </label>
+    </div>
   );
 }

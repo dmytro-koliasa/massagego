@@ -247,7 +247,7 @@ Source: `src/auth/*`, `src/lib/validation/auth.ts`, `src/app/api/auth/register/r
 - City and address are **required** to save a profile; names and descriptions are optional, per language (`en`, `uk`). Description max 200 characters.
 - A public `slug` is assigned once and then kept stable; client links work by slug or legacy id.
 - Gallery: max **3** images, JPEG/PNG/WebP (content-checked), max 5 MB each (`src/app/api/masseur/gallery/route.ts`; [#14](https://github.com/dmytro-koliasa/massagego/pull/14)).
-- City search uses OpenStreetMap Nominatim (masseur-only endpoint).
+- City search uses OpenStreetMap Nominatim via `/api/geocode/city` (authenticated client/masseur preferred; anonymous registration allowed under rate limits — #113). No per-keystroke autocomplete against the public API.
 
 ### 9.3 Masseur discovery - Implemented ([BR-010](decisions.md#br-010); see AR-9)
 

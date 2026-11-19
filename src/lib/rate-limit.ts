@@ -23,6 +23,15 @@ export const RATE_LIMITS = {
   /** Masseur bulk-cancel of all future bookings (X-4) — few times per hour. */
   masseurBulkCancel: { limit: 5, windowMs: 60 * 60 * 1000 },
   complaintCreate: { limit: 5, windowMs: 60 * 60 * 1000 },
+  /**
+   * App-wide Nominatim budget (#113). OSMF policy ≈ 1 req/s for the whole app.
+   * Applied only on cache miss before upstream fetch.
+   */
+  geocodeNominatimGlobal: { limit: 1, windowMs: 1000 },
+  /** Authenticated city search per user (#113). */
+  geocodeUser: { limit: 30, windowMs: 60 * 60 * 1000 },
+  /** City search per IP — covers BR-017 registration without a session (#113). */
+  geocodeIp: { limit: 20, windowMs: 60 * 60 * 1000 },
 } as const;
 
 /**

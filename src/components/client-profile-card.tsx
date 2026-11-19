@@ -374,6 +374,7 @@ export function ClientProfileCard() {
 								label={t.profileCity}
 								placeholder={t.profileCityPlaceholder}
 								lang={locale === 'en' ? 'en' : 'uk'}
+								portal='client'
 								required
 							/>
 						</div>

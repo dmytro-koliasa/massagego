@@ -844,6 +844,7 @@ export function DashboardView({ profile }: { profile: Profile }) {
 									label={t.profileCity}
 									placeholder={t.profileCityPlaceholder}
 									lang={locale === 'en' ? 'en' : 'uk'}
+									portal='masseur'
 									required
 								/>
 

@@ -233,6 +233,10 @@ export const dictionaries = {
 			'Your profile stays private in the client catalog until you confirm this email. You can still sign in and edit your dashboard.',
 		masseurEmailVerifyResend: 'Resend confirmation email',
 		citySearchEmpty: 'No cities found.',
+		citySearchAction: 'Search',
+		citySearchHint: 'Enter a city name, then press Search (or Enter).',
+		citySearchError: 'Could not search cities. Try again.',
+		citySearchRateLimited: 'Too many city searches. Try again later.',
 		authAccountCreatedSignIn:
 			'Account created. Please sign in with your phone and password.',
 		authWeakPassword:
@@ -784,6 +788,10 @@ export const dictionaries = {
 			'Профіль не з’явиться в каталозі клієнтів, доки ви не підтвердите цю пошту. Увійти й редагувати кабінет можна вже зараз.',
 		masseurEmailVerifyResend: 'Надіслати лист ще раз',
 		citySearchEmpty: 'Міст не знайдено.',
+		citySearchAction: 'Шукати',
+		citySearchHint: 'Введіть назву міста та натисніть «Шукати» (або Enter).',
+		citySearchError: 'Не вдалося знайти міста. Спробуйте ще раз.',
+		citySearchRateLimited: 'Забагато пошуків міст. Спробуйте пізніше.',
 		authAccountCreatedSignIn:
 			'Акаунт створено. Увійдіть за телефоном і паролем.',
 		authWeakPassword:
