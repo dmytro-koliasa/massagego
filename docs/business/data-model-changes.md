@@ -80,6 +80,7 @@ Constants live in `src/lib/booking-constants.ts` ([#5](https://github.com/dmytro
 | **Implemented** ([#17](https://github.com/dmytro-koliasa/massagego/pull/17), [#27](https://github.com/dmytro-koliasa/massagego/pull/27)): retry failed notifications + claim reminders | every 5 min `/api/cron/notifications` (+ local `npm run cron:notifications`) | [BR-009](decisions.md#br-009) |
 | **Implemented** (2026-11-18): delete in-app inbox rows older than ~30 days | daily `/api/cron/cleanup` via `deleteExpiredInAppNotifications` | [BR-009](decisions.md#br-009) |
 | **Implemented** (#81): delete terminal outbox (`sent`/`dead`) older than ~7 days; safety-net delete stuck live outbox after retry window + 1d grace; purge idle `RateLimitBucket` after max window + 1d; hashed rate-limit key subjects | same cleanup cron | XR-1 / [#81](https://github.com/dmytro-koliasa/massagego/issues/81) |
+| **Implemented** (#83): masseur self-delete takes `lockMasseurBookings` + re-checks future confirmed bookings before anonymise; booking create re-checks `deletedAt` under the same lock; upload blobs deleted after commit (best-effort) | account delete + booking create | [#83](https://github.com/dmytro-koliasa/massagego/issues/83) |
 
 ## 5. Behaviour-only (no new columns) — Implemented
 

@@ -287,6 +287,33 @@ export async function POST(request: Request) {
       await lockClientBookings(tx, client.userId);
       await lockMasseurBookings(tx, masseurId);
 
+      // Re-check under advisory locks (#83): refuse if either party was deleted/blocked.
+      const clientStillActive = await tx.user.findFirst({
+        where: {
+          id: client.userId,
+          portal: "client",
+          deletedAt: null,
+          blockedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!clientStillActive) {
+        throw new Error("forbidden");
+      }
+
+      const masseurStillActive = await tx.user.findFirst({
+        where: {
+          id: masseurId,
+          portal: "masseur",
+          deletedAt: null,
+          blockedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!masseurStillActive) {
+        throw new Error("masseur_not_found");
+      }
+
       const activeFutureCount = await tx.booking.count({
         where: {
           clientUserId: client.userId,
@@ -388,6 +415,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "slot_taken" }, { status: 409 });
     }
     if (error instanceof Error) {
+      if (error.message === "forbidden") {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+      }
+      if (error.message === "masseur_not_found") {
+        return NextResponse.json({ error: "masseur_not_found" }, { status: 404 });
+      }
       if (error.message === "slot_unavailable") {
         return NextResponse.json({ error: "slot_unavailable" }, { status: 409 });
       }

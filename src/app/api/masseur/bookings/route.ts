@@ -99,6 +99,21 @@ export async function POST(request: Request) {
 
     const booking = await prisma.$transaction(async (tx) => {
       await lockMasseurBookings(tx, gate.userId);
+
+      // Refuse walk-ins if this account is deleted or blocked (#83).
+      const self = await tx.user.findFirst({
+        where: {
+          id: gate.userId,
+          portal: "masseur",
+          deletedAt: null,
+          blockedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!self) {
+        throw new Error("forbidden");
+      }
+
       const existingBooking = await tx.booking.findFirst({
         where: {
           masseurId: gate.userId,
@@ -153,6 +168,9 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "forbidden") {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     if (
       isBookingConflictError(error) ||
       (error instanceof Error && error.message === "slot_taken")
