@@ -11,9 +11,14 @@ import { findPortalUserByEmail, findPortalUserByPhone, readAuthIntentCookie } fr
 import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
 import {
+  AUTH_RATE_LIMIT_SCOPES,
+  shouldConsumeSignInPasswordFail,
+  SIGN_IN_IP_LIMIT,
+  SIGN_IN_PASSWORD_FAIL_LIMIT,
+} from "@/lib/auth/auth-rate-limit-policy";
+import {
   checkRateLimit,
   minutesFromRetryAfter,
-  RATE_LIMITS,
   rateLimitKey,
 } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -34,31 +39,30 @@ class AccountBlockedSignIn extends CredentialsSignin {
   code = "blocked";
 }
 
-async function enforceSignInRateLimits(
-  request: Request | undefined,
-  accountKey: string,
-) {
+/** IP budget on every sign-in attempt (#86). Account fail budget is separate. */
+async function enforceSignInIpLimit(request: Request | undefined) {
   // IP is best-effort: Auth.js v5 passes the original Request into authorize.
   const ip = request ? getClientIp(request) : "unknown";
   const ipLimit = await checkRateLimit(
-    rateLimitKey("signin:ip", ip),
-    RATE_LIMITS.signIn.limit,
-    RATE_LIMITS.signIn.windowMs,
+    rateLimitKey(AUTH_RATE_LIMIT_SCOPES.signInIp, ip),
+    SIGN_IN_IP_LIMIT.limit,
+    SIGN_IN_IP_LIMIT.windowMs,
   );
   if (!ipLimit.ok) {
     throw new RateLimitedSignIn(minutesFromRetryAfter(ipLimit.retryAfterSec));
   }
+}
 
-  const accountLimit = await checkRateLimit(
-    rateLimitKey("signin:account", accountKey),
-    RATE_LIMITS.signIn.limit,
-    RATE_LIMITS.signIn.windowMs,
+/**
+ * Count a failed password against the identifier bucket. Never throws a
+ * rate-limit error here — credentials failures stay generic (#86).
+ */
+async function recordSignInPasswordFailure(accountKey: string) {
+  await checkRateLimit(
+    rateLimitKey(AUTH_RATE_LIMIT_SCOPES.signInPasswordFail, accountKey),
+    SIGN_IN_PASSWORD_FAIL_LIMIT.limit,
+    SIGN_IN_PASSWORD_FAIL_LIMIT.windowMs,
   );
-  if (!accountLimit.ok) {
-    throw new RateLimitedSignIn(
-      minutesFromRetryAfter(accountLimit.retryAfterSec),
-    );
-  }
 }
 
 const googleConfigured =
@@ -174,10 +178,8 @@ export function createPortalAuth(portal: Portal) {
             }
 
             const { phone, password } = parsed.data;
-            await enforceSignInRateLimits(
-              request,
-              `client:${phone}`,
-            );
+            const accountKey = `client:${phone}`;
+            await enforceSignInIpLimit(request);
 
             const user = await findPortalUserByPhone(phone, portal);
 
@@ -189,7 +191,13 @@ export function createPortalAuth(portal: Portal) {
             }
 
             const valid = await compare(password, user.passwordHash);
-            if (!valid) {
+            if (
+              shouldConsumeSignInPasswordFail({
+                hasPasswordHash: true,
+                passwordValid: valid,
+              })
+            ) {
+              await recordSignInPasswordFailure(accountKey);
               return null;
             }
 
@@ -212,10 +220,8 @@ export function createPortalAuth(portal: Portal) {
           }
 
           const { email, password } = parsed.data;
-          await enforceSignInRateLimits(
-            request,
-            `${portal}:${email}`,
-          );
+          const accountKey = `${portal}:${email}`;
+          await enforceSignInIpLimit(request);
 
           const user = await findPortalUserByEmail(email, portal);
 
@@ -227,7 +233,13 @@ export function createPortalAuth(portal: Portal) {
           }
 
           const valid = await compare(password, user.passwordHash);
-          if (!valid) {
+          if (
+            shouldConsumeSignInPasswordFail({
+              hasPasswordHash: true,
+              passwordValid: valid,
+            })
+          ) {
+            await recordSignInPasswordFailure(accountKey);
             return null;
           }
 
