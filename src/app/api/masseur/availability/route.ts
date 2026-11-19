@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
+import { syntheticBookedSlotEventId } from "@/lib/availability-event-id";
 import {
   SLOT_MS,
   WEEKLY_COPY_DEFAULT_WEEKS,
@@ -145,7 +146,7 @@ export async function GET(request: Request) {
     if (byStart.has(startIso)) continue;
     const start = new Date(startIso);
     byStart.set(startIso, {
-      id: `booking-${booked.id}`,
+      id: syntheticBookedSlotEventId(startIso),
       start: startIso,
       end: new Date(start.getTime() + SLOT_MS).toISOString(),
       status: "booked",
