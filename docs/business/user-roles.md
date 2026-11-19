@@ -26,6 +26,7 @@ Complaints: client and masseur may report each other from a shared booking; admi
 - Shared APIs that accept either public portal (`requirePortalUser`) require `X-Portal: client|masseur` when **both** portal cookies are present; without the hint they return `409 ambiguous_portal` (inbox, notification prefs, Telegram account routes, account delete) — [#69](https://github.com/dmytro-koliasa/massagego/pull/69).
 - `src/proxy.ts` protects `/masseur/dashboard/**`, `/client/**` and `/admin/**` page routes by reading the matching portal cookie and `token.portal`. API routes do **not** rely on the proxy alone; each performs its own check.
 - Google sign-in for a new identity is only accepted when the "register" intent cookie is set; otherwise the user is returned to the portal with `no_portal_access`.
+- Google must **not** auto-link to an existing masseur row solely because emails match (`allowDangerousEmailAccountLinking: false` + `decideGoogleSignIn` in `src/lib/auth/google-account-linking.ts`). A returning Google user is allowed only when that Google `providerAccountId` is already linked. Password accounts with the same email get `oauth_not_linked` (sign in with password). Secure Google linking while signed in is a separate future issue — not silent email merge.
 
 ---
 

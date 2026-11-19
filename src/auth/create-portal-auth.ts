@@ -18,6 +18,7 @@ import {
 import { getClientIp } from "@/lib/request-ip";
 import { clientLoginSchema, loginSchema, NAME_MAX } from "@/lib/validation";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
+import { decideGoogleSignIn } from "@/lib/auth/google-account-linking";
 
 /** Surfaced to the client as `signIn` result `code` (e.g. rate_limited_5). */
 class RateLimitedSignIn extends CredentialsSignin {
@@ -131,7 +132,8 @@ export function createPortalAuth(portal: Portal) {
             Google({
               clientId: process.env.AUTH_GOOGLE_ID,
               clientSecret: process.env.AUTH_GOOGLE_SECRET,
-              allowDangerousEmailAccountLinking: true,
+              // Never auto-link Google to an existing password user by email alone (#76).
+              allowDangerousEmailAccountLinking: false,
               authorization: {
                 params: {
                   prompt: "select_account",
@@ -258,20 +260,45 @@ export function createPortalAuth(portal: Portal) {
               })
             : null;
 
+        if (account?.provider === "google") {
+          const providerAccountId =
+            typeof account.providerAccountId === "string"
+              ? account.providerAccountId
+              : null;
+
+          let googleAccountAlreadyLinked = false;
+          if (dbUser && providerAccountId) {
+            const linked = await prisma.account.findFirst({
+              where: {
+                userId: dbUser.id,
+                provider: "google",
+                providerAccountId,
+              },
+              select: { id: true },
+            });
+            googleAccountAlreadyLinked = Boolean(linked);
+          }
+
+          const intent = await readAuthIntentCookie("login");
+          const decision = decideGoogleSignIn({
+            existingUser: dbUser
+              ? { id: dbUser.id, blockedAt: dbUser.blockedAt }
+              : null,
+            googleAccountAlreadyLinked,
+            authIntent: intent === "register" ? "register" : "login",
+          });
+
+          if (!decision.allow) {
+            return `${portalHomePath(portal)}?error=${decision.error}`;
+          }
+          return true;
+        }
+
         if (dbUser) {
           if (dbUser.blockedAt) {
             return `${portalHomePath(portal)}?error=blocked`;
           }
           return true;
-        }
-
-        // New OAuth identity for this portal only.
-        if (account?.provider === "google") {
-          const intent = await readAuthIntentCookie("login");
-          if (intent === "register") {
-            return true;
-          }
-          return `${portalHomePath(portal)}?error=no_portal_access`;
         }
 
         // Credentials registration creates the portal user before signIn.

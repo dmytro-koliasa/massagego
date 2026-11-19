@@ -239,6 +239,8 @@ export const dictionaries = {
 			'Google sign-in is not configured yet. Add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET.',
 		authNoPortalAccess:
 			'No access to this area yet. Create an account for this role first.',
+		authOAuthNotLinked:
+			'This email already has a password account. Sign in with email and password. Linking Google later requires a signed-in confirmation step.',
 		dashboardSignOut: 'Sign out',
 		headerPortalMasseur: 'Masseur',
 		headerPortalClient: 'Client',
@@ -784,6 +786,8 @@ export const dictionaries = {
 			'Вхід через Google ще не налаштовано. Додайте AUTH_GOOGLE_ID і AUTH_GOOGLE_SECRET.',
 		authNoPortalAccess:
 			'Немає доступу до цієї зони. Спочатку зареєструйте акаунт для цієї ролі.',
+		authOAuthNotLinked:
+			'Для цієї пошти вже є акаунт із паролем. Увійдіть email і паролем. Прив’язка Google пізніше потребує підтвердження в увійденому акаунті.',
 		dashboardSignOut: 'Вийти',
 		headerPortalMasseur: 'Масажист',
 		headerPortalClient: 'Клієнт',
