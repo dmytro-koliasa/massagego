@@ -5,6 +5,7 @@ import {
   neighbouringSlotStarts,
 } from "@/lib/client-booking-rules";
 import { requireClientSession } from "@/lib/client-session.server";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   rateLimitJsonResponse,
   resolveRequestLocale,
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
     try {
       await notifyClientCancelledBooking(booking.id);
     } catch (notifyError) {
-      console.error("[bookings/cancel] notifyClientCancelledBooking", notifyError);
+      logRouteError("bookings/cancel/notify", notifyError);
     }
 
     return NextResponse.json({
@@ -229,7 +230,8 @@ export async function POST(request: Request) {
       bookingId: booking.id,
       ...(neighborHint ? { neighborHint } : {}),
     });
-  } catch {
+  } catch (error) {
+    logRouteError("bookings/cancel", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

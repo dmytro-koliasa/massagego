@@ -5,6 +5,7 @@ import {
   resolveBookingSettings,
 } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
+import { logRouteError } from "@/lib/http/route-error";
 import { isMasseurListed } from "@/lib/masseur-catalog";
 import {
   clientBookingWindowExclusiveEnd,
@@ -194,7 +195,8 @@ export async function GET(request: Request, context: RouteContext) {
       bookingWindowEnd: windowEnd.toISOString(),
       slots: visible.sort((a, b) => a.start.localeCompare(b.start)),
     });
-  } catch {
+  } catch (error) {
+    logRouteError("masseurs/[id]/availability", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

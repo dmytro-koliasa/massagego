@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { SLOT_MS } from "@/lib/booking-constants";
+import { logRouteError } from "@/lib/http/route-error";
 import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { notifyMasseurCancelledBooking } from "@/lib/notifications/outbox";
@@ -121,10 +122,7 @@ export async function POST(request: Request) {
       try {
         await notifyMasseurCancelledBooking(cancelledBookingId);
       } catch (notifyError) {
-        console.error(
-          "[masseur/bookings/resolve] notifyMasseurCancelledBooking",
-          notifyError,
-        );
+        logRouteError("masseur/bookings/resolve/notify", notifyError);
       }
     }
 
@@ -136,7 +134,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "not_found") {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
-    console.error("[masseur/bookings/resolve]", error);
+    logRouteError("masseur/bookings/resolve", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

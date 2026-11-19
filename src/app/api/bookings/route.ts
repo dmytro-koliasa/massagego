@@ -11,6 +11,7 @@ import {
 } from "@/lib/booking-constants";
 import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   rateLimitJsonResponse,
   resolveRequestLocale,
@@ -125,7 +126,8 @@ export async function GET(request: Request) {
         },
       })),
     });
-  } catch {
+  } catch (error) {
+    logRouteError("bookings", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -399,7 +401,7 @@ export async function POST(request: Request) {
       try {
         await notifyBookingCreated(booking.id);
       } catch (notifyError) {
-        console.error("[bookings] notifyBookingCreated", notifyError);
+        logRouteError("bookings/notify", notifyError);
       }
     }
 
@@ -440,6 +442,7 @@ export async function POST(request: Request) {
         );
       }
     }
+    logRouteError("bookings", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

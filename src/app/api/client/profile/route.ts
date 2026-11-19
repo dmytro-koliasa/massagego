@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cityDisplayName, toCityWriteData } from "@/lib/city";
 import { requireClientSession } from "@/lib/client-session.server";
 import { createAndSendVerificationLink } from "@/lib/email/verification";
+import { logRouteError } from "@/lib/http/route-error";
 import { findPortalUserByEmail } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import {
@@ -156,7 +157,8 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ user: toProfile(user) });
-  } catch {
+  } catch (error) {
+    logRouteError("client/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -201,6 +203,7 @@ export async function POST(request: Request) {
     if (error instanceof ImageProcessError) {
       return NextResponse.json({ error: error.code }, { status: 400 });
     }
+    logRouteError("client/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -224,7 +227,8 @@ export async function DELETE() {
     await deleteUpload(current?.image);
 
     return NextResponse.json({ user: toProfile(user) });
-  } catch {
+  } catch (error) {
+    logRouteError("client/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

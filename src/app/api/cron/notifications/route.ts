@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeCron } from "@/lib/cron-auth";
+import { logRouteError } from "@/lib/http/route-error";
 import { processNotificationOutbox } from "@/lib/notifications/outbox";
 
 export async function GET(request: Request) {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const result = await processNotificationOutbox();
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("[cron/notifications]", error);
+    logRouteError("cron/notifications", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

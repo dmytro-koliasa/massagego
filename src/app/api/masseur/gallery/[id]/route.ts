@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
+import { logRouteError } from "@/lib/http/route-error";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { deleteUpload } from "@/lib/uploads";
@@ -35,7 +36,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     await deleteUpload(image.url);
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/gallery/[id]", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

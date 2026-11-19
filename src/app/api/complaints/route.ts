@@ -6,6 +6,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
+import { logRouteError } from "@/lib/http/route-error";
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
 import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, id: result.id });
   } catch (error) {
-    console.error("[complaints]", error);
+    logRouteError("complaints", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
