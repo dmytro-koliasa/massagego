@@ -9,7 +9,7 @@ Analysis only — **production host cron remains deferred**. Do not treat this f
 | Notifications / reminders | `GET /api/cron/notifications` | Drain `NotificationOutbox` (retries + due booking reminders) |
 | Retention cleanup | `GET /api/cron/cleanup` | Cancelled/completed bookings, inbox, outbox, idle rate-limit buckets |
 
-Auth: shared Bearer `CRON_SECRET` via `authorizeCron` (`src/lib/cron-auth.ts`). Empty secret is allowed only outside `NODE_ENV=production`.
+Auth: shared Bearer `CRON_SECRET` via `authorizeCron` (`src/lib/cron-auth.ts`). **Fail-closed in every environment** (#116): missing/empty secret or wrong Bearer → 401. Local scripts require `CRON_SECRET` in `.env`.
 
 Declared in repo `vercel.json` today:
 
