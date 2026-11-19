@@ -539,6 +539,7 @@ export function ClientSessionsCalendar() {
       {reportBookingId ? (
         <ReportUserDialog
           bookingId={reportBookingId}
+          portal="client"
           open
           onClose={() => setReportBookingId(null)}
         />

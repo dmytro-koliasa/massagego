@@ -4,9 +4,15 @@ import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { COMPLAINT_CATEGORIES } from "@/lib/complaints";
+import {
+  portalRequestHeaders,
+  type PublicPortal,
+} from "@/lib/portals";
 
 type ReportUserDialogProps = {
   bookingId: string;
+  /** Portal UI that opened the dialog — sent as X-Portal for dual-session (#88). */
+  portal: PublicPortal;
   open: boolean;
   onClose: () => void;
   onSubmitted?: () => void;
@@ -14,6 +20,7 @@ type ReportUserDialogProps = {
 
 export function ReportUserDialog({
   bookingId,
+  portal,
   open,
   onClose,
   onSubmitted,
@@ -45,7 +52,10 @@ export function ReportUserDialog({
     try {
       const response = await fetch("/api/complaints", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...portalRequestHeaders(portal),
+        },
         body: JSON.stringify({
           bookingId,
           category,

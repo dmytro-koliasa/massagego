@@ -1,53 +1,23 @@
 import { NextResponse } from "next/server";
-import { auth as clientAuth } from "@/auth/client";
-import { auth as masseurAuth } from "@/auth/masseur";
 import { createComplaint } from "@/lib/complaints";
 import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
+import { requirePortalUser } from "@/lib/notifications/portal-gate";
 import { prisma } from "@/lib/prisma";
-import { userHasPortal } from "@/lib/portals.server";
 import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { parseWithSchema } from "@/lib/validation";
 import { complaintCreateSchema } from "@/lib/validation/complaints";
 
-async function requireReporter(): Promise<
-  | { ok: true; userId: string; portal: "client" | "masseur" }
-  | { ok: false; status: 401 | 403; error: "unauthorized" | "forbidden" }
-> {
-  const clientSession = await clientAuth();
-  if (clientSession?.user?.id) {
-    const allowed = await userHasPortal(clientSession.user.id, "client");
-    if (allowed) {
-      return { ok: true, userId: clientSession.user.id, portal: "client" };
-    }
-  }
-
-  const masseurSession = await masseurAuth();
-  if (masseurSession?.user?.id) {
-    const allowed = await userHasPortal(masseurSession.user.id, "masseur");
-    if (allowed) {
-      return { ok: true, userId: masseurSession.user.id, portal: "masseur" };
-    }
-  }
-
-  if (clientSession?.user?.id || masseurSession?.user?.id) {
-    return { ok: false, status: 403, error: "forbidden" };
-  }
-  return { ok: false, status: 401, error: "unauthorized" };
-}
-
 export async function POST(request: Request) {
   try {
-    const reporter = await requireReporter();
+    // Same dual-session gate as notifications / account APIs (#88 / #69).
+    const reporter = await requirePortalUser();
     if (!reporter.ok) {
-      return NextResponse.json(
-        { error: reporter.error },
-        { status: reporter.status },
-      );
+      return reporter.response;
     }
 
     const locale = resolveRequestLocale(request);
