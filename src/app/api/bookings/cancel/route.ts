@@ -13,7 +13,7 @@ import { alignToHour } from "@/lib/masseur-time";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { notifyClientCancelledBooking } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { bookingCancelSchema, parseWithSchema } from "@/lib/validation";
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(
-      `booking-cancel:ip:${getClientIp(request)}`,
+      rateLimitKey("booking-cancel:ip", getClientIp(request)),
       RATE_LIMITS.bookingCancel.limit,
       RATE_LIMITS.bookingCancel.windowMs,
     );
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const accountLimit = await checkRateLimit(
-      `booking-cancel:account:${client.userId}`,
+      rateLimitKey("booking-cancel:account", client.userId),
       RATE_LIMITS.bookingCancel.limit,
       RATE_LIMITS.bookingCancel.windowMs,
     );

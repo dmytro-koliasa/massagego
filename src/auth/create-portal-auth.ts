@@ -14,6 +14,7 @@ import {
   checkRateLimit,
   minutesFromRetryAfter,
   RATE_LIMITS,
+  rateLimitKey,
 } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { clientLoginSchema, loginSchema, NAME_MAX } from "@/lib/validation";
@@ -40,7 +41,7 @@ async function enforceSignInRateLimits(
   // IP is best-effort: Auth.js v5 passes the original Request into authorize.
   const ip = request ? getClientIp(request) : "unknown";
   const ipLimit = await checkRateLimit(
-    `signin:ip:${ip}`,
+    rateLimitKey("signin:ip", ip),
     RATE_LIMITS.signIn.limit,
     RATE_LIMITS.signIn.windowMs,
   );
@@ -49,7 +50,7 @@ async function enforceSignInRateLimits(
   }
 
   const accountLimit = await checkRateLimit(
-    `signin:account:${accountKey}`,
+    rateLimitKey("signin:account", accountKey),
     RATE_LIMITS.signIn.limit,
     RATE_LIMITS.signIn.windowMs,
   );

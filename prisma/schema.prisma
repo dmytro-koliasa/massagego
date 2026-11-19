@@ -143,10 +143,13 @@ model VerificationToken {
 /// Sliding-window counter for BR-020 rate limits (Postgres-backed for serverless).
 model RateLimitBucket {
   id          String   @id @default(cuid())
+  /// Opaque `scope:sha256(subject)` — never raw phone/email/IP (#81).
   key         String   @unique
   windowStart DateTime
   count       Int
   updatedAt   DateTime @updatedAt
+
+  @@index([windowStart])
 }
 
 /// The exclusion constraint "Booking_no_overlapping_active_slots" (SQL only)
@@ -313,6 +316,8 @@ model NotificationOutbox {
 
   @@index([status, nextAttemptAt])
   @@index([status, leaseExpiresAt])
+  @@index([status, sentAt])
+  @@index([status, updatedAt])
   @@index([userId, createdAt])
   @@index([bookingId])
 }

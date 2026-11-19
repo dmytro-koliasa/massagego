@@ -28,7 +28,7 @@ import {
 } from "@/lib/massage-types";
 import { notifyBookingCreated } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { bookingCreateSchema, parseWithSchema } from "@/lib/validation";
 
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(
-      `booking-create:ip:${getClientIp(request)}`,
+      rateLimitKey("booking-create:ip", getClientIp(request)),
       RATE_LIMITS.bookingCreate.limit,
       RATE_LIMITS.bookingCreate.windowMs,
     );
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
     }
 
     const accountLimit = await checkRateLimit(
-      `booking-create:account:${client.userId}`,
+      rateLimitKey("booking-create:account", client.userId),
       RATE_LIMITS.bookingCreate.limit,
       RATE_LIMITS.bookingCreate.windowMs,
     );

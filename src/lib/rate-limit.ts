@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { rateLimitBucketEligibleBefore } from "@/lib/rate-limit-cleanup-rules";
 
 export const RATE_LIMITS = {
   signIn: { limit: 10, windowMs: 15 * 60 * 1000 },
@@ -10,6 +12,19 @@ export const RATE_LIMITS = {
   masseurBulkCancel: { limit: 5, windowMs: 60 * 60 * 1000 },
   complaintCreate: { limit: 5, windowMs: 60 * 60 * 1000 },
 } as const;
+
+/**
+ * Hash a subject (IP, email, phone, user id) so `RateLimitBucket.key`
+ * never stores raw identifiers (#81).
+ */
+export function hashRateLimitSubject(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/** Build `scope:sha256(subject)` keys used by all rate-limit call sites. */
+export function rateLimitKey(scope: string, subject: string): string {
+  return `${scope}:${hashRateLimitSubject(subject)}`;
+}
 
 export type RateLimitResult =
   | { ok: true }
@@ -91,4 +106,30 @@ export async function checkRateLimit(
     });
     return { ok: true as const };
   });
+}
+
+/**
+ * Hard-delete idle rate-limit buckets whose window can no longer matter (#81).
+ * Logs counts only (keys are already hashed subjects).
+ */
+export async function deleteExpiredRateLimitBuckets(options?: {
+  now?: Date;
+  limit?: number;
+}): Promise<{ deleted: number }> {
+  const now = options?.now ?? new Date();
+  const limit = options?.limit ?? 500;
+  const before = rateLimitBucketEligibleBefore(now);
+
+  const rows = await prisma.rateLimitBucket.findMany({
+    where: { windowStart: { lte: before } },
+    select: { id: true },
+    take: limit,
+    orderBy: { windowStart: "asc" },
+  });
+  if (rows.length === 0) return { deleted: 0 };
+
+  const result = await prisma.rateLimitBucket.deleteMany({
+    where: { id: { in: rows.map((row) => row.id) } },
+  });
+  return { deleted: result.count };
 }

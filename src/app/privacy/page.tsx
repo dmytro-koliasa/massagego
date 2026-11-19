@@ -9,7 +9,7 @@ function readLocale(value: string | undefined): Locale {
 const copy = {
   en: {
     title: 'Privacy Policy',
-    updated: 'Last updated: 17 November 2026',
+    updated: 'Last updated: 19 November 2026',
     intro:
       'This Privacy Policy explains how MassageGo (“we”, “us”) collects and uses personal data when you use our website and booking service. It is a product statement for the current implementation and may be updated after legal review.',
     sections: [
@@ -39,7 +39,7 @@ const copy = {
       },
       {
         h: '7. Retention',
-        p: 'Cancelled bookings without a retention hold are hard-deleted about 7 days after cancellation. Completed bookings without a hold are hard-deleted about 3 months after the session start. Self-service account deletion anonymises your profile (name, phone, email, photos, address, descriptions), ends sessions and Telegram linking, and cancels a client’s future bookings with notice to masseurs. Copies in hosting backups may remain until those backups expire; that retention is reviewed under our legal process (P-2) and is not purged by the application job.',
+        p: 'Cancelled bookings without a retention hold are hard-deleted about 7 days after cancellation. Completed bookings without a hold are hard-deleted about 3 months after the session start. In-app notification inbox rows are removed after about 30 days. Notification delivery log rows (outbox) that have finished or permanently failed are removed after about 7 days; rows still in the retry window are kept for up to about 48 hours. Abuse-prevention rate-limit counters are stored with hashed identifiers and purged about a day after their sliding window ends. Self-service account deletion anonymises your profile (name, phone, email, photos, address, descriptions), ends sessions and Telegram linking, and cancels a client’s future bookings with notice to masseurs. Copies in hosting backups may remain until those backups expire; that retention is reviewed under our legal process (P-2) and is not purged by the application job.',
       },
       {
         h: '8. Your choices',
@@ -58,7 +58,7 @@ const copy = {
   },
   uk: {
     title: 'Політика конфіденційності',
-    updated: 'Оновлено: 17 листопада 2026',
+    updated: 'Оновлено: 19 листопада 2026',
     intro:
       'Ця Політика пояснює, як MassageGo («ми») збирає та використовує персональні дані під час користування сайтом і сервісом бронювання. Це продуктова заява для поточної реалізації; після юридичного огляду текст може бути оновлений.',
     sections: [
@@ -88,7 +88,7 @@ const copy = {
       },
       {
         h: '7. Зберігання',
-        p: 'Скасовані бронювання без hold видаляються приблизно через 7 днів після скасування. Завершені бронювання без hold — приблизно через 3 місяці після початку сеансу. Самостійне видалення акаунта анонімізує профіль (ім’я, телефон, email, фото, адресу, описи), завершує сесії й Telegram і скасовує майбутні бронювання клієнта з повідомленням масажистам. Копії в резервних копіях хостингу можуть лишатися до закінчення їхнього строку; це розглядається в юридичному процесі (P-2) і не чиститься job застосунку.',
+        p: 'Скасовані бронювання без hold видаляються приблизно через 7 днів після скасування. Завершені бронювання без hold — приблизно через 3 місяці після початку сеансу. Рядки in-app inbox видаляються приблизно через 30 днів. Журнал доставки сповіщень (outbox) після успіху або остаточної помилки — приблизно через 7 днів; рядки в вікні повторів зберігаються до близько 48 годин. Лічильники антизловживань зберігаються з хешованими ідентифікаторами й очищаються приблизно через день після кінця вікна. Самостійне видалення акаунта анонімізує профіль (ім’я, телефон, email, фото, адресу, описи), завершує сесії й Telegram і скасовує майбутні бронювання клієнта з повідомленням масажистам. Копії в резервних копіях хостингу можуть лишатися до закінчення їхнього строку; це розглядається в юридичному процесі (P-2) і не чиститься job застосунку.',
       },
       {
         h: '8. Ваші можливості',
