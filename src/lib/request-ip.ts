@@ -54,10 +54,9 @@ export function parseTrustProxyHops(
   return n;
 }
 
+/** Subset of process.env used for IP trust decisions (tests pass plain objects). */
 export type ClientIpEnv = {
-  VERCEL?: string;
-  VERCEL_ENV?: string;
-  TRUST_PROXY_HOPS?: string;
+  readonly [key: string]: string | undefined;
 };
 
 export function isVercelRuntime(env: ClientIpEnv = process.env): boolean {
