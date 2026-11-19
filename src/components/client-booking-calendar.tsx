@@ -486,7 +486,7 @@ export function ClientBookingCalendar({
 			}
 			setCancelTarget(null);
 			if (range) {
-				await loadSlots(range.from, range.to);
+				await loadSlots(range.from, range.to, timeZone);
 			}
 		} catch {
 			toast.error(t.bookingCancelError);
