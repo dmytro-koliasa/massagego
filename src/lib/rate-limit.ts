@@ -3,9 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { rateLimitBucketEligibleBefore } from "@/lib/rate-limit-cleanup-rules";
 
 export const RATE_LIMITS = {
+  /** Every sign-in attempt (IP). Primary brake on distributed spray (#86). */
   signIn: { limit: 10, windowMs: 15 * 60 * 1000 },
+  /**
+   * Failed password checks only (per identifier). Correct passwords bypass;
+   * does not apply before verification (#86).
+   */
+  signInPasswordFail: { limit: 30, windowMs: 15 * 60 * 1000 },
   register: { limit: 5, windowMs: 60 * 60 * 1000 },
+  /** Password-reset requests per IP. */
   passwordReset: { limit: 5, windowMs: 60 * 60 * 1000 },
+  /**
+   * Password-reset per identifier — higher than IP so a third party cannot
+   * cheaply deny reset, still caps mail bombing one address (#86).
+   */
+  passwordResetIdentifier: { limit: 20, windowMs: 60 * 60 * 1000 },
   bookingCreate: { limit: 30, windowMs: 15 * 60 * 1000 },
   bookingCancel: { limit: 30, windowMs: 15 * 60 * 1000 },
   /** Masseur bulk-cancel of all future bookings (X-4) — few times per hour. */

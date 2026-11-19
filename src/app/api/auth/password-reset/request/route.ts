@@ -5,7 +5,12 @@ import {
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
-import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
+import {
+  AUTH_RATE_LIMIT_SCOPES,
+  PASSWORD_RESET_IDENTIFIER_LIMIT,
+  PASSWORD_RESET_IP_LIMIT,
+} from "@/lib/auth/auth-rate-limit-policy";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import {
   parseWithSchema,
@@ -32,18 +37,22 @@ export async function POST(request: Request) {
       portal === "client" ? parsed.data.phone : parsed.data.email;
 
     const ipLimit = await checkRateLimit(
-      rateLimitKey("password-reset:ip", ip),
-      RATE_LIMITS.passwordReset.limit,
-      RATE_LIMITS.passwordReset.windowMs,
+      rateLimitKey(AUTH_RATE_LIMIT_SCOPES.passwordResetIp, ip),
+      PASSWORD_RESET_IP_LIMIT.limit,
+      PASSWORD_RESET_IP_LIMIT.windowMs,
     );
     if (!ipLimit.ok) {
       return rateLimitJsonResponse(ipLimit.retryAfterSec, locale);
     }
 
+    // Higher than IP so a third party cannot cheaply deny reset (#86).
     const idLimit = await checkRateLimit(
-      rateLimitKey("password-reset:id", `${portal}:${identifier}`),
-      RATE_LIMITS.passwordReset.limit,
-      RATE_LIMITS.passwordReset.windowMs,
+      rateLimitKey(
+        AUTH_RATE_LIMIT_SCOPES.passwordResetIdentifier,
+        `${portal}:${identifier}`,
+      ),
+      PASSWORD_RESET_IDENTIFIER_LIMIT.limit,
+      PASSWORD_RESET_IDENTIFIER_LIMIT.windowMs,
     );
     if (!idLimit.ok) {
       return rateLimitJsonResponse(idLimit.retryAfterSec, locale);
