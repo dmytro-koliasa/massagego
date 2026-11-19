@@ -228,7 +228,7 @@ Added on 2026-11-16 while grooming PR 2: no pull request covered point 2 of [BR-
 - Settings: separate **Notifications** page (client + masseur); **email toggles only** in this PR (Telegram column in PR 13).
 - Until Telegram: email for critical events (2–4 + confirmation 5) **cannot be turned off**; event 1 (new booking → masseur) may be off.
 - Copy: short transactional subject + 3–5 lines plain + simple HTML; no phones; masseur TZ label; `preferredLocale`.
-- Delivery: **always create an outbox row**, then attempt send immediately; cron retries `pending`/`failed`.
+- Delivery: **always create an outbox row**, then attempt send immediately; cron retries `pending`/`failed` (and reclaim expired `processing` leases — #80). Semantics are **at-least-once**: a lease expiry mid-send can still duplicate at the provider; claim/lease prevents two live workers from starting the same row.
 - Event 4: type + template + settings + `enqueueClientDeletedCancellationNotice` exported; **enqueue call site in PR 14**.
 
 **Scope:** sending by email for the five events (new booking, client cancellation with the reason, masseur cancellation, automatic cancellation on client deletion, booking confirmation), in the recipient's language, with times in the masseur's timezone and no phone numbers; per-event, per-channel settings with at least one channel kept on for cancellations and confirmations; a send log and automatic retries for up to a day; the events stay visible in the application as long as the booking exists.
