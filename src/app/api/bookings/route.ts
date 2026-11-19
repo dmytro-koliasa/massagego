@@ -11,6 +11,10 @@ import {
 } from "@/lib/booking-constants";
 import { resolveBookingLeadHours } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
+import {
+  CLIENT_BOOKINGS_LIST_MAX_SPAN_MS,
+  parseRequiredDateRange,
+} from "@/lib/date-range";
 import { logRouteError } from "@/lib/http/route-error";
 import {
   rateLimitJsonResponse,
@@ -65,17 +69,13 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const fromRaw = searchParams.get("from");
-    const toRaw = searchParams.get("to");
-
-    const from = fromRaw ? new Date(fromRaw) : null;
-    const to = toRaw ? new Date(toRaw) : null;
-
-    if (
-      (from && Number.isNaN(from.getTime())) ||
-      (to && Number.isNaN(to.getTime()))
-    ) {
-      return NextResponse.json({ error: "invalid_range" }, { status: 400 });
+    const range = parseRequiredDateRange(
+      searchParams.get("from"),
+      searchParams.get("to"),
+      CLIENT_BOOKINGS_LIST_MAX_SPAN_MS,
+    );
+    if (!range.ok) {
+      return NextResponse.json({ error: range.error }, { status: 400 });
     }
 
     const bookings = await prisma.booking.findMany({
@@ -84,8 +84,8 @@ export async function GET(request: Request) {
         status: { not: "cancelled" },
         slotStart: {
           not: null,
-          ...(from ? { gte: from } : {}),
-          ...(to ? { lt: to } : {}),
+          gte: range.from,
+          lt: range.to,
         },
       },
       orderBy: { slotStart: "asc" },

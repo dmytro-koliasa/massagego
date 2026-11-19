@@ -15,6 +15,10 @@ import {
   isSlotStarted,
   isWithinWorkingHours,
 } from "@/lib/masseur-time";
+import {
+  CALENDAR_AVAILABILITY_MAX_SPAN_MS,
+  parseRequiredDateRange,
+} from "@/lib/date-range";
 import { logRouteError } from "@/lib/http/route-error";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
@@ -29,14 +33,15 @@ export async function GET(request: Request) {
   if ("error" in gate) return gate.error;
 
   const { searchParams } = new URL(request.url);
-  const fromRaw = searchParams.get("from");
-  const toRaw = searchParams.get("to");
-  const from = fromRaw ? new Date(fromRaw) : null;
-  const to = toRaw ? new Date(toRaw) : null;
-
-  if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-    return NextResponse.json({ error: "invalid_range" }, { status: 400 });
+  const range = parseRequiredDateRange(
+    searchParams.get("from"),
+    searchParams.get("to"),
+    CALENDAR_AVAILABILITY_MAX_SPAN_MS,
+  );
+  if (!range.ok) {
+    return NextResponse.json({ error: range.error }, { status: 400 });
   }
+  const { from, to } = range;
 
   const retentionSince = lastCancellationSince();
 
