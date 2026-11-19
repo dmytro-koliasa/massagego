@@ -6,8 +6,8 @@
  *   npm run cron:notifications
  *
  * Reads CRON_SECRET and optional CRON_BASE_URL from the environment
- * or from `.env` in the project root. When CRON_SECRET is empty,
- * the request is sent without Authorization (allowed outside production).
+ * or from `.env` in the project root. CRON_SECRET is required (#116);
+ * the script exits if it is missing.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -45,10 +45,17 @@ const baseUrl = (
 const secret = process.env.CRON_SECRET?.trim() ?? "";
 const url = `${baseUrl}/api/cron/notifications`;
 
-const headers = { Accept: "application/json" };
-if (secret) {
-  headers.Authorization = `Bearer ${secret}`;
+if (!secret) {
+  console.error(
+    "[cron:notifications] CRON_SECRET is required (fail-closed, #116). Set it in `.env`.",
+  );
+  process.exit(1);
 }
+
+const headers = {
+  Accept: "application/json",
+  Authorization: `Bearer ${secret}`,
+};
 
 let response;
 try {

@@ -19,8 +19,8 @@ EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_xxxxxxxx
 EMAIL_FROM=MassageGo <onboarding@resend.dev>
 AUTH_URL=http://localhost:3000
-# Optional. If set, local cron must send the same Bearer token.
-# CRON_SECRET=
+# Required for local cron scripts (#116 fail-closed).
+CRON_SECRET=dev-cron-secret
 ```
 
 Restart `npm run dev` after changing env.
@@ -39,7 +39,7 @@ npm run cron:notifications
 npm run cron:notifications:loop
 ```
 
-That calls `GET http://localhost:3000/api/cron/notifications` (override base with `CRON_BASE_URL` or `AUTH_URL`). If `CRON_SECRET` is set in `.env`, the script sends `Authorization: Bearer …`.
+That calls `GET http://localhost:3000/api/cron/notifications` (override base with `CRON_BASE_URL` or `AUTH_URL`). `CRON_SECRET` is **required** in `.env` (#116); the script sends `Authorization: Bearer …`.
 
 Plan limits and production deferral for host cron: [cron.md](cron.md) (#89).
 
