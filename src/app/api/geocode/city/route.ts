@@ -1,32 +1,63 @@
 import { NextResponse } from "next/server";
+import {
+  cityGeocodeCacheKey,
+  cityGeocodeResultCache,
+} from "@/lib/geocode/city-cache";
+import {
+  fetchNominatimCityResults,
+  type GeocodeCitySuggestion,
+} from "@/lib/geocode/nominatim-city";
+import {
+  rateLimitJsonResponse,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
-import { isExcludedCountryCode } from "@/lib/phone-countries";
-import { suggestTimezone } from "@/lib/timezone-suggest";
+import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
-const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
-const USER_AGENT = "SereinMassageApp/1.0 (city-lookup; local-dev)";
-const FETCH_LIMIT = 20;
-const RESULT_LIMIT = 6;
-
-type NominatimResult = {
-  place_id: number;
-  name?: string;
-  display_name: string;
-  lat?: string;
-  lon?: string;
-  address?: {
-    country_code?: string;
-  };
-};
-
-function shortLabel(item: NominatimResult) {
-  const name = item.name?.trim();
-  if (name) return name;
-  return item.display_name.split(",")[0]?.trim() || item.display_name;
-}
-
+/**
+ * City search proxy for Nominatim (#113).
+ *
+ * - Authenticated client or masseur: preferred (BR-017 + masseur profile).
+ * - Anonymous: allowed only under IP + global Nominatim budgets so client
+ *   registration can still pick a canonical city without a session (BR-017).
+ * - Cache hits skip upstream and the global Nominatim bucket.
+ */
 export async function GET(request: Request) {
+  const locale = resolveRequestLocale(request);
+  const gate = await requirePortalUser();
+  let userId: string | null = null;
+
+  if (gate.ok) {
+    userId = gate.userId;
+  } else if (gate.response.status === 409) {
+    return gate.response;
+  }
+  // else: anonymous registration path (BR-017) — rate-limited below.
+
+  const ip = getClientIp(request);
+  const ipLimit = await checkRateLimit(
+    rateLimitKey("geocode:ip", ip),
+    RATE_LIMITS.geocodeIp.limit,
+    RATE_LIMITS.geocodeIp.windowMs,
+  );
+  if (!ipLimit.ok) {
+    return rateLimitJsonResponse(ipLimit.retryAfterSec, locale);
+  }
+
+  if (userId) {
+    const userLimit = await checkRateLimit(
+      rateLimitKey("geocode:user", userId),
+      RATE_LIMITS.geocodeUser.limit,
+      RATE_LIMITS.geocodeUser.windowMs,
+    );
+    if (!userLimit.ok) {
+      return rateLimitJsonResponse(userLimit.retryAfterSec, locale);
+    }
+  }
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() ?? "";
   const lang = searchParams.get("lang") === "en" ? "en" : "uk";
@@ -35,55 +66,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: [] });
   }
 
-  const url = new URL(NOMINATIM_URL);
-  url.searchParams.set("q", q);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("featureType", "settlement");
-  url.searchParams.set("addressdetails", "1");
-  url.searchParams.set("limit", String(FETCH_LIMIT));
+  const cacheKey = cityGeocodeCacheKey(q, lang);
+  const cached = cityGeocodeResultCache.get(cacheKey) as
+    | GeocodeCitySuggestion[]
+    | undefined;
+  if (cached) {
+    return NextResponse.json({ results: cached, cached: true });
+  }
+
+  const globalLimit = await checkRateLimit(
+    rateLimitKey("geocode:nominatim:global", "app"),
+    RATE_LIMITS.geocodeNominatimGlobal.limit,
+    RATE_LIMITS.geocodeNominatimGlobal.windowMs,
+  );
+  if (!globalLimit.ok) {
+    return rateLimitJsonResponse(globalLimit.retryAfterSec, locale);
+  }
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "application/json",
-        "Accept-Language": lang === "en" ? "en" : "uk,ru;q=0.8,en;q=0.5",
-      },
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ results: [] }, { status: 502 });
-    }
-
-    const data = (await response.json()) as NominatimResult[];
-    const results = data
-      .filter((item) => !isExcludedCountryCode(item.address?.country_code))
-      .slice(0, RESULT_LIMIT)
-      .map((item) => {
-        const label = shortLabel(item);
-        const lat = item.lat ? Number(item.lat) : null;
-        const lon = item.lon ? Number(item.lon) : null;
-        const countryCode = (item.address?.country_code ?? "").toUpperCase();
-        const safeLat = Number.isFinite(lat) ? lat : null;
-        const safeLon = Number.isFinite(lon) ? lon : null;
-        return {
-          id: String(item.place_id),
-          placeId: String(item.place_id),
-          countryCode,
-          label,
-          detail: item.display_name,
-          nameEn: lang === "en" ? label : label,
-          nameUk: lang === "uk" ? label : label,
-          lat: safeLat,
-          lon: safeLon,
-          timeZone: suggestTimezone(safeLat, safeLon),
-        };
-      })
-      .filter((item) => item.countryCode.length === 2);
-
-    return NextResponse.json({ results });
+    const results = await fetchNominatimCityResults(q, lang);
+    cityGeocodeResultCache.set(cacheKey, results);
+    return NextResponse.json({ results, cached: false });
   } catch (error) {
     logRouteError("geocode/city", error);
     return NextResponse.json({ results: [] }, { status: 502 });

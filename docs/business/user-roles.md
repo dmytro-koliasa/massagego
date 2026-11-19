@@ -67,7 +67,7 @@ Legend: **Y** = allowed, **own** = only for the caller's own records, **-** = no
 | Edit masseur profile, massage types, gallery (max 3 images) | - | - | **own** | `api/masseur/profile`, `api/masseur/gallery*` |
 | Edit client profile (en/uk names) and avatar | - | **own** | - | `api/client/profile` |
 | Edit masseur avatar | - | - | **own** | `api/masseur/profile` |
-| Search cities (OpenStreetMap proxy) | - | - | **Y** | `api/geocode/city` |
+| Search cities (OpenStreetMap proxy) | rate-limited (register) | **Y** (own profile) | **Y** | `api/geocode/city` (#113) |
 | List other clients or other masseurs' private data | - | - | - | no endpoint exists |
 | Delete an account | - | **own** | **own** (refused while future bookings exist) | **Implemented** ([BR-011](decisions.md#br-011), [#19](https://github.com/dmytro-koliasa/massagego/pull/19)) |
 
