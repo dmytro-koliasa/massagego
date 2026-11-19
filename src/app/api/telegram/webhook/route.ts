@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { telegramWebhookSecret } from "@/lib/telegram/config";
+import {
+  authorizeTelegramWebhook,
+  readTelegramWebhookAuthEnv,
+} from "@/lib/telegram/webhook-auth";
 import { handleTelegramUpdate } from "@/lib/telegram/webhook";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const expected = telegramWebhookSecret();
-  if (expected) {
-    const got = request.headers.get("x-telegram-bot-api-secret-token");
-    if (got !== expected) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+  const auth = authorizeTelegramWebhook(
+    request.headers.get("x-telegram-bot-api-secret-token"),
+    readTelegramWebhookAuthEnv(),
+  );
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   let body: unknown;
@@ -21,7 +24,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    await handleTelegramUpdate(body as Parameters<typeof handleTelegramUpdate>[0]);
+    await handleTelegramUpdate(
+      body as Parameters<typeof handleTelegramUpdate>[0],
+    );
   } catch (error) {
     console.error("[telegram-webhook]", error);
   }
