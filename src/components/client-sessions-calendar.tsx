@@ -21,11 +21,7 @@ import {
   DEFAULT_CANCEL_CUTOFF_HOURS,
   DEFAULT_MASSEUR_TIME_ZONE,
 } from "@/lib/booking-constants";
-import {
-  formatHourRange,
-  formatSlotDateTime,
-  formatWeekTitle,
-} from "@/lib/calendar-time";
+import { formatHourRange, formatWeekTitle } from "@/lib/calendar-time";
 import {
   isWithinClientCancelWindow,
   type ClientCancelReasonKey,

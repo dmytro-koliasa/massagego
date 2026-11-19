@@ -25,14 +25,16 @@ export type PrefChannelState = {
 };
 
 export function defaultEmailEnabled(
-  _eventType: NotificationEventType,
+  eventType: NotificationEventType,
 ): boolean {
+  void eventType;
   return true;
 }
 
 export function defaultTelegramEnabled(
-  _eventType: NotificationEventType,
+  eventType: NotificationEventType,
 ): boolean {
+  void eventType;
   return true;
 }
 

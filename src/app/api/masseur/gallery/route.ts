@@ -6,7 +6,7 @@ import {
 } from "@/lib/image-process";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
-import { deleteUpload, storeUpload } from "@/lib/uploads";
+import { storeUpload } from "@/lib/uploads";
 
 const MAX_GALLERY_IMAGES = 3;
 

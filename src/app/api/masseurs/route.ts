@@ -194,11 +194,9 @@ export async function GET(request: Request) {
   return NextResponse.json({
     masseurs: pageSlice.map(
       ({ masseur, nearestFreeAt, hasFreeTime, availabilityLabel }) => {
-        const {
-          timezone: _timezone,
-          bookingLeadHours: _bookingLeadHours,
-          ...card
-        } = masseur;
+        const { timezone, bookingLeadHours, ...card } = masseur;
+        void timezone;
+        void bookingLeadHours;
         return {
           ...card,
           cityLabel: cityDisplayName(masseur, locale),
