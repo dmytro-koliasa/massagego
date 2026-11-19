@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatRateLimitMessage,
   hashRateLimitSubject,
+  isUniqueConstraintError,
   isWindowExpired,
   minutesFromRetryAfter,
   rateLimitKey,
@@ -90,5 +91,14 @@ describe("rateLimitKey hashing (#81)", () => {
     expect(rateLimitKey("signin:ip", "203.0.113.10")).toBe(
       rateLimitKey("signin:ip", "203.0.113.10"),
     );
+  });
+});
+
+describe("isUniqueConstraintError (#85)", () => {
+  it("detects Prisma P2002 and ignores other errors", () => {
+    expect(isUniqueConstraintError({ code: "P2002" })).toBe(true);
+    expect(isUniqueConstraintError({ code: "P2003" })).toBe(false);
+    expect(isUniqueConstraintError(new Error("boom"))).toBe(false);
+    expect(isUniqueConstraintError(null)).toBe(false);
   });
 });

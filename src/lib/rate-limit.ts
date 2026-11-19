@@ -61,9 +61,22 @@ export function isWindowExpired(
   return nowMs - windowStartMs >= windowMs;
 }
 
+/** Prisma unique-constraint violation (e.g. concurrent first insert on key). */
+export function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2002"
+  );
+}
+
 /**
  * Atomic sliding-window check: window starts on the first hit after expiry,
  * then increments until `limit` within `windowMs`.
+ *
+ * Concurrent first inserts on an empty key race past `SELECT … FOR UPDATE`
+ * (no row to lock). Catch P2002 and re-enter the transaction (#85).
  */
 export async function checkRateLimit(
   key: string,
@@ -72,40 +85,53 @@ export async function checkRateLimit(
   nowMs = Date.now(),
 ): Promise<RateLimitResult> {
   const now = new Date(nowMs);
+  const maxUniqueRetries = 3;
 
-  return prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<
-      { id: string; windowStart: Date; count: number }[]
-    >`SELECT id, "windowStart", count FROM "RateLimitBucket" WHERE key = ${key} FOR UPDATE`;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const rows = await tx.$queryRaw<
+          { id: string; windowStart: Date; count: number }[]
+        >`SELECT id, "windowStart", count FROM "RateLimitBucket" WHERE key = ${key} FOR UPDATE`;
 
-    const row = rows[0];
-    if (!row || isWindowExpired(row.windowStart.getTime(), windowMs, nowMs)) {
-      if (row) {
+        const row = rows[0];
+        if (!row || isWindowExpired(row.windowStart.getTime(), windowMs, nowMs)) {
+          if (row) {
+            await tx.rateLimitBucket.update({
+              where: { key },
+              data: { windowStart: now, count: 1 },
+            });
+          } else {
+            await tx.rateLimitBucket.create({
+              data: { key, windowStart: now, count: 1 },
+            });
+          }
+          return { ok: true as const };
+        }
+
+        if (row.count >= limit) {
+          return {
+            ok: false as const,
+            retryAfterSec: retryAfterSec(
+              row.windowStart.getTime(),
+              windowMs,
+              nowMs,
+            ),
+          };
+        }
+
         await tx.rateLimitBucket.update({
           where: { key },
-          data: { windowStart: now, count: 1 },
+          data: { count: { increment: 1 } },
         });
-      } else {
-        await tx.rateLimitBucket.create({
-          data: { key, windowStart: now, count: 1 },
-        });
+        return { ok: true as const };
+      });
+    } catch (error) {
+      if (!isUniqueConstraintError(error) || attempt >= maxUniqueRetries) {
+        throw error;
       }
-      return { ok: true as const };
     }
-
-    if (row.count >= limit) {
-      return {
-        ok: false as const,
-        retryAfterSec: retryAfterSec(row.windowStart.getTime(), windowMs, nowMs),
-      };
-    }
-
-    await tx.rateLimitBucket.update({
-      where: { key },
-      data: { count: { increment: 1 } },
-    });
-    return { ok: true as const };
-  });
+  }
 }
 
 /**
