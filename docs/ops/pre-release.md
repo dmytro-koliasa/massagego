@@ -78,4 +78,5 @@ Local-only testing without a secret requires `TELEGRAM_WEBHOOK_ALLOW_INSECURE=1`
 ## Related local ops
 
 - Email without Vercel: [email-local.md](email-local.md)
+- Cron / Vercel schedule analysis (deferred prod): [cron.md](cron.md)
 - Tests + CI (P-6): [testing.md](../testing.md)

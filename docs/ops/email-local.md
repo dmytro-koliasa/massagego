@@ -35,9 +35,13 @@ Vercel Cron is not used locally. With the app running:
 
 ```bash
 npm run cron:notifications
+# optional: repeat every 5 min (override with CRON_POLL_MS)
+npm run cron:notifications:loop
 ```
 
 That calls `GET http://localhost:3000/api/cron/notifications` (override base with `CRON_BASE_URL` or `AUTH_URL`). If `CRON_SECRET` is set in `.env`, the script sends `Authorization: Bearer …`.
+
+Plan limits and production deferral for host cron: [cron.md](cron.md) (#89).
 
 ## 4. Manual checklist
 
