@@ -31,9 +31,9 @@ describeDb("masseur bulk-cancel", () => {
       bulkCancelMasseurFutureBookings,
       countMasseurFutureBookings,
     } = await import("@/lib/masseur-bulk-cancel"));
-    ({ notifyMasseurCancelledBooking } = await import(
-      "@/lib/notifications/outbox"
-    ));
+    notifyMasseurCancelledBooking = vi.mocked(
+      (await import("@/lib/notifications/outbox")).notifyMasseurCancelledBooking,
+    );
 
     const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const masseur = await prisma.user.create({

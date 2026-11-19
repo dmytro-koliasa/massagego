@@ -321,7 +321,9 @@ export function pickThaiPairStarts(now = DateTime.now().setZone(ZONE)): {
   needsNextWeek: boolean;
 } {
   let { start, needsNextWeek } = pickBookableSlotStart(now);
-  let local = DateTime.fromJSDate(start, { zone: "utc" }).setZone(ZONE);
+  let local: DateTime = DateTime.fromJSDate(start, { zone: "utc" }).setZone(
+    ZONE,
+  );
   if (local.hour >= 22) {
     local = normalizeWorkingHour(
       local.plus({ days: 1 }).set({ hour: 10, minute: 0, second: 0, millisecond: 0 }),
@@ -349,7 +351,7 @@ export function pickThaiCutoffPairStarts(
   neighbor: Date;
   needsNextWeek: boolean;
 } {
-  let neighborLocal = now
+  let neighborLocal: DateTime = now
     .plus({ hours: Math.max(cutoffHours - 1, 1) })
     .startOf("hour");
   let cancelLocal = neighborLocal.plus({ hours: 1 });

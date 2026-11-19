@@ -1,6 +1,6 @@
 # Testing
 
-Local setup for **unit**, **integration**, and **E2E** tests. Continuous integration runs unit + integration + lint on GitHub Actions (see below). E2E stays local-only for now.
+Local setup for **unit**, **integration**, and **E2E** tests. Continuous integration runs lint, TypeScript, production build, and unit + integration on GitHub Actions (see below). E2E stays local-only for now.
 
 ## Prerequisites
 
@@ -44,6 +44,8 @@ TEST_DATABASE_URL="postgresql://massage:massage@localhost:5432/massage_test?sche
 | `npm run test:unit` | Vitest unit tests in `tests/unit/` (no DB) |
 | `npm run test:integration` | Vitest integration tests in `tests/integration/` (needs `TEST_DATABASE_URL`) |
 | `npm test` | Unit then integration |
+| `npm run typecheck` | `next typegen` then `tsc --noEmit` (needs generated `.next/types` for `LayoutProps` etc.) |
+| `npm run build` | Local production build (`prisma generate` + migrate deploy + `next build`) |
 | `npm run test:e2e` | Playwright specs in `e2e/` |
 | `npm run db:test:prepare` | Create/migrate `massage_test` |
 | `npm run db:migrate:test` | Migrate `massage_test` only |
@@ -74,7 +76,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 | Triggers | `pull_request` (all branches) and `push` to `master` |
 | Runner | Free `ubuntu-latest` |
 | Database | Postgres 16 service container → `massage_test` |
-| Steps | `npm ci` → `db:migrate:test` → `lint` → `npm test` |
+| Steps | `npm ci` → `db:migrate:test` → `lint` → `typecheck` → `build` → `npm test` |
 | Not in CI | Playwright E2E, paid runners |
 
 Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow env only.
