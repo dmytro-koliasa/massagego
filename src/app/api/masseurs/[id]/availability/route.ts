@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { syntheticBookedSlotEventId } from "@/lib/availability-event-id";
 import { SLOT_MS } from "@/lib/booking-constants";
 import {
   resolveBookingLeadHours,
@@ -166,7 +167,7 @@ export async function GET(request: Request, context: RouteContext) {
       if (byStart.has(startIso)) continue;
       const start = new Date(startIso);
       byStart.set(startIso, {
-        id: `booking-${booked.bookingId}`,
+        id: syntheticBookedSlotEventId(startIso),
         start: startIso,
         end: new Date(start.getTime() + SLOT_MS).toISOString(),
         status: "booked",
