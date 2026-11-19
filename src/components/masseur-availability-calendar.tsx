@@ -1437,6 +1437,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				{reportBookingId ? (
 					<ReportUserDialog
 						bookingId={reportBookingId}
+						portal="masseur"
 						open
 						onClose={() => setReportBookingId(null)}
 					/>
