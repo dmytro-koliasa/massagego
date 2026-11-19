@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { resolveBookingSettings } from "@/lib/booking-settings";
 import { cityDisplayName, toCityWriteData } from "@/lib/city";
 import { logRouteError } from "@/lib/http/route-error";
@@ -8,8 +7,8 @@ import {
   parseMassageTypes,
   serializeMassageTypes,
 } from "@/lib/massage-types";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
-import { userHasPortal } from "@/lib/portals.server";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import {
   ImageProcessError,
@@ -85,20 +84,8 @@ function toProfileResponse(
   };
 }
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
-
 export async function GET() {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   const user = await prisma.user.findUnique({
@@ -115,7 +102,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   try {
@@ -191,7 +178,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   try {
@@ -237,7 +224,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   try {

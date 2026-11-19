@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { SLOT_MS } from "@/lib/booking-constants";
 import { logRouteError } from "@/lib/http/route-error";
 import { alignToHour } from "@/lib/masseur-time";
-import { getMasseurTimeZone } from "@/lib/masseur-time.server";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { notifyMasseurCancelledBooking } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
 import {
@@ -11,21 +10,9 @@ import {
   parseWithSchema,
 } from "@/lib/validation";
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const timeZone = await getMasseurTimeZone(session.user.id);
-  if (!timeZone) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id, timeZone };
-}
-
 export async function POST(request: Request) {
   try {
-    const gate = await requireMasseur();
+    const gate = await requireMasseurSession({ withTimeZone: true });
     if ("error" in gate) return gate.error;
 
     const body = await request.json();

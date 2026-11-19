@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import {
   isMassageTypeValue,
   parseMassageTypes,
 } from "@/lib/massage-types";
-import { userHasPortal } from "@/lib/portals.server";
 import {
   isBookingConflictError,
   lockMasseurBookings,
@@ -16,6 +14,7 @@ import {
   isWithinWorkingHours,
   resolveTimeZone,
 } from "@/lib/masseur-time";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
 import {
   masseurBookingCreateSchema,
@@ -27,21 +26,9 @@ function isSlotExpired(start: Date) {
   return start.getTime() <= Date.now();
 }
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
-
 export async function POST(request: Request) {
   try {
-    const gate = await requireMasseur();
+    const gate = await requireMasseurSession();
     if ("error" in gate) return gate.error;
 
     const body = await request.json();
