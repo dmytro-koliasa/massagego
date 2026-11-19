@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { logRouteError } from "@/lib/http/route-error";
-import { userHasPortal } from "@/lib/portals.server";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
 import { deleteUpload } from "@/lib/uploads";
 
@@ -10,21 +9,14 @@ type RouteContext = {
 };
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const gate = await requireMasseurSession();
+  if ("error" in gate) return gate.error;
 
   const { id } = await context.params;
 
   try {
     const image = await prisma.galleryImage.findFirst({
-      where: { id, masseurId: session.user.id },
+      where: { id, masseurId: gate.userId },
       select: { id: true, url: true },
     });
 

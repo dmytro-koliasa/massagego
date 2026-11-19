@@ -1,30 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { logRouteError } from "@/lib/http/route-error";
 import {
   ImageProcessError,
   MAX_UPLOAD_BYTES,
 } from "@/lib/image-process";
-import { userHasPortal } from "@/lib/portals.server";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 
 const MAX_GALLERY_IMAGES = 3;
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
-
 export async function GET() {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   const images = await prisma.galleryImage.findMany({
@@ -43,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   try {

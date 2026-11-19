@@ -1,27 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import {
   lastCancellationSince,
   mapRecentCancellations,
   RECENT_CANCELLATIONS_LIMIT,
 } from "@/lib/last-cancellation";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
-import { userHasPortal } from "@/lib/portals.server";
-
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const allowed = await userHasPortal(session.user.id, "masseur");
-  if (!allowed) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
 
 export async function GET() {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   const since = lastCancellationSince();

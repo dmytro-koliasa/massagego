@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import { syntheticBookedSlotEventId } from "@/lib/availability-event-id";
 import {
   SLOT_MS,
@@ -17,7 +16,7 @@ import {
   isWithinWorkingHours,
 } from "@/lib/masseur-time";
 import { logRouteError } from "@/lib/http/route-error";
-import { getMasseurTimeZone } from "@/lib/masseur-time.server";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
 
 function statusForSlotError(error: string | undefined) {
@@ -25,20 +24,8 @@ function statusForSlotError(error: string | undefined) {
   return 400;
 }
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  const timeZone = await getMasseurTimeZone(session.user.id);
-  if (!timeZone) {
-    return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id, timeZone };
-}
-
 export async function GET(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession({ withTimeZone: true });
   if ("error" in gate) return gate.error;
 
   const { searchParams } = new URL(request.url);
@@ -256,7 +243,7 @@ async function applySlotChange(
 }
 
 export async function POST(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession({ withTimeZone: true });
   if ("error" in gate) return gate.error;
 
   try {
@@ -327,7 +314,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession({ withTimeZone: true });
   if ("error" in gate) return gate.error;
 
   try {

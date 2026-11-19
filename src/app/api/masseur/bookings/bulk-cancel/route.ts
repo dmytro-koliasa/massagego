@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth/masseur";
 import {
   rateLimitJsonResponse,
   resolveRequestLocale,
@@ -9,7 +8,7 @@ import {
   bulkCancelMasseurFutureBookings,
   countMasseurFutureBookings,
 } from "@/lib/masseur-bulk-cancel";
-import { getMasseurTimeZone } from "@/lib/masseur-time.server";
+import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import {
@@ -17,24 +16,8 @@ import {
   parseWithSchema,
 } from "@/lib/validation";
 
-async function requireMasseur() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return {
-      error: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
-    };
-  }
-  const timeZone = await getMasseurTimeZone(session.user.id);
-  if (!timeZone) {
-    return {
-      error: NextResponse.json({ error: "forbidden" }, { status: 403 }),
-    };
-  }
-  return { userId: session.user.id };
-}
-
 export async function GET() {
-  const gate = await requireMasseur();
+  const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
   const count = await countMasseurFutureBookings(gate.userId);
@@ -43,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const gate = await requireMasseur();
+    const gate = await requireMasseurSession();
     if ("error" in gate) return gate.error;
 
     const locale = resolveRequestLocale(request);
