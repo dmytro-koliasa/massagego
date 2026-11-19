@@ -179,7 +179,15 @@ export function CityAutocomplete({
             <li className="px-3 py-2 text-sm text-muted">{t.citySearchEmpty}</li>
           ) : (
             shownSuggestions.map((item) => (
-              <li key={item.id} role="option">
+              <li
+                key={item.id}
+                role="option"
+                aria-selected={
+                  item.label === value ||
+                  item.nameEn === value ||
+                  item.nameUk === value
+                }
+              >
                 <button
                   type="button"
                   className="flex w-full flex-col gap-0.5 px-3 py-2 text-left transition hover:bg-accent-soft"
