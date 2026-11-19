@@ -44,7 +44,7 @@ TEST_DATABASE_URL="postgresql://massage:massage@localhost:5432/massage_test?sche
 | `npm run test:unit` | Vitest unit tests in `tests/unit/` (no DB) |
 | `npm run test:integration` | Vitest integration tests in `tests/integration/` (needs `TEST_DATABASE_URL`) |
 | `npm test` | Unit then integration |
-| `npm run typecheck` | `tsc --noEmit` against `tsconfig.json` (app + tests + e2e) |
+| `npm run typecheck` | `next typegen` then `tsc --noEmit` (needs generated `.next/types` for `LayoutProps` etc.) |
 | `npm run build` | Local production build (`prisma generate` + migrate deploy + `next build`) |
 | `npm run test:e2e` | Playwright specs in `e2e/` |
 | `npm run db:test:prepare` | Create/migrate `massage_test` |
