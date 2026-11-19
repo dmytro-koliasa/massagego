@@ -46,7 +46,8 @@ TEST_DATABASE_URL="postgresql://massage:massage@localhost:5432/massage_test?sche
 | `npm test` | Unit then integration |
 | `npm run typecheck` | `next typegen` then `tsc --noEmit` (needs generated `.next/types` for `LayoutProps` etc.) |
 | `npm run knip` | Unused files/dependencies (Knip; see `knip.json`, #110). Unused exports/types are off for now — tighten later. |
-| `npm run build` | Local production build (`prisma generate` + migrate deploy + `next build`) |
+| `npm run build` | Local production build (`prisma generate` + `next build`; **does not** migrate — see #112) |
+| `npm run db:migrate` | Apply migrations to `DATABASE_URL` (explicit; never part of `build`) |
 | `npm run test:e2e` | Playwright specs in `e2e/` |
 | `npm run db:test:prepare` | Create/migrate `massage_test` |
 | `npm run db:migrate:test` | Migrate `massage_test` only |
@@ -77,7 +78,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 | Triggers | `pull_request` (all branches) and `push` to `master` |
 | Runner | Free `ubuntu-latest` |
 | Database | Postgres 16 service container → `massage_test` |
-| Steps | `npm ci` → `db:migrate:test` → `lint` → `knip` → `typecheck` → `build` → `npm test` |
+| Steps | `npm ci` → `db:migrate:test` (isolated service DB only) → `lint` → `knip` → `typecheck` → `build` (no migrate; #112) → `npm test` |
 | Not in CI | Playwright E2E, paid runners |
 
 Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow env only.

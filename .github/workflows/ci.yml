@@ -52,6 +52,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Migrations only against the workflow Postgres service (massage_test).
+      # npm run build must not migrate (#112).
       - name: Migrate test database
         run: npm run db:migrate:test
 
