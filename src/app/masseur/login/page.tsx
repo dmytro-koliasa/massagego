@@ -27,10 +27,21 @@ function MasseurLoginContent() {
     const error = searchParams.get("error");
     if (error === "blocked") {
       toast.error(t.authAccountBlocked);
+    } else if (
+      error === "oauth_not_linked" ||
+      error === "OAuthAccountNotLinked" ||
+      error === "AccountNotLinked"
+    ) {
+      toast.error(t.authOAuthNotLinked);
     } else if (error === "no_portal_access" || error === "AccessDenied") {
       toast.error(t.authNoPortalAccess);
     }
-  }, [searchParams, t.authAccountBlocked, t.authNoPortalAccess]);
+  }, [
+    searchParams,
+    t.authAccountBlocked,
+    t.authNoPortalAccess,
+    t.authOAuthNotLinked,
+  ]);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.id) {
