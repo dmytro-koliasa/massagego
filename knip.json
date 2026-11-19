@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/**/*.{js,mjs,ts}",
+    "e2e/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}",
+    "scripts/**/*.{js,mjs,ts}"
+  ],
+  "ignore": [
+    "tests/shims/server-only.ts"
+  ],
+  "ignoreDependencies": [
+    "tailwindcss"
+  ],
+  "ignoreIssues": {
+    "src/auth/admin.ts": ["exports"],
+    "src/auth/client.ts": ["exports"],
+    "src/auth/masseur.ts": ["exports"]
+  },
+  "rules": {
+    "exports": "off",
+    "types": "off",
+    "nsExports": "off",
+    "nsTypes": "off",
+    "enumMembers": "off"
+  }
+}
+
