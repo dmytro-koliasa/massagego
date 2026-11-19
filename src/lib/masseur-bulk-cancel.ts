@@ -41,12 +41,21 @@ export async function bulkCancelMasseurFutureBookings(options: {
     });
 
     if (bookings.length === 0) {
-      return { cancelledIds: [] as string[], notifyIds: [] as string[] };
+      return {
+        emptyAtStart: true as const,
+        cancelledIds: [] as string[],
+        notifyIds: [] as string[],
+      };
     }
 
     const cancelledAt = now;
+    // Only transition still-confirmed rows (#82) so concurrent client cancels
+    // keep their cancelledBy / reason.
     await tx.booking.updateMany({
-      where: { id: { in: bookings.map((row) => row.id) } },
+      where: {
+        id: { in: bookings.map((row) => row.id) },
+        status: "confirmed",
+      },
       data: {
         status: "cancelled",
         cancelledBy: "masseur",
@@ -54,7 +63,18 @@ export async function bulkCancelMasseurFutureBookings(options: {
       },
     });
 
-    for (const booking of bookings) {
+    const won = await tx.booking.findMany({
+      where: {
+        id: { in: bookings.map((row) => row.id) },
+        status: "cancelled",
+        cancelledBy: "masseur",
+        cancelledAt,
+      },
+      select: { id: true, slotStart: true, clientUserId: true },
+    });
+
+    // Availability only for rows this masseur actually cancelled (#82).
+    for (const booking of won) {
       if (!booking.slotStart) continue;
       const slotStart = booking.slotStart;
       const slotEnd = new Date(slotStart.getTime() + SLOT_MS);
@@ -85,14 +105,15 @@ export async function bulkCancelMasseurFutureBookings(options: {
     }
 
     return {
-      cancelledIds: bookings.map((row) => row.id),
-      notifyIds: bookings
+      emptyAtStart: false as const,
+      cancelledIds: won.map((row) => row.id),
+      notifyIds: won
         .filter((row) => row.clientUserId)
         .map((row) => row.id),
     };
   });
 
-  if (result.cancelledIds.length === 0) {
+  if (result.emptyAtStart) {
     return { ok: false, error: "none_found" };
   }
 

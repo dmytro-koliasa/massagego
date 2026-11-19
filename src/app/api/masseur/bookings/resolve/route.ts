@@ -60,8 +60,13 @@ export async function POST(request: Request) {
         throw new Error("not_found");
       }
 
-      await tx.booking.update({
-        where: { id: booking.id },
+      // Atomic claim (#82): do not overwrite a concurrent client cancel.
+      const claimed = await tx.booking.updateMany({
+        where: {
+          id: booking.id,
+          masseurId: gate.userId,
+          status: "confirmed",
+        },
         data: {
           status: "cancelled",
           cancelledBy: "masseur",
@@ -93,6 +98,8 @@ export async function POST(request: Request) {
         });
       }
 
+      // Notify only when this request won the cancel transition.
+      if (claimed.count === 0) return null;
       return booking.clientUserId ? booking.id : null;
     });
 
