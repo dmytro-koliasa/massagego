@@ -27,6 +27,8 @@ Restart `npm run dev` after changing env.
 
 With `EMAIL_PROVIDER` unset or `log`, messages only print in the server console — useful when you do not want to hit Resend.
 
+Outbox delivery uses an exclusive `processing` lease (`leaseExpiresAt`, #80). Concurrent immediate send + cron claim the same row with `updateMany`; only the winner calls the provider. Delivery is still **at-least-once** if a worker dies after send but before marking `sent` and the lease expires.
+
 ## 3. Drain the outbox (local cron)
 
 Vercel Cron is not used locally. With the app running:

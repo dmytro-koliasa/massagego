@@ -51,20 +51,29 @@ function truncateError(message: string): string {
   return message.slice(0, 500);
 }
 
+/** How long a worker may hold an outbox row before another may reclaim (#80). */
+export const OUTBOX_LEASE_MS = 2 * 60 * 1000;
+
+/**
+ * Terminal / retry writes only apply while this worker still owns `processing`.
+ * Prevents a stale worker from flipping `sent` → `failed` after reclaim (#80).
+ */
 async function markDead(
   id: string,
   attemptCount: number,
   lastError: string,
-): Promise<void> {
-  await prisma.notificationOutbox.update({
-    where: { id },
+): Promise<boolean> {
+  const result = await prisma.notificationOutbox.updateMany({
+    where: { id, status: "processing" },
     data: {
       status: "dead",
       lastError: truncateError(lastError),
       attemptCount,
       nextAttemptAt: null,
+      leaseExpiresAt: null,
     },
   });
+  return result.count === 1;
 }
 
 async function markFailed(
@@ -73,24 +82,83 @@ async function markFailed(
   createdAt: Date,
   lastError: string,
   now: Date,
-): Promise<void> {
+): Promise<boolean> {
   const retryAt = nextRetryAt(attemptCount, now);
   if (isPastRetryWindow(createdAt, retryAt)) {
-    await markDead(id, attemptCount, lastError);
-    return;
+    return markDead(id, attemptCount, lastError);
   }
-  await prisma.notificationOutbox.update({
-    where: { id },
+  const result = await prisma.notificationOutbox.updateMany({
+    where: { id, status: "processing" },
     data: {
       status: "failed",
       attemptCount,
       lastError: truncateError(lastError),
       nextAttemptAt: retryAt,
+      leaseExpiresAt: null,
     },
   });
+  return result.count === 1;
 }
 
-async function deliverOutboxRow(id: string): Promise<void> {
+async function markSent(
+  id: string,
+  attemptCount: number,
+  sentAt: Date,
+): Promise<boolean> {
+  const result = await prisma.notificationOutbox.updateMany({
+    where: { id, status: "processing" },
+    data: {
+      status: "sent",
+      sentAt,
+      attemptCount,
+      nextAttemptAt: null,
+      leaseExpiresAt: null,
+      lastError: null,
+    },
+  });
+  return result.count === 1;
+}
+
+/**
+ * Atomically claim a due outbox row for delivery.
+ * Returns false when another worker already holds a live lease.
+ */
+export async function claimOutboxDelivery(
+  id: string,
+  now = new Date(),
+): Promise<boolean> {
+  const leaseExpiresAt = new Date(now.getTime() + OUTBOX_LEASE_MS);
+  const result = await prisma.notificationOutbox.updateMany({
+    where: {
+      id,
+      OR: [
+        {
+          status: { in: ["pending", "failed"] },
+          OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }],
+        },
+        {
+          status: "processing",
+          OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
+        },
+      ],
+    },
+    data: {
+      status: "processing",
+      leaseExpiresAt,
+    },
+  });
+  return result.count === 1;
+}
+
+/**
+ * Deliver one outbox row after an exclusive claim.
+ * External providers remain at-least-once if a lease expires mid-send.
+ */
+export async function deliverOutboxRow(id: string): Promise<void> {
+  const now = new Date();
+  const claimed = await claimOutboxDelivery(id, now);
+  if (!claimed) return;
+
   const row = await prisma.notificationOutbox.findUnique({
     where: { id },
     include: {
@@ -106,7 +174,6 @@ async function deliverOutboxRow(id: string): Promise<void> {
   if (!row) return;
   if (row.status === "sent" || row.status === "dead") return;
 
-  const now = new Date();
   if (isPastRetryWindow(row.createdAt, now)) {
     await markDead(id, row.attemptCount, "max_retry_age");
     return;
@@ -136,16 +203,7 @@ async function deliverOutboxRow(id: string): Promise<void> {
       text: rendered.text,
     });
     if (result.ok) {
-      await prisma.notificationOutbox.update({
-        where: { id },
-        data: {
-          status: "sent",
-          sentAt: now,
-          attemptCount: row.attemptCount + 1,
-          nextAttemptAt: null,
-          lastError: null,
-        },
-      });
+      await markSent(id, row.attemptCount + 1, now);
       return;
     }
     await markFailed(
@@ -177,16 +235,7 @@ async function deliverOutboxRow(id: string): Promise<void> {
   });
 
   if (result.ok) {
-    await prisma.notificationOutbox.update({
-      where: { id },
-      data: {
-        status: "sent",
-        sentAt: now,
-        attemptCount: row.attemptCount + 1,
-        nextAttemptAt: null,
-        lastError: null,
-      },
-    });
+    await markSent(id, row.attemptCount + 1, now);
     return;
   }
 
@@ -303,8 +352,16 @@ export async function processNotificationOutbox(
   const now = new Date();
   const due = await prisma.notificationOutbox.findMany({
     where: {
-      status: { in: ["pending", "failed"] },
-      OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }],
+      OR: [
+        {
+          status: { in: ["pending", "failed"] },
+          OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: now } }],
+        },
+        {
+          status: "processing",
+          OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
+        },
+      ],
     },
     orderBy: { createdAt: "asc" },
     take: limit,

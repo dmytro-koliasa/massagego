@@ -267,6 +267,7 @@ enum NotificationChannel {
 
 enum NotificationOutboxStatus {
   pending
+  processing
   sent
   failed
   dead
@@ -298,6 +299,8 @@ model NotificationOutbox {
   status        NotificationOutboxStatus  @default(pending)
   attemptCount  Int                       @default(0)
   nextAttemptAt DateTime?
+  /// Exclusive delivery lease (#80); reclaim when expired while `processing`.
+  leaseExpiresAt DateTime?
   lastError     String?                   @db.VarChar(500)
   /// Minimal render snapshot (names, slot ISO, massage type, reason, locale, path).
   payloadJson   String
@@ -309,6 +312,7 @@ model NotificationOutbox {
   booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([status, nextAttemptAt])
+  @@index([status, leaseExpiresAt])
   @@index([userId, createdAt])
   @@index([bookingId])
 }
