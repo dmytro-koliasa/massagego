@@ -56,23 +56,39 @@ export async function POST(request: Request) {
         select: { id: true, clientUserId: true },
       });
 
-      if (!booking) {
-        throw new Error("not_found");
-      }
+      let notifyId: string | null = null;
 
-      // Atomic claim (#82): do not overwrite a concurrent client cancel.
-      const claimed = await tx.booking.updateMany({
-        where: {
-          id: booking.id,
-          masseurId: gate.userId,
-          status: "confirmed",
-        },
-        data: {
-          status: "cancelled",
-          cancelledBy: "masseur",
-          cancelledAt: new Date(),
-        },
-      });
+      if (booking) {
+        // Atomic claim (#82): do not overwrite a concurrent client cancel.
+        const claimed = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            masseurId: gate.userId,
+            status: "confirmed",
+          },
+          data: {
+            status: "cancelled",
+            cancelledBy: "masseur",
+            cancelledAt: new Date(),
+          },
+        });
+        if (claimed.count === 1 && booking.clientUserId) {
+          notifyId = booking.id;
+        }
+      } else {
+        // Client may have cancelled first in a race — still apply availability.
+        const alreadyCancelled = await tx.booking.findFirst({
+          where: {
+            masseurId: gate.userId,
+            slotStart,
+            status: "cancelled",
+          },
+          select: { id: true },
+        });
+        if (!alreadyCancelled) {
+          throw new Error("not_found");
+        }
+      }
 
       if (keepAvailable) {
         await tx.availabilitySlot.upsert({
@@ -98,9 +114,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // Notify only when this request won the cancel transition.
-      if (claimed.count === 0) return null;
-      return booking.clientUserId ? booking.id : null;
+      return notifyId;
     });
 
     if (cancelledBookingId) {
