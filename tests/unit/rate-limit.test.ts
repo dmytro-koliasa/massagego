@@ -47,26 +47,53 @@ describe("rate-limit helpers", () => {
   });
 });
 
-describe("getClientIp", () => {
-  it("prefers the first x-forwarded-for hop", () => {
+describe("getClientIp (#115)", () => {
+  const localEnv = {};
+
+  it("ignores spoofable leftmost XFF when no trusted proxy is configured", () => {
     const request = new Request("https://example.com", {
       headers: {
         "x-forwarded-for": "203.0.113.10, 10.0.0.1",
         "x-real-ip": "198.51.100.2",
       },
     });
-    expect(getClientIp(request)).toBe("203.0.113.10");
+    expect(getClientIp(request, localEnv)).toBe("unknown");
   });
 
-  it("falls back to x-real-ip then unknown", () => {
-    expect(
-      getClientIp(
-        new Request("https://example.com", {
-          headers: { "x-real-ip": "198.51.100.2" },
-        }),
-      ),
-    ).toBe("198.51.100.2");
-    expect(getClientIp(new Request("https://example.com"))).toBe("unknown");
+  it("prefers x-vercel-forwarded-for over XFF", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "x-vercel-forwarded-for": "198.51.100.9",
+        "x-forwarded-for": "203.0.113.10, 10.0.0.1",
+      },
+    });
+    expect(getClientIp(request, localEnv)).toBe("198.51.100.9");
+  });
+
+  it("uses TRUST_PROXY_HOPS from the right (append-style)", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "x-forwarded-for": "203.0.113.10, 198.51.100.2",
+      },
+    });
+    expect(getClientIp(request, { TRUST_PROXY_HOPS: "1" })).toBe(
+      "198.51.100.2",
+    );
+  });
+
+  it("on Vercel without platform header uses rightmost XFF", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "x-forwarded-for": "203.0.113.10, 198.51.100.2",
+      },
+    });
+    expect(getClientIp(request, { VERCEL: "1" })).toBe("198.51.100.2");
+  });
+
+  it("returns unknown with no usable trusted signal", () => {
+    expect(getClientIp(new Request("https://example.com"), localEnv)).toBe(
+      "unknown",
+    );
   });
 });
 
