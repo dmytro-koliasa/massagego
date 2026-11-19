@@ -1,27 +1,23 @@
 import { NextResponse } from "next/server";
-import { requireClientSession } from "@/lib/client-session.server";
 import { createAndSendVerificationLink } from "@/lib/email/verification";
-import { prisma } from "@/lib/prisma";
 import type { Locale } from "@/lib/i18n";
+import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
-  const client = await requireClientSession();
-  if (!client.ok) {
-    return NextResponse.json(
-      { error: client.status === 401 ? "unauthorized" : "forbidden" },
-      { status: client.status },
-    );
-  }
+  const gate = await requirePortalUser();
+  if (!gate.ok) return gate.response;
 
   const user = await prisma.user.findUnique({
-    where: { id: client.userId },
+    where: { id: gate.userId },
     select: {
       email: true,
       emailVerified: true,
       preferredLocale: true,
+      portal: true,
     },
   });
-  if (!user) {
+  if (!user || user.portal !== gate.portal) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
   if (user.emailVerified) {
@@ -31,7 +27,7 @@ export async function POST(request: Request) {
   const origin = new URL(request.url).origin;
   const locale = (user.preferredLocale === "uk" ? "uk" : "en") as Locale;
   const result = await createAndSendVerificationLink({
-    userId: client.userId,
+    userId: gate.userId,
     email: user.email,
     origin,
     locale,

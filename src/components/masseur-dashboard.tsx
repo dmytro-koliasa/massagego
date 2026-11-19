@@ -48,6 +48,7 @@ import {
 } from '@/lib/phone';
 import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
 import { deviceTimeZone } from '@/lib/timezone';
+import { portalRequestHeaders } from '@/lib/portals';
 import {
 	ADDRESS_MAX,
 	DESCRIPTION_MAX,
@@ -64,6 +65,7 @@ type Profile = {
 	nameUk: string | null;
 	slug: string | null;
 	email: string;
+	emailVerified?: boolean;
 	phone: string | null;
 	image: string | null;
 	descriptionEn: string | null;
@@ -135,6 +137,8 @@ export function DashboardView({ profile }: { profile: Profile }) {
 	);
 	const [image, setImage] = useState(profile.image);
 	const [slug, setSlug] = useState(profile.slug);
+	const [resendPending, setResendPending] = useState(false);
+	const emailVerified = Boolean(profile.emailVerified);
 	const [bookingLeadHours, setBookingLeadHours] = useState<BookingLeadHours>(
 		initialSettings.bookingLeadHours,
 	);
@@ -465,6 +469,25 @@ export function DashboardView({ profile }: { profile: Profile }) {
 		}
 	}
 
+	async function resendVerification() {
+		setResendPending(true);
+		try {
+			const response = await fetch('/api/auth/verify-email/resend', {
+				method: 'POST',
+				headers: portalRequestHeaders('masseur'),
+			});
+			if (!response.ok) {
+				toast.error(t.profileSaveError);
+				return;
+			}
+			toast.success(t.authVerifyEmailSent);
+		} catch {
+			toast.error(t.profileSaveError);
+		} finally {
+			setResendPending(false);
+		}
+	}
+
 	const displayName = nameEn || nameUk || profile.email || '?';
 	const initials = displayName
 		.split(' ')
@@ -484,6 +507,25 @@ export function DashboardView({ profile }: { profile: Profile }) {
 						<NotificationNavLink href='/masseur/notifications' portal='masseur' />
 					</p>
 				</div>
+
+				{!emailVerified ? (
+					<div className='mt-8 rounded-xl border border-accent/30 bg-accent-soft/40 p-4 text-left sm:p-5'>
+						<h2 className='text-base font-semibold text-foreground'>
+							{t.masseurEmailVerifyBannerTitle}
+						</h2>
+						<p className='mt-1 text-sm text-muted'>
+							{t.masseurEmailVerifyBannerSupport}
+						</p>
+						<button
+							type='button'
+							disabled={resendPending}
+							onClick={() => void resendVerification()}
+							className='mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
+						>
+							{t.masseurEmailVerifyResend}
+						</button>
+					</div>
+				) : null}
 
 				<section className='mt-10 rounded-2xl border border-surface-border bg-surface p-6 sm:p-8'>
 					<div className='mb-6 text-left'>

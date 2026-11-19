@@ -28,6 +28,7 @@ export default async function MasseurDashboardPage() {
       nameUk: true,
       slug: true,
       email: true,
+      emailVerified: true,
       phone: true,
       image: true,
       descriptionEn: true,
@@ -57,6 +58,7 @@ export default async function MasseurDashboardPage() {
     <DashboardView
       profile={{
         ...profile!,
+        emailVerified: Boolean(profile!.emailVerified),
         massageTypes: parseMassageTypes(profile!.massageTypes),
       }}
     />

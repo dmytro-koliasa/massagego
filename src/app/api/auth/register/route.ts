@@ -145,6 +145,17 @@ export async function POST(request: Request) {
       },
     });
 
+    // Masseur password accounts must prove mailbox ownership before catalog
+    // listing / email-dependent features (#78). Login itself stays allowed.
+    if (portal === "masseur") {
+      await createAndSendVerificationLink({
+        userId: user.id,
+        email,
+        origin,
+        locale,
+      });
+    }
+
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
     console.error("[auth/register]", error);

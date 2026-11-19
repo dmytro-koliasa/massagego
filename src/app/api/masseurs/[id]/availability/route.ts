@@ -55,6 +55,7 @@ export async function GET(request: Request, context: RouteContext) {
         bookingLeadHours: true,
         cancelCutoffHours: true,
         phone: true,
+        emailVerified: true,
         _count: { select: { availabilitySlots: true } },
       },
     });

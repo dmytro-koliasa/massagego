@@ -15,6 +15,8 @@ export type ListedMasseurProfileFields = {
   cityPlaceId?: string | null;
   address?: string | null;
   phone?: string | null;
+  /** Required for catalog publication (#78); login still allowed when null. */
+  emailVerified?: Date | string | null;
 };
 
 /** Profile fields required for a masseur to appear in the client catalog (BR-010). */
@@ -30,9 +32,13 @@ export function isCompleteMasseurProfile(
   );
 }
 
+function hasVerifiedEmail(user: ListedMasseurProfileFields): boolean {
+  return Boolean(user.emailVerified);
+}
+
 /**
- * Listed = complete profile + at least one AvailabilitySlot ever (BR-010).
- * Pass `hasAvailability` or `_count.availabilitySlots`.
+ * Listed = complete profile + verified email (#78) + at least one AvailabilitySlot
+ * ever (BR-010). Pass `hasAvailability` or `_count.availabilitySlots`.
  */
 export function isMasseurListed(
   user: ListedMasseurProfileFields & {
@@ -43,14 +49,19 @@ export function isMasseurListed(
   const hasAvailability =
     user.hasAvailability === true ||
     (user._count?.availabilitySlots ?? 0) > 0;
-  return isCompleteMasseurProfile(user) && hasAvailability;
+  return (
+    isCompleteMasseurProfile(user) &&
+    hasVerifiedEmail(user) &&
+    hasAvailability
+  );
 }
 
-/** Prisma fragment: complete profile + ever had an availability row. */
+/** Prisma fragment: complete profile + verified email + ever had an availability row. */
 export const listedMasseurWhere: Prisma.UserWhereInput = {
   AND: [
     { deletedAt: null },
     { blockedAt: null },
+    { emailVerified: { not: null } },
     {
       OR: [
         { AND: [{ nameEn: { not: null } }, { nameEn: { not: "" } }] },
