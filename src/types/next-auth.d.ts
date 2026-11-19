@@ -25,5 +25,7 @@ declare module "next-auth/jwt" {
     portal?: Portal;
     nameEn?: string | null;
     nameUk?: string | null;
+    /** Epoch ms of User.passwordChangedAt stamped at sign-in (#79). */
+    pwdChangedAt?: number;
   }
 }
