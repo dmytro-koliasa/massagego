@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   ImageProcessError,
   MAX_UPLOAD_BYTES,
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
     if (error instanceof ImageProcessError) {
       return NextResponse.json({ error: error.code }, { status: 400 });
     }
+    logRouteError("masseur/gallery", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

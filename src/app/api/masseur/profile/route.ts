@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth/masseur";
 import { resolveBookingSettings } from "@/lib/booking-settings";
 import { cityDisplayName, toCityWriteData } from "@/lib/city";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   normalizeMassageTypesInput,
   parseMassageTypes,
@@ -183,7 +184,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       user: toProfileResponse(user, locale),
     });
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -229,6 +231,7 @@ export async function POST(request: Request) {
     if (error instanceof ImageProcessError) {
       return NextResponse.json({ error: error.code }, { status: 400 });
     }
+    logRouteError("masseur/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -253,7 +256,8 @@ export async function DELETE() {
 
     const locale = current?.preferredLocale === "uk" ? "uk" : "en";
     return NextResponse.json({ user: toProfileResponse(user, locale) });
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/profile", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

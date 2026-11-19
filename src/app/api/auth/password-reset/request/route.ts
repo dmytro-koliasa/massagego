@@ -4,6 +4,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
+import { logRouteError } from "@/lib/http/route-error";
 import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import {
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
       message: SUCCESS_MESSAGES[locale],
     });
   } catch (error) {
-    console.error("[auth/password-reset/request]", error);
+    logRouteError("auth/password-reset/request", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

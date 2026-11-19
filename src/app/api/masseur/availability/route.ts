@@ -15,6 +15,7 @@ import {
   isSlotStarted,
   isWithinWorkingHours,
 } from "@/lib/masseur-time";
+import { logRouteError } from "@/lib/http/route-error";
 import { getMasseurTimeZone } from "@/lib/masseur-time.server";
 import { prisma } from "@/lib/prisma";
 
@@ -318,7 +319,8 @@ export async function POST(request: Request) {
       );
     }
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/availability", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
@@ -441,7 +443,8 @@ export async function PUT(request: Request) {
       weeksAhead,
       copiedSlots: template.length,
     });
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/availability", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

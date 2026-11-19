@@ -4,6 +4,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   bulkCancelMasseurFutureBookings,
   countMasseurFutureBookings,
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
       availability: result.availability,
     });
   } catch (error) {
-    console.error("[masseur/bookings/bulk-cancel]", error);
+    logRouteError("masseur/bookings/bulk-cancel", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

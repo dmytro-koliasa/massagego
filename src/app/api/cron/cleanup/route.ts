@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { processBookingCleanup } from "@/lib/booking-cleanup";
 import { authorizeCron } from "@/lib/cron-auth";
+import { logRouteError } from "@/lib/http/route-error";
 
 export async function GET(request: Request) {
   if (!authorizeCron(request)) {
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     console.info("[cron/cleanup]", result);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("[cron/cleanup]", error);
+    logRouteError("cron/cleanup", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

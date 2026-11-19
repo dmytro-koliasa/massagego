@@ -6,6 +6,7 @@ import {
   rateLimitJsonResponse,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   findPortalUserByEmail,
   findPortalUserByPhone,
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
-    console.error("[auth/register]", error);
+    logRouteError("auth/register", error);
     const code = prismaErrorCode(error);
     if (code === "P2002") {
       return NextResponse.json({ error: "email_taken" }, { status: 409 });

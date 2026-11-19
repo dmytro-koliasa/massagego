@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logRouteError } from "@/lib/http/route-error";
 import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { suggestTimezone } from "@/lib/timezone-suggest";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
@@ -83,7 +84,8 @@ export async function GET(request: Request) {
       .filter((item) => item.countryCode.length === 2);
 
     return NextResponse.json({ results });
-  } catch {
+  } catch (error) {
+    logRouteError("geocode/city", error);
     return NextResponse.json({ results: [] }, { status: 502 });
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   authorizeTelegramWebhook,
   readTelegramWebhookAuthEnv,
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
       body as Parameters<typeof handleTelegramUpdate>[0],
     );
   } catch (error) {
-    console.error("[telegram-webhook]", error);
+    logRouteError("telegram-webhook", error);
   }
 
   // Always 200 so Telegram does not retry endlessly on app bugs.

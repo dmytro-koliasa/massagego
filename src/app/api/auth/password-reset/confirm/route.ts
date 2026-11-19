@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { consumeResetToken } from "@/lib/email/password-reset";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   parseWithSchema,
   passwordResetConfirmSchema,
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("[auth/password-reset/confirm]", error);
+    logRouteError("auth/password-reset/confirm", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

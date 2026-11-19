@@ -10,6 +10,7 @@ import {
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
 import { SLOT_MS } from "@/lib/booking-constants";
+import { logRouteError } from "@/lib/http/route-error";
 import {
   alignToHour,
   isWithinWorkingHours,
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: "slot_taken" }, { status: 409 });
     }
-    console.error("[masseur/bookings]", error);
+    logRouteError("masseur/bookings", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

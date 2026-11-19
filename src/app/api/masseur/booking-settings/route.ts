@@ -5,6 +5,7 @@ import {
   resolveBookingSettings,
 } from "@/lib/booking-settings";
 import type { BookingLeadHours, CancelCutoffHours } from "@/lib/booking-constants";
+import { logRouteError } from "@/lib/http/route-error";
 import { prisma } from "@/lib/prisma";
 import { userHasPortal } from "@/lib/portals.server";
 import {
@@ -96,7 +97,8 @@ export async function PATCH(request: Request) {
       settings: resolveBookingSettings(user),
       cutoffRaised: applied.cutoffRaised,
     });
-  } catch {
+  } catch (error) {
+    logRouteError("masseur/booking-settings", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
