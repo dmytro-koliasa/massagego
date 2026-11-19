@@ -4,7 +4,7 @@ Next.js app for masseur and client portals: profiles, availability, bookings, an
 
 ## Stack
 
-- Next.js 16 + Auth.js (credentials + optional Google)
+- Next.js 16 + Auth.js (credentials + optional Google) — currently `next-auth` v5 beta; do not bump without a separate decision
 - PostgreSQL via Prisma
 - Photo uploads: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) in production, or `public/uploads/` locally when `BLOB_READ_WRITE_TOKEN` is unset
 
@@ -23,6 +23,22 @@ npm run dev
 2. Open [http://localhost:3000](http://localhost:3000).
 
 Optional: set `BLOB_READ_WRITE_TOKEN` to use Vercel Blob locally instead of disk.
+
+Set a non-empty `CRON_SECRET` in `.env` before running local cron scripts (#116).
+
+## Docs map
+
+| Topic | Doc |
+|--------|-----|
+| Unit / integration / E2E / CI | [docs/testing.md](docs/testing.md) |
+| Cron / notifications loop | [docs/ops/cron.md](docs/ops/cron.md) |
+| Client IP / rate-limit trust | [docs/ops/client-ip.md](docs/ops/client-ip.md) |
+| Local email (Resend log/dev) | [docs/ops/email-local.md](docs/ops/email-local.md) |
+| Pre-release DB / legal gates | [docs/ops/pre-release.md](docs/ops/pre-release.md) |
+| Business rules / roles | [docs/business/](docs/business/) |
+
+Admin portal: `/admin/login` (bootstrap via `ADMIN_BOOTSTRAP_*` in `.env.example`).  
+Telegram webhook: see `.env.example` (`TELEGRAM_*`) and fail-closed auth (#77).
 
 ## Deploy on Vercel
 
@@ -52,3 +68,9 @@ Google redirect URIs must match:
 | `npm run db:migrate:dev` | Create/apply migrations in development |
 | `npm run db:migrate:test` | Migrate isolated `massage_test` only |
 | `npm run db:studio` | Prisma Studio |
+| `npm run knip` | Unused files/deps gate (#110) |
+| `npm run cron:notifications` | Local outbox drain (needs `CRON_SECRET`) |
+| `npm run cron:cleanup` | Local retention cleanup (needs `CRON_SECRET`) |
+| `npm test` | Unit + integration tests |
+
+See [docs/testing.md](docs/testing.md) for the full test matrix.
