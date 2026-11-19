@@ -6,6 +6,10 @@ import {
   resolveBookingSettings,
 } from "@/lib/booking-settings";
 import { requireClientSession } from "@/lib/client-session.server";
+import {
+  CALENDAR_AVAILABILITY_MAX_SPAN_MS,
+  parseRequiredDateRange,
+} from "@/lib/date-range";
 import { logRouteError } from "@/lib/http/route-error";
 import { isMasseurListed } from "@/lib/masseur-catalog";
 import {
@@ -31,14 +35,15 @@ export async function GET(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
     const { searchParams } = new URL(request.url);
-    const fromRaw = searchParams.get("from");
-    const toRaw = searchParams.get("to");
-    const from = fromRaw ? new Date(fromRaw) : null;
-    const to = toRaw ? new Date(toRaw) : null;
-
-    if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-      return NextResponse.json({ error: "invalid_range" }, { status: 400 });
+    const range = parseRequiredDateRange(
+      searchParams.get("from"),
+      searchParams.get("to"),
+      CALENDAR_AVAILABILITY_MAX_SPAN_MS,
+    );
+    if (!range.ok) {
+      return NextResponse.json({ error: range.error }, { status: 400 });
     }
+    const { from, to } = range;
 
     const masseur = await prisma.user.findFirst({
       where: {
