@@ -17,6 +17,9 @@ export type ListedMasseurProfileFields = {
   phone?: string | null;
   /** Required for catalog publication (#78); login still allowed when null. */
   emailVerified?: Date | string | null;
+  /** Blocked or deleted masseurs must not look bookable (#133). */
+  blockedAt?: Date | string | null;
+  deletedAt?: Date | string | null;
 };
 
 /** Profile fields required for a masseur to appear in the client catalog (BR-010). */
@@ -46,6 +49,9 @@ export function isMasseurListed(
     _count?: { availabilitySlots?: number };
   },
 ): boolean {
+  if (user.blockedAt || user.deletedAt) {
+    return false;
+  }
   const hasAvailability =
     user.hasAvailability === true ||
     (user._count?.availabilitySlots ?? 0) > 0;
