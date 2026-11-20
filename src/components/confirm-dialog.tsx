@@ -1,5 +1,7 @@
 'use client';
 
+import { ModalDialog } from '@/components/modal-dialog';
+
 type ConfirmDialogProps = {
 	open: boolean;
 	title: string;
@@ -23,44 +25,42 @@ export function ConfirmDialog({
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
-	if (!open) return null;
-
 	return (
-		<div className='fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4'>
-			<div
-				role='dialog'
-				aria-modal='true'
-				aria-labelledby='confirm-dialog-title'
-				className='w-full max-w-md rounded-2xl border border-surface-border bg-surface p-5 shadow-lg'
+		<ModalDialog
+			open={open}
+			onClose={onCancel}
+			closeDisabled={pending}
+			labelledBy='confirm-dialog-title'
+			overlayClassName='fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4'
+			panelClassName='w-full max-w-md rounded-2xl border border-surface-border bg-surface p-5 shadow-lg'
+		>
+			<h2
+				id='confirm-dialog-title'
+				className='text-lg font-semibold text-foreground'
 			>
-				<h2
-					id='confirm-dialog-title'
-					className='text-lg font-semibold text-foreground'
+				{title}
+			</h2>
+			<p className='mt-2 text-sm leading-relaxed text-muted'>{message}</p>
+			<div className='mt-5 flex flex-wrap justify-end gap-2'>
+				<button
+					type='button'
+					disabled={pending}
+					onClick={onCancel}
+					className='h-10 rounded-[var(--radius-control)] border border-surface-border px-4 text-sm text-foreground disabled:opacity-60'
 				>
-					{title}
-				</h2>
-				<p className='mt-2 text-sm leading-relaxed text-muted'>{message}</p>
-				<div className='mt-5 flex flex-wrap justify-end gap-2'>
-					<button
-						type='button'
-						disabled={pending}
-						onClick={onCancel}
-						className='h-10 rounded-[var(--radius-control)] border border-surface-border px-4 text-sm text-foreground disabled:opacity-60'
-					>
-						{cancelLabel}
-					</button>
-					<button
-						type='button'
-						disabled={pending}
-						onClick={onConfirm}
-						className={`h-10 rounded-[var(--radius-control)] px-4 text-sm font-medium text-white disabled:opacity-60 ${
-							danger ? 'bg-red-600 hover:bg-red-700' : 'bg-accent hover:opacity-90'
-						}`}
-					>
-						{pending ? '…' : confirmLabel}
-					</button>
-				</div>
+					{cancelLabel}
+				</button>
+				<button
+					type='button'
+					disabled={pending}
+					onClick={onConfirm}
+					className={`h-10 rounded-[var(--radius-control)] px-4 text-sm font-medium text-white disabled:opacity-60 ${
+						danger ? 'bg-red-600 hover:bg-red-700' : 'bg-accent hover:opacity-90'
+					}`}
+				>
+					{pending ? '…' : confirmLabel}
+				</button>
 			</div>
-		</div>
+		</ModalDialog>
 	);
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/components/language-provider';
+import { ModalDialog } from '@/components/modal-dialog';
 import {
 	CLIENT_CANCEL_REASON_KEYS,
 	type ClientCancelReasonKey,
@@ -74,102 +75,95 @@ export function CancelBookingDialog({
 	}
 
 	return (
-		<div
-			className='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
-			role='presentation'
-			onClick={() => {
-				if (!pending) onClose();
-			}}
+		<ModalDialog
+			open
+			onClose={onClose}
+			closeDisabled={pending}
+			labelledBy='booking-cancel-title'
+			overlayClassName='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
+			panelClassName='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
 		>
-			<div
-				role='dialog'
-				aria-modal='true'
-				aria-labelledby='booking-cancel-title'
-				className='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
-				onClick={event => event.stopPropagation()}
+			<p
+				id='booking-cancel-title'
+				className='text-base font-medium text-foreground'
 			>
-				<p
-					id='booking-cancel-title'
-					className='text-base font-medium text-foreground'
-				>
-					{t.bookingCancelConfirm}
-				</p>
-				<div className='mt-2 space-y-1 text-sm text-muted'>
-					{subtitle ? <p>{subtitle}</p> : null}
-					<p>{formatSlotDateTime(startIso, locale, timeZone)}</p>
-					{massageType ? (
-						<p>
-							{t.bookingMassageType}:{' '}
-							{getMassageTypeLabel(massageType, locale)}
-						</p>
-					) : null}
-				</div>
+				{t.bookingCancelConfirm}
+			</p>
+			<div className='mt-2 space-y-1 text-sm text-muted'>
+				{subtitle ? <p>{subtitle}</p> : null}
+				<p>{formatSlotDateTime(startIso, locale, timeZone)}</p>
+				{massageType ? (
+					<p>
+						{t.bookingMassageType}:{' '}
+						{getMassageTypeLabel(massageType, locale)}
+					</p>
+				) : null}
+			</div>
 
-				<label className='mt-4 block text-left'>
-					<span className='mb-1.5 block text-sm text-muted'>
-						{t.bookingCancelReasonLabel}
-					</span>
-					<select
-						value={cancelReason}
+			<label className='mt-4 block text-left'>
+				<span className='mb-1.5 block text-sm text-muted'>
+					{t.bookingCancelReasonLabel}
+				</span>
+				<select
+					value={cancelReason}
+					disabled={pending}
+					onChange={event => {
+						setCancelReason(
+							event.target.value as ClientCancelReasonKey | '',
+						);
+						setLocalError(null);
+					}}
+					className='h-11 w-full rounded-lg border border-surface-border bg-background/70 px-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+				>
+					<option value=''>{t.bookingCancelReasonPlaceholder}</option>
+					{CLIENT_CANCEL_REASON_KEYS.map(key => (
+						<option key={key} value={key}>
+							{reasonLabel(key, t)}
+						</option>
+					))}
+				</select>
+			</label>
+
+			{cancelReason === 'other' ? (
+				<label className='mt-3 block text-left'>
+					<textarea
+						value={cancelReasonText}
 						disabled={pending}
+						maxLength={200}
+						rows={3}
+						placeholder={t.bookingCancelReasonOtherPlaceholder}
 						onChange={event => {
-							setCancelReason(
-								event.target.value as ClientCancelReasonKey | '',
-							);
+							setCancelReasonText(event.target.value);
 							setLocalError(null);
 						}}
-						className='h-11 w-full rounded-lg border border-surface-border bg-background/70 px-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
-					>
-						<option value=''>{t.bookingCancelReasonPlaceholder}</option>
-						{CLIENT_CANCEL_REASON_KEYS.map(key => (
-							<option key={key} value={key}>
-								{reasonLabel(key, t)}
-							</option>
-						))}
-					</select>
+						className='w-full rounded-lg border border-surface-border bg-background/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
+					/>
 				</label>
+			) : null}
 
-				{cancelReason === 'other' ? (
-					<label className='mt-3 block text-left'>
-						<textarea
-							value={cancelReasonText}
-							disabled={pending}
-							maxLength={200}
-							rows={3}
-							placeholder={t.bookingCancelReasonOtherPlaceholder}
-							onChange={event => {
-								setCancelReasonText(event.target.value);
-								setLocalError(null);
-							}}
-							className='w-full rounded-lg border border-surface-border bg-background/70 px-3 py-2 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]'
-						/>
-					</label>
-				) : null}
+			{localError ? (
+				<p className='mt-2 text-sm text-accent'>{localError}</p>
+			) : null}
 
-				{localError ? (
-					<p className='mt-2 text-sm text-accent'>{localError}</p>
-				) : null}
-
-				<div className='mt-5 flex flex-wrap justify-end gap-2'>
-					<button
-						type='button'
-						disabled={pending}
-						onClick={onClose}
-						className='h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
-					>
-						{t.bookingCancelKeep}
-					</button>
-					<button
-						type='button'
-						disabled={pending}
-						onClick={submit}
-						className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
-					>
-						{pending ? t.authPleaseWait : t.bookingCancelConfirmAction}
-					</button>
-				</div>
+			<div className='mt-5 flex flex-wrap justify-end gap-2'>
+				<button
+					type='button'
+					disabled={pending}
+					onClick={onClose}
+					className='h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60'
+				>
+					{t.bookingCancelKeep}
+				</button>
+				<button
+					type='button'
+					disabled={pending}
+					onClick={submit}
+					className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+				>
+					{pending ? t.authPleaseWait : t.bookingCancelConfirmAction}
+				</button>
 			</div>
-		</div>
+		</ModalDialog>
 	);
 }
 

@@ -12,6 +12,7 @@ import {
   thaiNeighborCutoffMessage,
 } from "@/components/cancel-booking-dialog";
 import { useLanguage } from "@/components/language-provider";
+import { ModalDialog } from "@/components/modal-dialog";
 import { ReportUserDialog } from "@/components/report-user-dialog";
 import { showPersistentThaiHint } from "@/lib/thai-hints";
 import {
@@ -360,7 +361,7 @@ export function ClientSessionsCalendar() {
               type="button"
               onClick={goToPrev}
               className="AvailabilityCalendarNavBtn"
-              aria-label="Previous week"
+              aria-label={t.calendarPreviousWeek}
             >
               ‹
             </button>
@@ -368,7 +369,7 @@ export function ClientSessionsCalendar() {
               type="button"
               onClick={goToNext}
               className="AvailabilityCalendarNavBtn"
-              aria-label="Next week"
+              aria-label={t.calendarNextWeek}
             >
               ›
             </button>
@@ -478,59 +479,53 @@ export function ClientSessionsCalendar() {
         </div>
       ) : null}
 
-      {sessionAction ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          role="presentation"
-          onClick={() => setSessionAction(null)}
+      <ModalDialog
+        open={Boolean(sessionAction)}
+        onClose={() => setSessionAction(null)}
+        labelledBy="session-actions-title"
+        overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        panelClassName="w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+      >
+        <h2
+          id="session-actions-title"
+          className="text-base font-medium text-foreground"
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="session-actions-title"
-            className="w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
-            onClick={(event) => event.stopPropagation()}
+          {t.sessionActionsTitle}
+        </h2>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const target = sessionAction;
+              if (!target) return;
+              setSessionAction(null);
+              setReportBookingId(target.bookingId);
+            }}
+            className="flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40"
           >
-            <h2
-              id="session-actions-title"
-              className="text-base font-medium text-foreground"
-            >
-              {t.sessionActionsTitle}
-            </h2>
-            <div className="mt-5 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = sessionAction;
-                  setSessionAction(null);
-                  setReportBookingId(target.bookingId);
-                }}
-                className="flex h-11 w-full items-center justify-center rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40"
-              >
-                {t.complaintReportAction}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = sessionAction;
-                  setSessionAction(null);
-                  requestCancel(target);
-                }}
-                className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90"
-              >
-                {t.sessionActionsCancel}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSessionAction(null)}
-                className="mt-1 flex h-10 w-full items-center justify-center text-sm text-muted transition hover:text-foreground"
-              >
-                {t.sessionActionsClose}
-              </button>
-            </div>
-          </div>
+            {t.complaintReportAction}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const target = sessionAction;
+              if (!target) return;
+              setSessionAction(null);
+              requestCancel(target);
+            }}
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90"
+          >
+            {t.sessionActionsCancel}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSessionAction(null)}
+            className="mt-1 flex h-10 w-full items-center justify-center text-sm text-muted transition hover:text-foreground"
+          >
+            {t.sessionActionsClose}
+          </button>
         </div>
-      ) : null}
+      </ModalDialog>
 
       {reportBookingId ? (
         <ReportUserDialog

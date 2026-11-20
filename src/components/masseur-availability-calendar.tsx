@@ -20,6 +20,7 @@ import flags from 'react-phone-number-input/flags';
 import 'react-phone-number-input/style.css';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
+import { ModalDialog } from '@/components/modal-dialog';
 import { ReportUserDialog } from '@/components/report-user-dialog';
 import { PHONE_COUNTRIES_ALLOWED } from '@/lib/phone-countries';
 import {
@@ -922,7 +923,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 										type='button'
 										onClick={goToPrev}
 										className='AvailabilityCalendarNavBtn'
-										aria-label='Previous week'
+										aria-label={t.calendarPreviousWeek}
 									>
 										‹
 									</button>
@@ -930,7 +931,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 										type='button'
 										onClick={goToNext}
 										className='AvailabilityCalendarNavBtn'
-										aria-label='Next week'
+										aria-label={t.calendarNextWeek}
 									>
 										›
 									</button>
@@ -1125,18 +1126,14 @@ export const MasseurAvailabilityCalendar = forwardRef<
 				) : null}
 
 				{slotAction ? (
-					<div
-						className='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
-						role='presentation'
-						onClick={closeSlotAction}
+					<ModalDialog
+						open
+						onClose={closeSlotAction}
+						closeDisabled={bookPending || resolvePending}
+						labelledBy='availability-slot-action-title'
+						overlayClassName='fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4'
+						panelClassName='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
 					>
-						<div
-							role='dialog'
-							aria-modal='true'
-							aria-labelledby='availability-slot-action-title'
-							className='w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]'
-							onClick={event => event.stopPropagation()}
-						>
 							{(() => {
 								const start = new Date(slotAction.startIso);
 								const end = new Date(start.getTime() + SLOT_MS);
@@ -1426,8 +1423,7 @@ export const MasseurAvailabilityCalendar = forwardRef<
 									</div>
 								</form>
 							)}
-						</div>
-					</div>
+					</ModalDialog>
 				) : null}
 
 				{!loading && slots.length === 0 ? (

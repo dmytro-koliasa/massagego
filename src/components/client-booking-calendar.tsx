@@ -533,7 +533,7 @@ export function ClientBookingCalendar({
 								type='button'
 								onClick={goToPrev}
 								className='AvailabilityCalendarNavBtn'
-								aria-label='Previous week'
+								aria-label={t.calendarPreviousWeek}
 							>
 								‹
 							</button>
@@ -542,7 +542,7 @@ export function ClientBookingCalendar({
 								onClick={goToNext}
 								disabled={!canGoNext}
 								className='AvailabilityCalendarNavBtn disabled:cursor-not-allowed disabled:opacity-45'
-								aria-label='Next week'
+								aria-label={t.calendarNextWeek}
 							>
 								›
 							</button>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/language-provider';
+import { ModalDialog } from '@/components/modal-dialog';
 
 type Props = {
 	onCancelled?: () => void;
@@ -173,73 +174,71 @@ export function MasseurBulkCancel({ onCancelled }: Props) {
 				</button>
 			</div>
 
-			{open ? (
-				<div className='fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4'>
-					<div
-						role='dialog'
-						aria-modal='true'
-						aria-labelledby='bulk-cancel-title'
-						className='w-full max-w-md rounded-2xl border border-surface-border bg-surface p-5 shadow-lg'
+			<ModalDialog
+				open={open}
+				onClose={() => setOpen(false)}
+				closeDisabled={pending}
+				labelledBy='bulk-cancel-title'
+				overlayClassName='fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4'
+				panelClassName='w-full max-w-md rounded-2xl border border-surface-border bg-surface p-5 shadow-lg'
+			>
+				<h2
+					id='bulk-cancel-title'
+					className='text-lg font-semibold text-foreground'
+				>
+					{t.bulkCancelConfirmTitle.replace('{n}', String(count ?? 0))}
+				</h2>
+				<p className='mt-2 text-sm leading-relaxed text-muted'>
+					{t.bulkCancelConfirmMessage}
+				</p>
+
+				<fieldset className='mt-4 space-y-2'>
+					<legend className='text-sm font-medium text-foreground'>
+						{t.bulkCancelAvailabilityLegend}
+					</legend>
+					<label className='flex items-center gap-2 text-sm text-foreground'>
+						<input
+							type='radio'
+							name='bulk-cancel-availability'
+							checked={availability === 'available'}
+							onChange={() => setAvailability('available')}
+							disabled={pending}
+							className='accent-[var(--accent)]'
+						/>
+						{t.bulkCancelKeepAvailable}
+					</label>
+					<label className='flex items-center gap-2 text-sm text-foreground'>
+						<input
+							type='radio'
+							name='bulk-cancel-availability'
+							checked={availability === 'unavailable'}
+							onChange={() => setAvailability('unavailable')}
+							disabled={pending}
+							className='accent-[var(--accent)]'
+						/>
+						{t.bulkCancelMakeUnavailable}
+					</label>
+				</fieldset>
+
+				<div className='mt-5 flex flex-wrap justify-end gap-2'>
+					<button
+						type='button'
+						disabled={pending}
+						onClick={() => setOpen(false)}
+						className='h-10 rounded-[var(--radius-control)] border border-surface-border px-4 text-sm text-foreground disabled:opacity-60'
 					>
-						<h2
-							id='bulk-cancel-title'
-							className='text-lg font-semibold text-foreground'
-						>
-							{t.bulkCancelConfirmTitle.replace('{n}', String(count ?? 0))}
-						</h2>
-						<p className='mt-2 text-sm leading-relaxed text-muted'>
-							{t.bulkCancelConfirmMessage}
-						</p>
-
-						<fieldset className='mt-4 space-y-2'>
-							<legend className='text-sm font-medium text-foreground'>
-								{t.bulkCancelAvailabilityLegend}
-							</legend>
-							<label className='flex items-center gap-2 text-sm text-foreground'>
-								<input
-									type='radio'
-									name='bulk-cancel-availability'
-									checked={availability === 'available'}
-									onChange={() => setAvailability('available')}
-									disabled={pending}
-									className='accent-[var(--accent)]'
-								/>
-								{t.bulkCancelKeepAvailable}
-							</label>
-							<label className='flex items-center gap-2 text-sm text-foreground'>
-								<input
-									type='radio'
-									name='bulk-cancel-availability'
-									checked={availability === 'unavailable'}
-									onChange={() => setAvailability('unavailable')}
-									disabled={pending}
-									className='accent-[var(--accent)]'
-								/>
-								{t.bulkCancelMakeUnavailable}
-							</label>
-						</fieldset>
-
-						<div className='mt-5 flex flex-wrap justify-end gap-2'>
-							<button
-								type='button'
-								disabled={pending}
-								onClick={() => setOpen(false)}
-								className='h-10 rounded-[var(--radius-control)] border border-surface-border px-4 text-sm text-foreground disabled:opacity-60'
-							>
-								{t.bulkCancelCancel}
-							</button>
-							<button
-								type='button'
-								disabled={pending}
-								onClick={() => void confirm()}
-								className='h-10 rounded-[var(--radius-control)] bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60'
-							>
-								{pending ? '…' : t.bulkCancelConfirmAction}
-							</button>
-						</div>
-					</div>
+						{t.bulkCancelCancel}
+					</button>
+					<button
+						type='button'
+						disabled={pending}
+						onClick={() => void confirm()}
+						className='h-10 rounded-[var(--radius-control)] bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60'
+					>
+						{pending ? '…' : t.bulkCancelConfirmAction}
+					</button>
 				</div>
-			) : null}
+			</ModalDialog>
 		</section>
 	);
 }

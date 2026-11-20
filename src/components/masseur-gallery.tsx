@@ -6,6 +6,7 @@ import Lightbox from "yet-another-react-lightbox";
 import { toast } from "sonner";
 import { GalleryCropModal } from "@/components/gallery-crop-modal";
 import { useLanguage } from "@/components/language-provider";
+import { ModalDialog } from "@/components/modal-dialog";
 import "react-photo-album/masonry.css";
 import "yet-another-react-lightbox/styles.css";
 
@@ -214,12 +215,18 @@ export function MasseurGallery({
                       }
                       setLightboxIndex(index);
                     }}
-                    aria-label={t.galleryTitle}
+                    aria-label={t.galleryPhotoLabel.replace(
+                      "{n}",
+                      String(index + 1),
+                    )}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={photo.src}
-                      alt=""
+                      alt={t.galleryPhotoLabel.replace(
+                        "{n}",
+                        String(index + 1),
+                      )}
                       width={width}
                       height={height}
                       className="h-full w-full object-cover"
@@ -269,48 +276,39 @@ export function MasseurGallery({
         />
       ) : null}
 
-      {deleteTargetId ? (
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4"
-          role="presentation"
-          onClick={closeDeleteDialog}
+      <ModalDialog
+        open={Boolean(deleteTargetId)}
+        onClose={closeDeleteDialog}
+        closeDisabled={Boolean(deletingId)}
+        labelledBy="gallery-delete-title"
+        overlayClassName="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4"
+        panelClassName="w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+      >
+        <p
+          id="gallery-delete-title"
+          className="text-base font-medium text-foreground"
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="gallery-delete-title"
-            className="w-full max-w-sm rounded-xl border border-surface-border bg-background p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
-            onClick={(event) => event.stopPropagation()}
+          {t.galleryDeleteConfirm}
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            disabled={Boolean(deletingId)}
+            onClick={closeDeleteDialog}
+            className="h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60"
           >
-            <p
-              id="gallery-delete-title"
-              className="text-base font-medium text-foreground"
-            >
-              {t.galleryDeleteConfirm}
-            </p>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                disabled={Boolean(deletingId)}
-                onClick={closeDeleteDialog}
-                className="h-11 rounded-lg border border-surface-border px-4 text-sm font-medium text-foreground transition hover:border-accent/40 disabled:opacity-60"
-              >
-                {t.galleryDeleteCancel}
-              </button>
-              <button
-                type="button"
-                disabled={Boolean(deletingId)}
-                onClick={() => void confirmDelete()}
-                className="h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-              >
-                {deletingId
-                  ? t.authPleaseWait
-                  : t.galleryDeleteConfirmAction}
-              </button>
-            </div>
-          </div>
+            {t.galleryDeleteCancel}
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(deletingId)}
+            onClick={() => void confirmDelete()}
+            className="h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            {deletingId ? t.authPleaseWait : t.galleryDeleteConfirmAction}
+          </button>
         </div>
-      ) : null}
+      </ModalDialog>
     </section>
   );
 }
