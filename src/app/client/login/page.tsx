@@ -76,7 +76,7 @@ function ClientLoginContent() {
 
   return (
     <main className="relative flex flex-1 flex-col bg-background py-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-[15px] text-center">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-start gap-8 px-[15px] text-center">
         <div className="max-w-xl space-y-3">
           <h1 className="font-display text-4xl tracking-[-0.04em] text-foreground sm:text-5xl">
             {t.clientPageTitle}
