@@ -33,16 +33,20 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true, already: true });
   }
 
-  await prisma.user.update({
-    where: { id },
-    data: { blockedAt: null },
-  });
-
-  await writeAdminAuditLog({
-    actorUserId: gate.userId,
-    action: "user.unblock",
-    targetUserId: id,
-    meta: { portal: target.portal },
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: { blockedAt: null },
+    });
+    await writeAdminAuditLog(
+      {
+        actorUserId: gate.userId,
+        action: "user.unblock",
+        targetUserId: id,
+        meta: { portal: target.portal },
+      },
+      tx,
+    );
   });
 
   return NextResponse.json({ ok: true, blockedAt: null });

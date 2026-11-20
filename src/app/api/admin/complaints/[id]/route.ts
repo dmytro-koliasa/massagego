@@ -21,7 +21,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const existing = await prisma.complaint.findUnique({
     where: { id },
-    select: { id: true, status: true, targetId: true, bookingId: true },
+    select: {
+      id: true,
+      status: true,
+      targetId: true,
+      bookingId: true,
+      adminNote: true,
+    },
   });
   if (!existing) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -49,6 +55,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
+  const statusChanged =
+    parsed.data.status !== undefined &&
+    parsed.data.status !== existing.status;
+  const noteChanged =
+    parsed.data.adminNote !== undefined &&
+    (parsed.data.adminNote ?? null) !== (existing.adminNote ?? null);
+
   const updated = await prisma.$transaction(async (tx) => {
     const row = await tx.complaint.update({
       where: { id },
@@ -60,24 +73,32 @@ export async function PATCH(request: Request, context: RouteContext) {
         resolvedAt: true,
       },
     });
-    if (
-      existing.bookingId &&
-      parsed.data.status !== undefined &&
-      parsed.data.status !== existing.status
-    ) {
+    if (existing.bookingId && statusChanged) {
       await syncBookingRetentionHold(tx, existing.bookingId);
+    }
+    if (statusChanged) {
+      await writeAdminAuditLog(
+        {
+          actorUserId: gate.userId,
+          action: `complaint.${parsed.data.status}`,
+          targetUserId: existing.targetId,
+          meta: { complaintId: id, from: existing.status },
+        },
+        tx,
+      );
+    } else if (noteChanged) {
+      await writeAdminAuditLog(
+        {
+          actorUserId: gate.userId,
+          action: "complaint.note",
+          targetUserId: existing.targetId,
+          meta: { complaintId: id, from: existing.status },
+        },
+        tx,
+      );
     }
     return row;
   });
-
-  if (parsed.data.status && parsed.data.status !== existing.status) {
-    await writeAdminAuditLog({
-      actorUserId: gate.userId,
-      action: `complaint.${parsed.data.status}`,
-      targetUserId: existing.targetId,
-      meta: { complaintId: id, from: existing.status },
-    });
-  }
 
   return NextResponse.json({
     ok: true,
