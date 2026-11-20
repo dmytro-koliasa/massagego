@@ -12,17 +12,51 @@ export type EmailSendResult =
   | { ok: true; mode: "provider" | "log" }
   | { ok: false; error: "email_not_configured" | "send_failed" };
 
+export type EmailSenderEnv = {
+  EMAIL_PROVIDER?: string;
+  NODE_ENV?: string;
+  VERCEL_ENV?: string;
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
+};
+
 /**
- * Email adapter (P-3). `EMAIL_PROVIDER=log|console` (default) logs locally.
+ * Production-like hosts must not use the log/console adapter (#125).
+ * Matches Telegram webhook production-like detection.
+ */
+export function isEmailProductionLike(
+  env: Pick<EmailSenderEnv, "NODE_ENV" | "VERCEL_ENV">,
+): boolean {
+  if (env.NODE_ENV === "production") return true;
+  const vercel = env.VERCEL_ENV?.trim();
+  return vercel === "production" || vercel === "preview";
+}
+
+function isLogProvider(provider: string | undefined): boolean {
+  return !provider || provider === "log" || provider === "console";
+}
+
+/**
+ * Email adapter (P-3). `EMAIL_PROVIDER=log|console` (default) logs locally
+ * outside production-like env. On production-like hosts, log/console/empty
+ * returns `email_not_configured` without writing the body (#125).
  * `EMAIL_PROVIDER=resend` uses Resend with `RESEND_API_KEY` and `EMAIL_FROM`.
  */
-export async function sendEmail(
+export async function sendEmailWithEnv(
   input: SendEmailInput,
+  env: EmailSenderEnv,
+  log: Pick<Console, "info" | "error"> = console,
 ): Promise<EmailSendResult> {
-  const provider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+  const provider = env.EMAIL_PROVIDER?.trim().toLowerCase();
 
-  if (!provider || provider === "log" || provider === "console") {
-    console.info("[email:log]", {
+  if (isLogProvider(provider)) {
+    if (isEmailProductionLike(env)) {
+      log.error(
+        "[email] log/console provider is refused in production-like environments",
+      );
+      return { ok: false, error: "email_not_configured" };
+    }
+    log.info("[email:log]", {
       to: input.to,
       subject: input.subject,
       text: input.text,
@@ -31,10 +65,12 @@ export async function sendEmail(
   }
 
   if (provider === "resend") {
-    const apiKey = process.env.RESEND_API_KEY?.trim();
-    const from = process.env.EMAIL_FROM?.trim();
+    const apiKey = env.RESEND_API_KEY?.trim();
+    const from = env.EMAIL_FROM?.trim();
     if (!apiKey || !from) {
-      console.error("[email] Resend is selected but RESEND_API_KEY or EMAIL_FROM is missing");
+      log.error(
+        "[email] Resend is selected but RESEND_API_KEY or EMAIL_FROM is missing",
+      );
       return { ok: false, error: "email_not_configured" };
     }
     try {
@@ -47,28 +83,34 @@ export async function sendEmail(
         html: input.html,
       });
       if (result.error) {
-        console.error("[email:resend]", result.error);
+        log.error("[email:resend]", result.error);
         return { ok: false, error: "send_failed" };
       }
       return { ok: true, mode: "provider" };
     } catch (error) {
-      console.error("[email:resend]", error);
+      log.error("[email:resend]", error);
       return { ok: false, error: "send_failed" };
     }
   }
 
-  if (process.env.NODE_ENV === "production") {
-    console.error("[email] EMAIL_PROVIDER is set but no transport is wired", {
+  if (isEmailProductionLike(env)) {
+    log.error("[email] EMAIL_PROVIDER is set but no transport is wired", {
       provider,
     });
     return { ok: false, error: "email_not_configured" };
   }
 
-  console.info("[email:unwired-provider]", {
+  log.info("[email:unwired-provider]", {
     provider,
     to: input.to,
     subject: input.subject,
     text: input.text,
   });
   return { ok: true, mode: "log" };
+}
+
+export async function sendEmail(
+  input: SendEmailInput,
+): Promise<EmailSendResult> {
+  return sendEmailWithEnv(input, process.env);
 }
