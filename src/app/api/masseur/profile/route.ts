@@ -14,6 +14,7 @@ import {
   ImageProcessError,
   MAX_UPLOAD_BYTES,
 } from "@/lib/image-process";
+import { normalizePhoneForCompare } from "@/lib/telegram/phone";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { masseurProfileSchema, parseWithSchema } from "@/lib/validation";
 
@@ -145,11 +146,19 @@ export async function PATCH(request: Request) {
       data.massageTypes = serializeMassageTypes(massageTypes);
     }
 
+    const current = await prisma.user.findUnique({
+      where: { id: gate.userId },
+      select: {
+        nameEn: true,
+        nameUk: true,
+        name: true,
+        slug: true,
+        phone: true,
+        phoneConfirmedAt: true,
+      },
+    });
+
     if (nameEn !== undefined || nameUk !== undefined) {
-      const current = await prisma.user.findUnique({
-        where: { id: gate.userId },
-        select: { nameEn: true, nameUk: true, name: true, slug: true },
-      });
       const nextEn = nameEn !== undefined ? nameEn : current?.nameEn;
       const nextUk = nameUk !== undefined ? nameUk : current?.nameUk;
       data.name = nextEn || nextUk || null;
@@ -160,6 +169,13 @@ export async function PATCH(request: Request) {
           { excludeUserId: gate.userId },
         );
       }
+    }
+
+    // Changing the public phone clears Telegram phone confirmation (#135).
+    const nextPhone = normalizePhoneForCompare(phone);
+    const prevPhone = normalizePhoneForCompare(current?.phone);
+    if (nextPhone !== prevPhone) {
+      data.phoneConfirmedAt = null;
     }
 
     const user = await prisma.user.update({
