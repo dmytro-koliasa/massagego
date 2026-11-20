@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 export const COMPLAINT_BODY_MAX = 500;
 export const COMPLAINT_ADMIN_NOTE_MAX = 1000;
@@ -66,8 +66,25 @@ export function assertComplaintBookingLink(options: {
   return { ok: true, targetId: booking.clientUserId };
 }
 
+/**
+ * Keep `Booking.hasRetentionHold` true while any open complaint references
+ * the booking (#132 / BR-011).
+ */
+export async function syncBookingRetentionHold(
+  tx: Pick<Prisma.TransactionClient, "complaint" | "booking">,
+  bookingId: string,
+): Promise<void> {
+  const openCount = await tx.complaint.count({
+    where: { bookingId, status: "open" },
+  });
+  await tx.booking.update({
+    where: { id: bookingId },
+    data: { hasRetentionHold: openCount > 0 },
+  });
+}
+
 export async function createComplaint(
-  prisma: Pick<PrismaClient, "booking" | "complaint" | "user">,
+  prisma: Pick<PrismaClient, "booking" | "complaint" | "user" | "$transaction">,
   input: ComplaintCreateInput,
 ): Promise<
   | { ok: true; id: string }
@@ -112,16 +129,20 @@ export async function createComplaint(
     return { ok: false, error: "invalid_target" };
   }
 
-  const created = await prisma.complaint.create({
-    data: {
-      reporterId: input.reporterId,
-      targetId: target.id,
-      bookingId: booking.id,
-      category: input.category,
-      body,
-      status: "open",
-    },
-    select: { id: true },
+  const created = await prisma.$transaction(async (tx) => {
+    const row = await tx.complaint.create({
+      data: {
+        reporterId: input.reporterId,
+        targetId: target.id,
+        bookingId: booking.id,
+        category: input.category,
+        body,
+        status: "open",
+      },
+      select: { id: true },
+    });
+    await syncBookingRetentionHold(tx, booking.id);
+    return row;
   });
 
   return { ok: true, id: created.id };
