@@ -12,12 +12,13 @@ import { prisma } from "@/lib/prisma";
 import { createPortalAuthConfig } from "@/auth/portal-config";
 import {
   AUTH_RATE_LIMIT_SCOPES,
-  shouldConsumeSignInPasswordFail,
+  evaluateSignInPasswordAttempt,
   SIGN_IN_IP_LIMIT,
   SIGN_IN_PASSWORD_FAIL_LIMIT,
 } from "@/lib/auth/auth-rate-limit-policy";
 import {
   checkRateLimit,
+  isRateLimitExceeded,
   minutesFromRetryAfter,
   rateLimitKey,
 } from "@/lib/rate-limit";
@@ -54,15 +55,38 @@ async function enforceSignInIpLimit(request: Request | undefined) {
 }
 
 /**
- * Count a failed password against the identifier bucket. Never throws a
- * rate-limit error here — credentials failures stay generic (#86).
+ * Verify password against the per-identifier fail ceiling (#127 / #86).
+ * Correct passwords always succeed and never touch the fail bucket.
+ * Wrong passwords at/over the ceiling return the same generic null without
+ * a distinct rate-limit code; under the ceiling they increment the bucket.
  */
-async function recordSignInPasswordFailure(accountKey: string) {
-  await checkRateLimit(
-    rateLimitKey(AUTH_RATE_LIMIT_SCOPES.signInPasswordFail, accountKey),
+async function passwordPassesSignInFailCeiling(
+  accountKey: string,
+  password: string,
+  passwordHash: string,
+): Promise<boolean> {
+  const failKey = rateLimitKey(
+    AUTH_RATE_LIMIT_SCOPES.signInPasswordFail,
+    accountKey,
+  );
+  const failCeilingReached = await isRateLimitExceeded(
+    failKey,
     SIGN_IN_PASSWORD_FAIL_LIMIT.limit,
     SIGN_IN_PASSWORD_FAIL_LIMIT.windowMs,
   );
+  const passwordValid = await compare(password, passwordHash);
+  const decision = evaluateSignInPasswordAttempt({
+    passwordValid,
+    failCeilingReached,
+  });
+  if (decision.recordFailure) {
+    await checkRateLimit(
+      failKey,
+      SIGN_IN_PASSWORD_FAIL_LIMIT.limit,
+      SIGN_IN_PASSWORD_FAIL_LIMIT.windowMs,
+    );
+  }
+  return decision.accept;
 }
 
 const googleConfigured =
@@ -190,14 +214,12 @@ export function createPortalAuth(portal: Portal) {
               throw new AccountBlockedSignIn();
             }
 
-            const valid = await compare(password, user.passwordHash);
-            if (
-              shouldConsumeSignInPasswordFail({
-                hasPasswordHash: true,
-                passwordValid: valid,
-              })
-            ) {
-              await recordSignInPasswordFailure(accountKey);
+            const accepted = await passwordPassesSignInFailCeiling(
+              accountKey,
+              password,
+              user.passwordHash,
+            );
+            if (!accepted) {
               return null;
             }
 
@@ -232,14 +254,12 @@ export function createPortalAuth(portal: Portal) {
             throw new AccountBlockedSignIn();
           }
 
-          const valid = await compare(password, user.passwordHash);
-          if (
-            shouldConsumeSignInPasswordFail({
-              hasPasswordHash: true,
-              passwordValid: valid,
-            })
-          ) {
-            await recordSignInPasswordFailure(accountKey);
+          const accepted = await passwordPassesSignInFailCeiling(
+            accountKey,
+            password,
+            user.passwordHash,
+          );
+          if (!accepted) {
             return null;
           }
 

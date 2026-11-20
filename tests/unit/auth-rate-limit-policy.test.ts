@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUTH_RATE_LIMIT_SCOPES,
   correctPasswordBypassesFailBudget,
+  evaluateSignInPasswordAttempt,
   PASSWORD_RESET_IDENTIFIER_LIMIT,
   PASSWORD_RESET_IP_LIMIT,
   shouldConsumeSignInPasswordFail,
@@ -48,5 +49,34 @@ describe("auth rate-limit policy (#86)", () => {
     expect(AUTH_RATE_LIMIT_SCOPES.passwordResetIdentifier).toBe(
       "password-reset:id",
     );
+  });
+});
+
+describe("evaluateSignInPasswordAttempt (#127)", () => {
+  it("accepts a correct password without recording even when the ceiling is full", () => {
+    expect(
+      evaluateSignInPasswordAttempt({
+        passwordValid: true,
+        failCeilingReached: true,
+      }),
+    ).toEqual({ accept: true, recordFailure: false });
+  });
+
+  it("rejects a wrong password at the ceiling without recording another failure", () => {
+    expect(
+      evaluateSignInPasswordAttempt({
+        passwordValid: false,
+        failCeilingReached: true,
+      }),
+    ).toEqual({ accept: false, recordFailure: false });
+  });
+
+  it("rejects a wrong password under the ceiling and records the failure", () => {
+    expect(
+      evaluateSignInPasswordAttempt({
+        passwordValid: false,
+        failCeilingReached: false,
+      }),
+    ).toEqual({ accept: false, recordFailure: true });
   });
 });
