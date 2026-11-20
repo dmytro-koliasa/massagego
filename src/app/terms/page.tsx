@@ -35,7 +35,7 @@ const copy = {
       },
       {
         h: '6. Acceptable use',
-        p: 'You must not abuse the service, attempt unauthorized access, scrape personal data, spam, or post unlawful or harmful content. We may rate-limit sensitive actions and may later introduce administrator blocking under separate product rules.',
+        p: 'You must not abuse the service, attempt unauthorized access, scrape personal data, spam, or post unlawful or harmful content. We may rate-limit sensitive actions. An administrator can block client and masseur accounts under the product rules.',
       },
       {
         h: '7. Content and profiles',
@@ -84,7 +84,7 @@ const copy = {
       },
       {
         h: '6. Прийнятне використання',
-        p: 'Заборонено зловживати сервісом, намагатися отримати несанкціонований доступ, збирати чужі дані, спамити чи публікувати незаконний контент. Ми можемо обмежувати частоту чутливих дій; блокування адміністратором з’явиться окремими правилами.',
+        p: 'Заборонено зловживати сервісом, намагатися отримати несанкціонований доступ, збирати чужі дані, спамити чи публікувати незаконний контент. Ми можемо обмежувати частоту чутливих дій. Адміністратор може блокувати облікові записи клієнта та масажиста згідно з правилами продукту.',
       },
       {
         h: '7. Контент і профілі',
