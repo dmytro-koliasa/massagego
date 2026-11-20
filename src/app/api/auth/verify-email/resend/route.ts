@@ -4,7 +4,7 @@ import type { Locale } from "@/lib/i18n";
 import { requirePortalUser } from "@/lib/notifications/portal-gate";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(request: Request) {
+export async function POST() {
   const gate = await requirePortalUser();
   if (!gate.ok) return gate.response;
 
@@ -24,12 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "already_verified" }, { status: 400 });
   }
 
-  const origin = new URL(request.url).origin;
   const locale = (user.preferredLocale === "uk" ? "uk" : "en") as Locale;
   const result = await createAndSendVerificationLink({
     userId: gate.userId,
     email: user.email,
-    origin,
     locale,
   });
 

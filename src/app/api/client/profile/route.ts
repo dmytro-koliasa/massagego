@@ -151,7 +151,6 @@ export async function PATCH(request: Request) {
       await createAndSendVerificationLink({
         userId: client.userId,
         email: user.email,
-        origin: new URL(request.url).origin,
         locale: user.preferredLocale === "uk" ? "uk" : "en",
       });
     }

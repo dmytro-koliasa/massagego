@@ -38,7 +38,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const portal = resolvePortalInput(body);
-    const origin = new URL(request.url).origin;
     const requestLocale = resolveRequestLocale(
       request,
       body && typeof body === "object"
@@ -101,7 +100,6 @@ export async function POST(request: Request) {
       await createAndSendVerificationLink({
         userId: user.id,
         email,
-        origin,
         locale,
       });
 
@@ -152,7 +150,6 @@ export async function POST(request: Request) {
       await createAndSendVerificationLink({
         userId: user.id,
         email,
-        origin,
         locale,
       });
     }
