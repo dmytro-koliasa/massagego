@@ -11,6 +11,6 @@ test("masseur login page is reachable", async ({ page }) => {
   await expect(page.locator('input[type="email"]').first()).toBeVisible();
   await expect(page.locator('input[type="password"]').first()).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
+    page.getByRole("button", { name: /Sign in|Увійти/i }),
   ).toBeVisible();
 });

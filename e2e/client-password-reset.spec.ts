@@ -13,13 +13,13 @@ test("client can request a password reset link", async ({ page }) => {
   await sessionReady;
 
   const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
+    name: /I am registered already|Я вже зареєстрований/i,
   });
   await loginTab.click();
   await expect(loginTab).toHaveAttribute("aria-selected", "true");
 
   await page
-    .getByRole("button", { name: /Forgot password|Забув пароль/ })
+    .getByRole("button", { name: /Forgot password|Забув пароль/i })
     .click();
 
   const phoneInput = page.locator(".PhoneInputInput");
@@ -38,6 +38,6 @@ test("client can request a password reset link", async ({ page }) => {
 
   // Forgot form returns to login after success.
   await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
+    page.getByRole("button", { name: /Sign in|Увійти/i }),
   ).toBeVisible();
 });

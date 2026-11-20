@@ -49,12 +49,12 @@ test("admin can block a client and the client cannot sign in", async ({
   await sessionReady;
 
   const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
+    name: /I am registered already|Я вже зареєстрований/i,
   });
   await loginTab.click();
   await page.locator('input[type="tel"]').first().fill(client.phone);
   await page.locator('input[type="password"]').first().fill(client.password);
-  await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
+  await page.getByRole("button", { name: /Sign in|Увійти/i }).click();
 
   await expect(
     page.getByText(

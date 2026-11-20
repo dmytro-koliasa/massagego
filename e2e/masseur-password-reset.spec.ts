@@ -13,14 +13,14 @@ test("masseur can request a password reset link", async ({ page }) => {
   await sessionReady;
 
   const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
+    name: /I am registered already|Я вже зареєстрований/i,
   });
   if ((await loginTab.getAttribute("aria-selected")) !== "true") {
     await loginTab.click();
   }
 
   await page
-    .getByRole("button", { name: /Forgot password|Забув пароль/ })
+    .getByRole("button", { name: /Forgot password|Забув пароль/i })
     .click();
 
   await page.locator('input[type="email"]').fill(fixture.masseurEmail);
@@ -35,6 +35,6 @@ test("masseur can request a password reset link", async ({ page }) => {
   ).toBeVisible({ timeout: 15_000 });
 
   await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
+    page.getByRole("button", { name: /Sign in|Увійти/i }),
   ).toBeVisible();
 });
