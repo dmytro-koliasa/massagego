@@ -1,16 +1,19 @@
 /**
- * Client IP for rate limiting (#115 / H5).
+ * Client IP for rate limiting (#115 / H5, #126).
  *
  * Trust model (do not blindly use first or last XFF without context):
  *
- * 1. `x-vercel-forwarded-for` — prefer when present (Vercel platform header).
+ * 1. On Vercel runtime (`VERCEL=1` / `VERCEL_ENV`) only: prefer
+ *    `x-vercel-forwarded-for` (rightmost hop if the value is a chain). Off
+ *    Vercel the header is ignored like any other client-supplied forwarded
+ *    header (#126).
  * 2. `TRUST_PROXY_HOPS` — positive integer N: take the Nth hop from the right
  *    of `x-forwarded-for` (append-style proxies; N=1 → rightmost = TCP peer
  *    observed by the nearest trusted proxy).
- * 3. Vercel runtime (`VERCEL=1` / `VERCEL_ENV`) without (1)/(2): treat as one
- *    trusted hop → rightmost XFF, else `x-real-ip`.
+ * 3. Vercel runtime without (1)/(2): treat as one trusted hop → rightmost XFF,
+ *    else `x-real-ip`.
  * 4. Otherwise (local `next dev`, no trusted proxy configured): ignore
- *    client-supplied `x-forwarded-for` / `x-real-ip` and return `"unknown"`.
+ *    client-supplied forwarded headers and return `"unknown"`.
  *
  * Callers already hash subjects via `rateLimitKey`; `"unknown"` collapses
  * unproxied local traffic into one bucket (acceptable for local-only abuse
@@ -21,12 +24,6 @@ const IP_MAX_LEN = 128;
 
 function clampIp(value: string): string {
   return value.slice(0, IP_MAX_LEN);
-}
-
-function firstHeaderValue(raw: string | null): string | null {
-  if (!raw) return null;
-  const first = raw.split(",")[0]?.trim();
-  return first || null;
 }
 
 /** Nth hop from the right (N=1 → last hop). */
@@ -73,10 +70,15 @@ export function getClientIp(
   request: Request,
   env: ClientIpEnv = process.env,
 ): string {
-  const vercelForwarded = firstHeaderValue(
-    request.headers.get("x-vercel-forwarded-for"),
-  );
-  if (vercelForwarded) return clampIp(vercelForwarded);
+  const onVercel = isVercelRuntime(env);
+
+  if (onVercel) {
+    const vercelForwarded = pickTrustedXffHop(
+      request.headers.get("x-vercel-forwarded-for"),
+      1,
+    );
+    if (vercelForwarded) return clampIp(vercelForwarded);
+  }
 
   const configuredHops = parseTrustProxyHops(env.TRUST_PROXY_HOPS);
   if (configuredHops !== null) {
@@ -87,7 +89,7 @@ export function getClientIp(
     if (hop) return clampIp(hop);
   }
 
-  if (isVercelRuntime(env)) {
+  if (onVercel) {
     const hop = pickTrustedXffHop(request.headers.get("x-forwarded-for"), 1);
     if (hop) return clampIp(hop);
     const realIp = request.headers.get("x-real-ip")?.trim();

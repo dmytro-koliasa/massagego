@@ -47,7 +47,7 @@ describe("rate-limit helpers", () => {
   });
 });
 
-describe("getClientIp (#115)", () => {
+describe("getClientIp (#115 / #126)", () => {
   const localEnv = {};
 
   it("ignores spoofable leftmost XFF when no trusted proxy is configured", () => {
@@ -60,14 +60,33 @@ describe("getClientIp (#115)", () => {
     expect(getClientIp(request, localEnv)).toBe("unknown");
   });
 
-  it("prefers x-vercel-forwarded-for over XFF", () => {
+  it("ignores x-vercel-forwarded-for when not on Vercel runtime (#126)", () => {
     const request = new Request("https://example.com", {
       headers: {
         "x-vercel-forwarded-for": "198.51.100.9",
         "x-forwarded-for": "203.0.113.10, 10.0.0.1",
       },
     });
-    expect(getClientIp(request, localEnv)).toBe("198.51.100.9");
+    expect(getClientIp(request, localEnv)).toBe("unknown");
+  });
+
+  it("on Vercel prefers x-vercel-forwarded-for over XFF (#126)", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "x-vercel-forwarded-for": "198.51.100.9",
+        "x-forwarded-for": "203.0.113.10, 10.0.0.1",
+      },
+    });
+    expect(getClientIp(request, { VERCEL: "1" })).toBe("198.51.100.9");
+  });
+
+  it("on Vercel takes the rightmost hop of x-vercel-forwarded-for (#126)", () => {
+    const request = new Request("https://example.com", {
+      headers: {
+        "x-vercel-forwarded-for": "203.0.113.10, 198.51.100.9",
+      },
+    });
+    expect(getClientIp(request, { VERCEL: "1" })).toBe("198.51.100.9");
   });
 
   it("uses TRUST_PROXY_HOPS from the right (append-style)", () => {
