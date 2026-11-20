@@ -11,7 +11,9 @@ import {
   addLocalWeeks,
   alignToHour,
   clientBookingWindowExclusiveEnd,
+  currentLocalWeekRange,
   formatInMasseurTimeZone,
+  isCurrentLocalWeekRange,
   isOutsideClientLeadTime,
   isValidTimeZone,
   isWithinClientBookingWindow,
@@ -166,5 +168,23 @@ describe("client lead time and booking window", () => {
     const nextDaySlot = utc("2031-05-10T21:00:00"); // 00:00 Kyiv on May 11
     expect(isWithinClientBookingWindow(lastDaySlot, KYIV, now)).toBe(true);
     expect(isWithinClientBookingWindow(nextDaySlot, KYIV, now)).toBe(false);
+  });
+
+  it("computes the Monday-based current local week (#129)", () => {
+    process.env.TZ = "UTC";
+    // 2031-07-14 is Monday; 12:00 Kyiv summer.
+    const now = utc("2031-07-14T09:00:00");
+    const week = currentLocalWeekRange(now, KYIV);
+    expect(week.from).toEqual(utc("2031-07-13T21:00:00"));
+    expect(week.to).toEqual(utc("2031-07-20T21:00:00"));
+    expect(isCurrentLocalWeekRange(week.from, week.to, KYIV, now)).toBe(true);
+    expect(
+      isCurrentLocalWeekRange(
+        week.from,
+        utc("2031-07-27T21:00:00"),
+        KYIV,
+        now,
+      ),
+    ).toBe(false);
   });
 });

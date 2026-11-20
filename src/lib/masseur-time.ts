@@ -109,6 +109,34 @@ export function addLocalWeeks(instant: Date, weeks: number, zone: string): Date 
   return inZone(instant, zone).plus({ weeks }).toJSDate();
 }
 
+/**
+ * Monday 00:00 → next Monday 00:00 in `zone` that contains `now`
+ * (matches FullCalendar `firstDay={1}` week bounds used by weekly copy).
+ */
+export function currentLocalWeekRange(
+  now: Date,
+  zone: string,
+): { from: Date; to: Date } {
+  const from = inZone(now, zone).startOf("week");
+  return {
+    from: from.toJSDate(),
+    to: from.plus({ weeks: 1 }).toJSDate(),
+  };
+}
+
+/** True when `from`/`to` are exactly the current local week bounds. */
+export function isCurrentLocalWeekRange(
+  from: Date,
+  to: Date,
+  zone: string,
+  now: Date = new Date(),
+): boolean {
+  const week = currentLocalWeekRange(now, zone);
+  return (
+    from.getTime() === week.from.getTime() && to.getTime() === week.to.getTime()
+  );
+}
+
 function formatOffset(offsetMinutes: number) {
   const sign = offsetMinutes < 0 ? "-" : "+";
   const abs = Math.abs(offsetMinutes);

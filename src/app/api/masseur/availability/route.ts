@@ -9,9 +9,11 @@ import {
   lastCancellationSince,
   pickLastCancellationsBySlotStart,
 } from "@/lib/last-cancellation";
+import { lockMasseurBookings } from "@/lib/booking-conflict";
 import {
   addLocalWeeks,
   alignToHour,
+  isCurrentLocalWeekRange,
   isSlotStarted,
   isWithinWorkingHours,
 } from "@/lib/masseur-time";
@@ -344,14 +346,18 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "invalid_range" }, { status: 400 });
     }
 
-    const now = Date.now();
-    if (now < from.getTime() || now >= to.getTime()) {
+    const now = new Date();
+    if (!isCurrentLocalWeekRange(from, to, gate.timeZone, now)) {
       return NextResponse.json({ error: "not_current_week" }, { status: 400 });
     }
 
     let template: { start: Date; end: Date }[] = [];
 
     if (Array.isArray(body.template)) {
+      if (body.template.length === 0) {
+        return NextResponse.json({ error: "empty_template" }, { status: 400 });
+      }
+      const seenTemplate = new Set<string>();
       for (const item of body.template) {
         const startRaw =
           typeof item === "string"
@@ -359,10 +365,28 @@ export async function PUT(request: Request) {
             : typeof item?.start === "string"
               ? item.start
               : "";
-        if (!startRaw) continue;
+        if (!startRaw) {
+          return NextResponse.json(
+            { error: "invalid_template" },
+            { status: 400 },
+          );
+        }
         const requested = new Date(startRaw);
-        if (Number.isNaN(requested.getTime())) continue;
+        if (Number.isNaN(requested.getTime())) {
+          return NextResponse.json(
+            { error: "invalid_template" },
+            { status: 400 },
+          );
+        }
         const start = alignToHour(requested, gate.timeZone);
+        const iso = start.toISOString();
+        if (seenTemplate.has(iso)) {
+          return NextResponse.json(
+            { error: "duplicate_template" },
+            { status: 400 },
+          );
+        }
+        seenTemplate.add(iso);
         template.push({
           start,
           end: new Date(start.getTime() + SLOT_MS),
@@ -377,6 +401,9 @@ export async function PUT(request: Request) {
         select: { start: true, end: true },
         orderBy: { start: "asc" },
       });
+      if (template.length === 0) {
+        return NextResponse.json({ error: "empty_template" }, { status: 400 });
+      }
     }
 
     if (
@@ -386,50 +413,69 @@ export async function PUT(request: Request) {
     }
 
     const futureEnd = addLocalWeeks(to, weeksAhead, gate.timeZone);
+    const generated: { masseurId: string; start: Date; end: Date }[] = [];
+    const generatedIso = new Set<string>();
 
-    const futureBookings = await prisma.booking.findMany({
-      where: {
-        masseurId: gate.userId,
-        slotStart: { gte: to, lt: futureEnd },
-        status: { not: "cancelled" },
-      },
-      select: { slotStart: true },
-    });
-    const protectedStarts = futureBookings
-      .map((booking) => booking.slotStart)
-      .filter((value): value is Date => Boolean(value));
+    for (let week = 1; week <= weeksAhead; week += 1) {
+      for (const slot of template) {
+        const start = addLocalWeeks(slot.start, week, gate.timeZone);
+        if (!isWithinWorkingHours(start, gate.timeZone)) {
+          return NextResponse.json({ error: "out_of_hours" }, { status: 400 });
+        }
+        if (isSlotStarted(start, now)) {
+          return NextResponse.json({ error: "slot_in_past" }, { status: 409 });
+        }
+        const iso = start.toISOString();
+        if (generatedIso.has(iso)) {
+          return NextResponse.json(
+            { error: "duplicate_template" },
+            { status: 400 },
+          );
+        }
+        generatedIso.add(iso);
+        generated.push({
+          masseurId: gate.userId,
+          start,
+          end: new Date(start.getTime() + SLOT_MS),
+        });
+      }
+    }
 
-    await prisma.availabilitySlot.deleteMany({
-      where: {
-        masseurId: gate.userId,
-        start: { gte: to, lt: futureEnd },
-        ...(protectedStarts.length > 0
-          ? { NOT: { start: { in: protectedStarts } } }
-          : {}),
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      await lockMasseurBookings(tx, gate.userId);
 
-    if (template.length > 0) {
+      const futureBookings = await tx.booking.findMany({
+        where: {
+          masseurId: gate.userId,
+          slotStart: { gte: to, lt: futureEnd },
+          status: { not: "cancelled" },
+        },
+        select: { slotStart: true },
+      });
+      const protectedStarts = futureBookings
+        .map((booking) => booking.slotStart)
+        .filter((value): value is Date => Boolean(value));
       const protectedIso = new Set(
         protectedStarts.map((start) => start.toISOString()),
       );
-      const data = [];
-      for (let week = 1; week <= weeksAhead; week += 1) {
-        for (const slot of template) {
-          const start = addLocalWeeks(slot.start, week, gate.timeZone);
-          if (protectedIso.has(start.toISOString())) continue;
-          data.push({
-            masseurId: gate.userId,
-            start,
-            end: new Date(start.getTime() + SLOT_MS),
-          });
-        }
-      }
 
+      await tx.availabilitySlot.deleteMany({
+        where: {
+          masseurId: gate.userId,
+          start: { gte: to, lt: futureEnd },
+          ...(protectedStarts.length > 0
+            ? { NOT: { start: { in: protectedStarts } } }
+            : {}),
+        },
+      });
+
+      const data = generated.filter(
+        (row) => !protectedIso.has(row.start.toISOString()),
+      );
       if (data.length > 0) {
-        await prisma.availabilitySlot.createMany({ data });
+        await tx.availabilitySlot.createMany({ data });
       }
-    }
+    });
 
     return NextResponse.json({
       ok: true,
