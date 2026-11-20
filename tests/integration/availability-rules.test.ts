@@ -132,11 +132,11 @@ describeDb("availability rules (database)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(utc("2031-07-14T09:00:00"));
 
-    // Current week Mon 2031-07-13 00:00 Kyiv (UTC+3) → Sun end.
-    const from = utc("2031-07-12T21:00:00");
-    const to = utc("2031-07-19T21:00:00");
+    // Current week Mon 2031-07-14 00:00 Kyiv (UTC+3) → next Mon.
+    const from = utc("2031-07-13T21:00:00");
+    const to = utc("2031-07-20T21:00:00");
     // 03:00 Kyiv = 00:00 UTC — outside the window.
-    const bad = utc("2031-07-13T00:00:00");
+    const bad = utc("2031-07-14T00:00:00");
 
     const response = ensure(
       await availabilityPut(
@@ -151,6 +151,143 @@ describeDb("availability rules (database)", () => {
     expect(response.status).toBe(400);
     expect((await response.json()).error).toBe("out_of_hours");
     expect(await prisma.availabilitySlot.count({ where: { masseurId } })).toBe(0);
+  });
+
+  it("does not delete future slots when the weekly-copy template is duplicate (#129)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(utc("2031-07-14T09:00:00"));
+
+    const from = utc("2031-07-13T21:00:00");
+    const to = utc("2031-07-20T21:00:00");
+    const templateStart = utc("2031-07-14T07:00:00"); // 10:00 Kyiv
+    const existingFuture = utc("2031-07-21T07:00:00"); // next week copy target
+
+    await prisma.availabilitySlot.create({
+      data: {
+        masseurId,
+        start: existingFuture,
+        end: utc("2031-07-21T08:00:00"),
+      },
+    });
+
+    const response = ensure(
+      await availabilityPut(
+        request("PUT", {
+          from: from.toISOString(),
+          to: to.toISOString(),
+          weeksAhead: 1,
+          template: [templateStart.toISOString(), templateStart.toISOString()],
+        }),
+      ),
+    );
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toBe("duplicate_template");
+    expect(
+      await prisma.availabilitySlot.count({
+        where: { masseurId, start: existingFuture },
+      }),
+    ).toBe(1);
+  });
+
+  it("rejects weekly copy when a generated start is already started (#129)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(utc("2031-07-14T09:00:00"));
+
+    const from = utc("2031-07-13T21:00:00");
+    const to = utc("2031-07-20T21:00:00");
+    // Template two weeks ago Monday 10:00 Kyiv → +1 week is still before `now`.
+    const staleTemplate = utc("2031-06-30T07:00:00");
+    const existingFuture = utc("2031-07-21T07:00:00");
+
+    await prisma.availabilitySlot.create({
+      data: {
+        masseurId,
+        start: existingFuture,
+        end: utc("2031-07-21T08:00:00"),
+      },
+    });
+
+    const response = ensure(
+      await availabilityPut(
+        request("PUT", {
+          from: from.toISOString(),
+          to: to.toISOString(),
+          weeksAhead: 1,
+          template: [staleTemplate.toISOString()],
+        }),
+      ),
+    );
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe("slot_in_past");
+    expect(
+      await prisma.availabilitySlot.count({
+        where: { masseurId, start: existingFuture },
+      }),
+    ).toBe(1);
+  });
+
+  it("keeps booked hours in the target window when weekly copy succeeds (#129)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(utc("2031-07-14T09:00:00"));
+
+    const from = utc("2031-07-13T21:00:00");
+    const to = utc("2031-07-20T21:00:00");
+    const templateStart = utc("2031-07-14T07:00:00"); // 10:00 Kyiv
+    const bookedStart = utc("2031-07-21T07:00:00"); // same hour next week
+    const otherFuture = utc("2031-07-22T07:00:00");
+
+    await prisma.availabilitySlot.createMany({
+      data: [
+        {
+          masseurId,
+          start: bookedStart,
+          end: utc("2031-07-21T08:00:00"),
+        },
+        {
+          masseurId,
+          start: otherFuture,
+          end: utc("2031-07-22T08:00:00"),
+        },
+      ],
+    });
+    await prisma.booking.create({
+      data: {
+        masseurId,
+        clientName: "Booked",
+        clientPhone: "+380501111111",
+        slotStart: bookedStart,
+        status: "confirmed",
+        massageType: "classic",
+      },
+    });
+
+    const response = ensure(
+      await availabilityPut(
+        request("PUT", {
+          from: from.toISOString(),
+          to: to.toISOString(),
+          weeksAhead: 1,
+          template: [templateStart.toISOString()],
+        }),
+      ),
+    );
+    expect(response.status).toBe(200);
+    expect(
+      await prisma.availabilitySlot.count({
+        where: { masseurId, start: bookedStart },
+      }),
+    ).toBe(1);
+    // Unbooked prior future hour is replaced by the template copy (same start).
+    expect(
+      await prisma.availabilitySlot.count({
+        where: { masseurId, start: otherFuture },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.availabilitySlot.count({
+        where: { masseurId, start: bookedStart },
+      }),
+    ).toBe(1);
   });
 
   it("still allows a walk-in inside the window before the slot starts", async () => {
