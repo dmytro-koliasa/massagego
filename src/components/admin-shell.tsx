@@ -12,6 +12,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     pathname === "/admin" || pathname.startsWith("/admin/users");
   const complaintsActive = pathname.startsWith("/admin/complaints");
   const auditActive = pathname.startsWith("/admin/audit");
+  const passwordActive = pathname.startsWith("/admin/password");
 
   return (
     <main className="flex flex-1 flex-col bg-background py-8">
@@ -54,6 +55,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             }`}
           >
             {t.adminNavAudit}
+          </Link>
+          <Link
+            href="/admin/password"
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+              passwordActive
+                ? "border-accent text-foreground"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            {t.adminNavPassword}
           </Link>
         </nav>
         <div className="mt-6">{children}</div>

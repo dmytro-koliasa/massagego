@@ -103,3 +103,21 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type ClientLoginInput = z.infer<typeof clientLoginSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetConfirmInput = z.infer<typeof passwordResetConfirmSchema>;
+
+export const adminPasswordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
+    password: passwordSchema,
+    passwordConfirm: z.string().min(1).max(PASSWORD_MAX),
+  })
+  .superRefine((value, ctx) => {
+    if (value.password !== value.passwordConfirm) {
+      ctx.addIssue({
+        code: "custom",
+        message: "password_mismatch",
+        path: ["passwordConfirm"],
+      });
+    }
+  });
+
+export type AdminPasswordChangeInput = z.infer<typeof adminPasswordChangeSchema>;
