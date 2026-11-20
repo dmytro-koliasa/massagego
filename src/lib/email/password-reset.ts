@@ -1,5 +1,9 @@
 import { createHash, randomBytes } from "crypto";
 import { hash } from "bcryptjs";
+import {
+  buildTrustedAppUrl,
+  resolveTrustedAppOrigin,
+} from "@/lib/auth/trusted-origin";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/sender";
 import { isSyntheticClientEmail } from "@/lib/email/verification";
@@ -22,17 +26,22 @@ export function hashPasswordResetToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+/** Site-relative reset path used in mailed links (#124). */
+export function passwordResetLinkPath(portal: Portal, rawToken: string): string {
+  return `${portalHomePath(portal)}?resetToken=${encodeURIComponent(rawToken)}`;
+}
+
 export type PasswordResetRequestResult = { ok: true };
 
 /**
  * Always succeeds from the caller's perspective. Email is sent only when the
- * user has a passwordHash and a verified, non-synthetic email.
+ * user has a passwordHash and a verified, non-synthetic email, and AUTH_URL
+ * is configured (#124). Never uses the request Host for the link.
  */
 export async function createAndSendResetLink(options: {
   portal: Portal;
   phone?: string;
   email?: string;
-  origin: string;
   locale: "en" | "uk";
 }): Promise<PasswordResetRequestResult> {
   const user =
@@ -51,6 +60,13 @@ export async function createAndSendResetLink(options: {
     return { ok: true };
   }
 
+  const trusted = resolveTrustedAppOrigin();
+  if (!trusted.ok) {
+    // Enumeration-safe: same response as an unknown account. No token written.
+    console.error("[password-reset] AUTH_URL unavailable", trusted.error);
+    return { ok: true };
+  }
+
   const now = Date.now();
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = hashPasswordResetToken(rawToken);
@@ -64,7 +80,10 @@ export async function createAndSendResetLink(options: {
     }),
   ]);
 
-  const resetUrl = `${options.origin.replace(/\/$/, "")}${portalHomePath(options.portal)}?resetToken=${rawToken}`;
+  const resetUrl = buildTrustedAppUrl(
+    trusted.origin,
+    passwordResetLinkPath(options.portal, rawToken),
+  );
   const subject =
     options.locale === "uk" ? "Скидання пароля" : "Reset your password";
   const text =

@@ -58,12 +58,10 @@ export async function POST(request: Request) {
       return rateLimitJsonResponse(idLimit.retryAfterSec, locale);
     }
 
-    const origin = new URL(request.url).origin;
     await createAndSendResetLink({
       portal,
       phone: portal === "client" ? parsed.data.phone : undefined,
       email: portal === "masseur" ? parsed.data.email : undefined,
-      origin,
       locale,
     });
 

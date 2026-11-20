@@ -1,4 +1,8 @@
 import { createHash, randomBytes } from "crypto";
+import {
+  buildTrustedAppUrl,
+  resolveTrustedAppOrigin,
+} from "@/lib/auth/trusted-origin";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/sender";
 
@@ -16,6 +20,11 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+/** Site-relative verify path used in mailed links (#124). */
+export function emailVerifyLinkPath(rawToken: string): string {
+  return `/api/auth/verify-email?token=${encodeURIComponent(rawToken)}`;
+}
+
 export type VerificationSendResult =
   | { ok: true }
   | {
@@ -30,10 +39,13 @@ export type VerificationSendResult =
       retryAfterSec?: number;
     };
 
+/**
+ * Send a one-time verify link built from AUTH_URL only (#124).
+ * Does not accept a request-derived origin.
+ */
 export async function createAndSendVerificationLink(options: {
   userId: string;
   email: string;
-  origin: string;
   locale: "en" | "uk";
 }): Promise<VerificationSendResult> {
   const user = await prisma.user.findUnique({
@@ -48,6 +60,12 @@ export async function createAndSendVerificationLink(options: {
   });
   if (!user) return { ok: false, error: "not_found" };
   if (user.emailVerified) return { ok: false, error: "already_verified" };
+
+  const trusted = resolveTrustedAppOrigin();
+  if (!trusted.ok) {
+    console.error("[email-verify] AUTH_URL unavailable", trusted.error);
+    return { ok: false, error: "email_not_configured" };
+  }
 
   const now = Date.now();
   if (user.emailVerifyLastSentAt) {
@@ -93,7 +111,10 @@ export async function createAndSendVerificationLink(options: {
     }),
   ]);
 
-  const verifyUrl = `${options.origin.replace(/\/$/, "")}/api/auth/verify-email?token=${rawToken}`;
+  const verifyUrl = buildTrustedAppUrl(
+    trusted.origin,
+    emailVerifyLinkPath(rawToken),
+  );
   const subject =
     options.locale === "uk"
       ? "Підтвердіть email"
