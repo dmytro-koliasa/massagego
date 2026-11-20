@@ -10,6 +10,7 @@ import {
   isTelegramNotificationEnabled,
 } from "@/lib/notifications/prefs";
 import { createInAppNotification } from "@/lib/notifications/inbox";
+import { notificationPartyName } from "@/lib/notifications/party-name";
 import { isPastRetryWindow, nextRetryAt } from "@/lib/notifications/retry";
 import {
   renderNotificationEmail,
@@ -19,6 +20,7 @@ import type {
   NotificationEventType,
   NotificationPayload,
 } from "@/lib/notifications/types";
+import { displayBookingClientName } from "@/lib/deleted-user";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramMessage } from "@/lib/telegram/api";
 import { formatTimeZoneOffsetLabel, normalizeTimeZone } from "@/lib/timezone";
@@ -33,18 +35,16 @@ function appOrigin(): string {
 
 function displayName(
   user: {
+    id?: string;
     name?: string | null;
     nameEn?: string | null;
     nameUk?: string | null;
     email?: string | null;
+    deletedAt?: Date | null;
   },
   locale: "en" | "uk",
 ): string {
-  const localized =
-    locale === "uk"
-      ? user.nameUk?.trim() || user.nameEn?.trim()
-      : user.nameEn?.trim() || user.nameUk?.trim();
-  return localized || user.name?.trim() || user.email?.trim() || "User";
+  return notificationPartyName(user, locale);
 }
 
 function truncateError(message: string): string {
@@ -397,6 +397,7 @@ type BookingNotifySource = {
     nameUk: string | null;
     email: string;
     preferredLocale: string;
+    deletedAt: Date | null;
   } | null;
 };
 
@@ -427,6 +428,7 @@ function bookingSelect() {
         nameUk: true,
         email: true,
         preferredLocale: true,
+        deletedAt: true,
       },
     },
   } as const;
@@ -553,10 +555,10 @@ export async function enqueueClientDeletedCancellationNotice(
 
   const masseurLocale =
     booking.masseur.preferredLocale === "uk" ? "uk" : "en";
-  const otherName =
-    (booking.client
-      ? displayName(booking.client, masseurLocale)
-      : booking.clientName.trim()) || "Client";
+  // Prefer the deleted-user label over anonymised email / empty names (#131).
+  const otherName = booking.client
+    ? displayName(booking.client, masseurLocale)
+    : displayBookingClientName(booking.clientName, masseurLocale);
 
   await enqueueChannels({
     recipientUserId: booking.masseur.id,
