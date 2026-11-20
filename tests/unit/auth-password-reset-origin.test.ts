@@ -98,4 +98,36 @@ describe("createAndSendResetLink origin (#124)", () => {
     expect(sendEmailMock).not.toHaveBeenCalled();
     expect(createToken).not.toHaveBeenCalled();
   });
+
+  it("mails a reclaim link for unverified accounts (#128 A)", async () => {
+    process.env.AUTH_URL = "https://trusted.example";
+    findPortalUserByEmail.mockResolvedValue({
+      id: "u-unverified",
+      email: "taken@example.com",
+      emailVerified: null,
+      passwordHash: "hash",
+    });
+
+    await createAndSendResetLink({
+      portal: "masseur",
+      email: "taken@example.com",
+      locale: "en",
+    });
+
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: "Confirm your email and set a password",
+        text: expect.stringMatching(
+          /^[\s\S]*https:\/\/trusted\.example\/masseur\/login\?resetToken=[0-9a-f]+[\s\S]*$/,
+        ),
+      }),
+    );
+    expect(createToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          identifier: "email-reclaim:u-unverified",
+        }),
+      }),
+    );
+  });
 });

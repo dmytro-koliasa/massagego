@@ -187,6 +187,7 @@ export async function deleteOwnAccount(options: {
           OR: [
             { identifier: `email-verify:${user.id}` },
             { identifier: `password-reset:${user.id}` },
+            { identifier: `email-reclaim:${user.id}` },
             { identifier: `telegram-link:${user.id}` },
           ],
         },
