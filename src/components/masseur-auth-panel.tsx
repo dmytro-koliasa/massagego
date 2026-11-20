@@ -10,7 +10,13 @@ import PhoneInput, {
 import flags from "react-phone-number-input/flags";
 import "react-phone-number-input/style.css";
 import { CityAutocomplete } from "@/components/city-autocomplete";
+import { PasswordField, TextField } from "@/components/form-fields";
 import { useLanguage } from "@/components/language-provider";
+import {
+  formCardClassName,
+  formControlClassName,
+  formPrimaryButtonClassName,
+} from "@/lib/ui-classes";
 import type { CanonicalCity } from "@/lib/city";
 import {
   AUTH_INTENT_COOKIE,
@@ -432,7 +438,7 @@ export function MasseurAuthPanel({
 
   if (resetToken) {
     return (
-      <div className="w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+      <div className={formCardClassName}>
         <div className="space-y-5">
           <h2 className="text-left font-display text-2xl tracking-[-0.03em] text-foreground">
             {t.authResetPasswordTitle}
@@ -471,7 +477,7 @@ export function MasseurAuthPanel({
             <button
               type="submit"
               disabled={pending}
-              className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className={formPrimaryButtonClassName}
             >
               {pending ? t.authPleaseWait : t.authResetPasswordSubmit}
             </button>
@@ -483,7 +489,7 @@ export function MasseurAuthPanel({
 
   if (mode === "forgot") {
     return (
-      <div className="w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+      <div className={formCardClassName}>
         <div className="space-y-5">
           <p className="text-left text-sm text-muted">{t.authForgotPasswordHint}</p>
           <form onSubmit={handleForgotRequest} className="space-y-4" noValidate>
@@ -517,7 +523,7 @@ export function MasseurAuthPanel({
                     autoComplete: "tel",
                     required: true,
                     className:
-                      "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                      "PhoneInputInput h-12 w-full rounded-none border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
                     onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
                       const inserted =
                         (event.nativeEvent as InputEvent).data ?? "";
@@ -540,7 +546,7 @@ export function MasseurAuthPanel({
                 />
               </label>
             ) : (
-              <Field
+              <TextField
                 id="email"
                 label={t.authEmail}
                 type="email"
@@ -555,7 +561,7 @@ export function MasseurAuthPanel({
             <button
               type="submit"
               disabled={pending}
-              className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className={formPrimaryButtonClassName}
             >
               {pending ? t.authPleaseWait : t.authForgotSubmit}
             </button>
@@ -573,7 +579,7 @@ export function MasseurAuthPanel({
   }
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+    <div className={formCardClassName}>
       <div
         role="tablist"
         aria-label={t.authTabsLabel}
@@ -600,7 +606,7 @@ export function MasseurAuthPanel({
           ) : null}
 
           {mode === "register" ? (
-            <Field
+            <TextField
               id="name"
               label={t.authName}
               type="text"
@@ -644,7 +650,7 @@ export function MasseurAuthPanel({
                     autoComplete: "tel",
                     required: true,
                     className:
-                      "PhoneInputInput h-12 w-full rounded-lg border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
+                      "PhoneInputInput h-12 w-full rounded-none border-0 bg-transparent pr-3 pl-1.5 text-foreground outline-none",
                     onBeforeInput: (event: FormEvent<HTMLInputElement>) => {
                       const inserted =
                         (event.nativeEvent as InputEvent).data ?? "";
@@ -684,7 +690,7 @@ export function MasseurAuthPanel({
                       onInvalid={validation.onInvalid}
                       onInput={validation.onInput}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="h-12 w-full rounded-[var(--radius-control)] border border-surface-border bg-background px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+                      className={formControlClassName}
                     />
                     <span className="mt-1.5 block text-xs text-muted">
                       {t.authEmailHint}
@@ -704,7 +710,7 @@ export function MasseurAuthPanel({
               ) : null}
             </>
           ) : (
-            <Field
+            <TextField
               id="email"
               label={t.authEmail}
               type="email"
@@ -770,7 +776,7 @@ export function MasseurAuthPanel({
           <button
             type="submit"
             disabled={pending}
-            className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className={formPrimaryButtonClassName}
           >
             {pending
               ? t.authPleaseWait
@@ -852,144 +858,6 @@ function TabButton({
     >
       {label}
     </button>
-  );
-}
-
-function Field({
-  id,
-  label,
-  type,
-  value,
-  onChange,
-  autoComplete,
-  required,
-  minLength,
-  maxLength,
-  validation,
-}: {
-  id: string;
-  label: string;
-  type: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete?: string;
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  validation: ReturnType<typeof createNativeValidationHandlers>;
-}) {
-  return (
-    <label className="block text-left">
-      <span className="mb-1.5 block text-sm text-muted">{label}</span>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        required={required}
-        minLength={minLength}
-        maxLength={maxLength}
-        onInvalid={validation.onInvalid}
-        onInput={validation.onInput}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-12 w-full rounded-[var(--radius-control)] border border-surface-border bg-background px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
-      />
-    </label>
-  );
-}
-
-function PasswordField({
-  id,
-  label,
-  value,
-  onChange,
-  autoComplete,
-  required,
-  minLength,
-  maxLength,
-  validation,
-  visible,
-  onToggleVisible,
-  showLabel,
-  hideLabel,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete?: string;
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  validation: ReturnType<typeof createNativeValidationHandlers>;
-  visible: boolean;
-  onToggleVisible: () => void;
-  showLabel: string;
-  hideLabel: string;
-}) {
-  return (
-    <label className="block text-left">
-      <span className="mb-1.5 block text-sm text-muted">{label}</span>
-      <div className="relative">
-        <input
-          id={id}
-          name={id}
-          type={visible ? "text" : "password"}
-          value={value}
-          autoComplete={autoComplete}
-          required={required}
-          minLength={minLength}
-          maxLength={maxLength}
-          onInvalid={validation.onInvalid}
-          onInput={validation.onInput}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full rounded-[var(--radius-control)] border border-surface-border bg-background px-4 pr-12 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
-        />
-        <button
-          type="button"
-          onClick={onToggleVisible}
-          aria-label={visible ? hideLabel : showLabel}
-          className="absolute top-1/2 right-3 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted transition hover:text-foreground"
-        >
-          {visible ? <EyeOffIcon /> : <EyeIcon />}
-        </button>
-      </div>
-    </label>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M3 3l18 18"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M10.6 10.7a2.75 2.75 0 0 0 3.7 3.7M9.5 5.2A10.6 10.6 0 0 1 12 5c6 0 9.5 7 9.5 7a16.7 16.7 0 0 1-3.2 3.9M6.2 6.3C4.1 7.8 2.5 12 2.5 12s3.5 7 9.5 7c1.5 0 2.9-.4 4.1-1"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
 

@@ -194,9 +194,9 @@ select:not(.PhoneInputCountrySelect):disabled {
   gap: 0.25rem;
   height: 3rem;
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: 0;
   border: 1px solid var(--surface-border);
-  background: color-mix(in srgb, var(--background) 70%, transparent);
+  background: var(--background);
   padding-inline: 0.75rem;
   color: var(--foreground);
   transition:
