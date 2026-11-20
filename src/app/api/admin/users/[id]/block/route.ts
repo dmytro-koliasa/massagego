@@ -35,19 +35,21 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   const blockedAt = new Date();
-  await prisma.$transaction([
-    prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
       where: { id },
       data: { blockedAt },
-    }),
-    prisma.session.deleteMany({ where: { userId: id } }),
-  ]);
-
-  await writeAdminAuditLog({
-    actorUserId: gate.userId,
-    action: "user.block",
-    targetUserId: id,
-    meta: { portal: target.portal },
+    });
+    await tx.session.deleteMany({ where: { userId: id } });
+    await writeAdminAuditLog(
+      {
+        actorUserId: gate.userId,
+        action: "user.block",
+        targetUserId: id,
+        meta: { portal: target.portal },
+      },
+      tx,
+    );
   });
 
   return NextResponse.json({ ok: true, blockedAt: blockedAt.toISOString() });
