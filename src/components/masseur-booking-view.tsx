@@ -34,6 +34,8 @@ type MasseurProfile = {
   descriptionUk: string | null;
   city: string | null;
   address: string | null;
+  /** Public phone (BR-004); shown on listed profiles (#134). */
+  phone: string | null;
   massageTypes: MassageTypeValue[];
   galleryImages: {
     id: string;
@@ -85,6 +87,7 @@ export function MasseurBookingView({
     city && addressLine
       ? `${city}, ${addressLine}`
       : city || addressLine;
+  const publicPhone = listed ? masseur.phone?.trim() || "" : "";
   const hasMassageTypes = masseur.massageTypes.length > 0;
 
   const showNonCancellableNotice = useMemo(() => {
@@ -267,6 +270,15 @@ export function MasseurBookingView({
                 <div className="flex items-start gap-2.5">
                   <LocationIcon className="mt-1 size-[18px] shrink-0 text-muted" />
                   <p className="text-[18px] text-muted">{location}</p>
+                </div>
+              ) : null}
+              {publicPhone ? (
+                <div className="flex items-start gap-2.5">
+                  <PhoneIcon className="mt-1 size-[18px] shrink-0 text-muted" />
+                  <p className="text-[18px] text-muted">
+                    <span className="sr-only">{t.profilePhone}: </span>
+                    {publicPhone}
+                  </p>
                 </div>
               ) : null}
               {description ? (
@@ -474,6 +486,23 @@ function LocationIcon({ className }: { className?: string }) {
     >
       <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z" />
       <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M22 16.9v2a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L7.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.4c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z" />
     </svg>
   );
 }
