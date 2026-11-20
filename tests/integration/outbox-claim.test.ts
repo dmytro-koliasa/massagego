@@ -152,12 +152,18 @@ describeDb("notification outbox claim/lease", () => {
     const deliverPromise = deliverOutboxRow(created.id);
 
     // Wait until A has claimed, then simulate successful reclaim → sent.
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    const mid = await prisma.notificationOutbox.findUniqueOrThrow({
-      where: { id: created.id },
-      select: { status: true },
-    });
-    expect(mid.status).toBe("processing");
+    // Fixed sleeps flake on slow CI; poll for the claim instead.
+    let midStatus = "pending";
+    for (let i = 0; i < 50; i += 1) {
+      const mid = await prisma.notificationOutbox.findUniqueOrThrow({
+        where: { id: created.id },
+        select: { status: true },
+      });
+      midStatus = mid.status;
+      if (mid.status === "processing") break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(midStatus).toBe("processing");
 
     await prisma.notificationOutbox.update({
       where: { id: created.id },
