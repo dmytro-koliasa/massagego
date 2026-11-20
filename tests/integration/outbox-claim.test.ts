@@ -105,7 +105,7 @@ describeDb("notification outbox claim/lease", () => {
     expect(row.leaseExpiresAt).toBeNull();
 
     // Already sent — further claims fail.
-    expect(await claimOutboxDelivery(outboxId)).toBe(false);
+    expect(await claimOutboxDelivery(outboxId)).toBeNull();
     await deliverOutboxRow(outboxId);
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
   });

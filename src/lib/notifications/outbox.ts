@@ -62,9 +62,10 @@ async function markDead(
   id: string,
   attemptCount: number,
   lastError: string,
+  leaseExpiresAt: Date,
 ): Promise<boolean> {
   const result = await prisma.notificationOutbox.updateMany({
-    where: { id, status: "processing" },
+    where: { id, status: "processing", leaseExpiresAt },
     data: {
       status: "dead",
       lastError: truncateError(lastError),
@@ -82,13 +83,14 @@ async function markFailed(
   createdAt: Date,
   lastError: string,
   now: Date,
+  leaseExpiresAt: Date,
 ): Promise<boolean> {
   const retryAt = nextRetryAt(attemptCount, now);
   if (isPastRetryWindow(createdAt, retryAt)) {
-    return markDead(id, attemptCount, lastError);
+    return markDead(id, attemptCount, lastError, leaseExpiresAt);
   }
   const result = await prisma.notificationOutbox.updateMany({
-    where: { id, status: "processing" },
+    where: { id, status: "processing", leaseExpiresAt },
     data: {
       status: "failed",
       attemptCount,
@@ -104,9 +106,10 @@ async function markSent(
   id: string,
   attemptCount: number,
   sentAt: Date,
+  leaseExpiresAt: Date,
 ): Promise<boolean> {
   const result = await prisma.notificationOutbox.updateMany({
-    where: { id, status: "processing" },
+    where: { id, status: "processing", leaseExpiresAt },
     data: {
       status: "sent",
       sentAt,
@@ -121,12 +124,13 @@ async function markSent(
 
 /**
  * Atomically claim a due outbox row for delivery.
- * Returns false when another worker already holds a live lease.
+ * Returns the lease expiry this worker wrote, or null when another worker
+ * already holds a live lease (#80 / #136).
  */
 export async function claimOutboxDelivery(
   id: string,
   now = new Date(),
-): Promise<boolean> {
+): Promise<Date | null> {
   const leaseExpiresAt = new Date(now.getTime() + OUTBOX_LEASE_MS);
   const result = await prisma.notificationOutbox.updateMany({
     where: {
@@ -147,17 +151,18 @@ export async function claimOutboxDelivery(
       leaseExpiresAt,
     },
   });
-  return result.count === 1;
+  return result.count === 1 ? leaseExpiresAt : null;
 }
 
 /**
  * Deliver one outbox row after an exclusive claim.
  * External providers remain at-least-once if a lease expires mid-send.
+ * Completion writes are fenced to this worker's lease (#136).
  */
 export async function deliverOutboxRow(id: string): Promise<void> {
   const now = new Date();
-  const claimed = await claimOutboxDelivery(id, now);
-  if (!claimed) return;
+  const leaseExpiresAt = await claimOutboxDelivery(id, now);
+  if (!leaseExpiresAt) return;
 
   const row = await prisma.notificationOutbox.findUnique({
     where: { id },
@@ -175,7 +180,7 @@ export async function deliverOutboxRow(id: string): Promise<void> {
   if (row.status === "sent" || row.status === "dead") return;
 
   if (isPastRetryWindow(row.createdAt, now)) {
-    await markDead(id, row.attemptCount, "max_retry_age");
+    await markDead(id, row.attemptCount, "max_retry_age", leaseExpiresAt);
     return;
   }
 
@@ -183,14 +188,19 @@ export async function deliverOutboxRow(id: string): Promise<void> {
   try {
     payload = JSON.parse(row.payloadJson) as NotificationPayload;
   } catch {
-    await markDead(id, row.attemptCount, "invalid_payload");
+    await markDead(id, row.attemptCount, "invalid_payload", leaseExpiresAt);
     return;
   }
 
   if (row.channel === "telegram") {
     const chatId = row.user.telegramChatId?.trim();
     if (!chatId) {
-      await markDead(id, row.attemptCount + 1, "telegram_not_linked");
+      await markDead(
+        id,
+        row.attemptCount + 1,
+        "telegram_not_linked",
+        leaseExpiresAt,
+      );
       return;
     }
     const rendered = renderNotificationTelegram(
@@ -203,7 +213,7 @@ export async function deliverOutboxRow(id: string): Promise<void> {
       text: rendered.text,
     });
     if (result.ok) {
-      await markSent(id, row.attemptCount + 1, now);
+      await markSent(id, row.attemptCount + 1, now, leaseExpiresAt);
       return;
     }
     await markFailed(
@@ -212,13 +222,19 @@ export async function deliverOutboxRow(id: string): Promise<void> {
       row.createdAt,
       result.error,
       now,
+      leaseExpiresAt,
     );
     return;
   }
 
   const email = row.user.email?.trim() ?? "";
   if (!row.user.emailVerified || !email || isSyntheticClientEmail(email)) {
-    await markDead(id, row.attemptCount + 1, "recipient_email_unverified");
+    await markDead(
+      id,
+      row.attemptCount + 1,
+      "recipient_email_unverified",
+      leaseExpiresAt,
+    );
     return;
   }
 
@@ -235,7 +251,7 @@ export async function deliverOutboxRow(id: string): Promise<void> {
   });
 
   if (result.ok) {
-    await markSent(id, row.attemptCount + 1, now);
+    await markSent(id, row.attemptCount + 1, now, leaseExpiresAt);
     return;
   }
 
@@ -245,6 +261,7 @@ export async function deliverOutboxRow(id: string): Promise<void> {
     row.createdAt,
     result.error,
     now,
+    leaseExpiresAt,
   );
 }
 
