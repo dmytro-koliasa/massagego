@@ -343,7 +343,10 @@ export const dictionaries = {
 		bookingWindowLimit:
 			'Booking is available up to 120 days ahead — until {date}.',
 		availabilityNotYetVisibleToClients: 'Not yet visible to clients',
+		calendarPreviousWeek: 'Previous week',
+		calendarNextWeek: 'Next week',
 		galleryTitle: 'Gallery',
+		galleryPhotoLabel: 'Photo {n}',
 		galleryEmptySupport:
 			'Add photos so clients can see them when placing an order.',
 		galleryLimitSupport: 'You can add up to 3 photos to the gallery.',
@@ -909,7 +912,10 @@ export const dictionaries = {
 		bookingWindowLimit:
 			'Запис доступний не більше ніж на 120 днів уперед — до {date}.',
 		availabilityNotYetVisibleToClients: 'Ще не видно клієнтам',
+		calendarPreviousWeek: 'Попередній тиждень',
+		calendarNextWeek: 'Наступний тиждень',
 		galleryTitle: 'Галерея',
+		galleryPhotoLabel: 'Фото {n}',
 		galleryEmptySupport:
 			'Додайте фото, щоб клієнт бачив їх при оформленні замовлення.',
 		galleryLimitSupport: 'У галерею можна додати не більше 3 фото.',
