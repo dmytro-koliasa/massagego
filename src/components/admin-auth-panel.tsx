@@ -4,12 +4,17 @@ import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PasswordField, TextField } from "@/components/form-fields";
 import { useLanguage } from "@/components/language-provider";
 import {
   AUTH_INTENT_COOKIE,
   AUTH_PORTAL_COOKIE,
   portalDefaultCallback,
 } from "@/lib/portals";
+import {
+  formCardClassName,
+  formPrimaryButtonClassName,
+} from "@/lib/ui-classes";
 import { loginSchema } from "@/lib/validation";
 
 function rateLimitedMessage(
@@ -29,6 +34,7 @@ export function AdminAuthPanel() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: FormEvent) {
@@ -68,36 +74,37 @@ export function AdminAuthPanel() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto w-full max-w-md space-y-4">
-      <label className="block text-left text-sm">
-        <span className="mb-1.5 block text-muted">{t.authEmail}</span>
-        <input
+    <div className={`${formCardClassName} mx-auto`}>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <TextField
+          id="admin-email"
+          label={t.authEmail}
           type="email"
           autoComplete="email"
           required
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="h-12 w-full rounded-lg border border-surface-border bg-background px-4 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+          onChange={setEmail}
         />
-      </label>
-      <label className="block text-left text-sm">
-        <span className="mb-1.5 block text-muted">{t.authPassword}</span>
-        <input
-          type="password"
+        <PasswordField
+          id="admin-password"
+          label={t.authPassword}
           autoComplete="current-password"
           required
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="h-12 w-full rounded-lg border border-surface-border bg-background px-4 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+          onChange={setPassword}
+          visible={showPassword}
+          onToggleVisible={() => setShowPassword((value) => !value)}
+          showLabel={t.authShowPassword}
+          hideLabel={t.authHidePassword}
         />
-      </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-      >
-        {pending ? t.authPleaseWait : t.adminSignIn}
-      </button>
-    </form>
+        <button
+          type="submit"
+          disabled={pending}
+          className={formPrimaryButtonClassName}
+        >
+          {pending ? t.authPleaseWait : t.adminSignIn}
+        </button>
+      </form>
+    </div>
   );
 }
