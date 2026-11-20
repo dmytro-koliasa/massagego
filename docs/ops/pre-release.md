@@ -71,7 +71,7 @@ The job hard-deletes cancelled bookings older than ~7 days (`cancelledAt`) and c
 
 ## Telegram webhook auth (#77)
 
-`POST /api/telegram/webhook` is **fail-closed** without `TELEGRAM_WEBHOOK_SECRET` on production-like hosts (`NODE_ENV=production` or `VERCEL_ENV=production|preview`). Invalid/missing `x-telegram-bot-api-secret-token` returns **401**.
+`POST /api/telegram/webhook` is **fail-closed** without `TELEGRAM_WEBHOOK_SECRET` on production-like hosts (`NODE_ENV=production` or `VERCEL_ENV=production|preview`). A missing secret returns **503**; an invalid or missing `x-telegram-bot-api-secret-token` (when a secret is configured) returns **401**.
 
 Local-only testing without a secret requires `TELEGRAM_WEBHOOK_ALLOW_INSECURE=1` (ignored on production-like hosts). Public Telegram host registration remains deferred (P-4); do not enable the webhook on a reachable URL without a real secret.
 
