@@ -1,5 +1,6 @@
 import "server-only";
 import { countMasseurFutureBookings } from "@/lib/account-deletion";
+import { lockMasseurBookings } from "@/lib/booking-conflict";
 import { SLOT_MS } from "@/lib/booking-constants";
 import { notifyMasseurCancelledBooking } from "@/lib/notifications/outbox";
 import { prisma } from "@/lib/prisma";
@@ -30,6 +31,9 @@ export async function bulkCancelMasseurFutureBookings(options: {
   const keepAvailable = options.availability === "available";
 
   const result = await prisma.$transaction(async (tx) => {
+    // Serialize with client/walk-in booking creates (#130; same lock as #83).
+    await lockMasseurBookings(tx, options.masseurId);
+
     const bookings = await tx.booking.findMany({
       where: {
         masseurId: options.masseurId,
