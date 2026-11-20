@@ -93,6 +93,25 @@ export function isUniqueConstraintError(error: unknown): boolean {
 }
 
 /**
+ * Read-only: whether the bucket is already at/over `limit` in the current
+ * window. Does not create or increment rows (#127).
+ */
+export async function isRateLimitExceeded(
+  key: string,
+  limit: number,
+  windowMs: number,
+  nowMs = Date.now(),
+): Promise<boolean> {
+  const row = await prisma.rateLimitBucket.findUnique({
+    where: { key },
+    select: { windowStart: true, count: true },
+  });
+  if (!row) return false;
+  if (isWindowExpired(row.windowStart.getTime(), windowMs, nowMs)) return false;
+  return row.count >= limit;
+}
+
+/**
  * Atomic sliding-window check: window starts on the first hit after expiry,
  * then increments until `limit` within `windowMs`.
  *

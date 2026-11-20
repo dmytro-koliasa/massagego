@@ -56,3 +56,24 @@ export function correctPasswordBypassesFailBudget(
 ): boolean {
   return passwordValid;
 }
+
+/**
+ * #127 — after a password check, decide accept vs generic failure and whether
+ * to increment the fail bucket.
+ *
+ * Binding #86 point 2: a correct password always accepts and never records.
+ * When the fail ceiling is already reached, further wrong passwords still
+ * return a generic failure but do not increment again.
+ */
+export function evaluateSignInPasswordAttempt(input: {
+  passwordValid: boolean;
+  failCeilingReached: boolean;
+}): { accept: boolean; recordFailure: boolean } {
+  if (input.passwordValid) {
+    return { accept: true, recordFailure: false };
+  }
+  return {
+    accept: false,
+    recordFailure: !input.failCeilingReached,
+  };
+}
