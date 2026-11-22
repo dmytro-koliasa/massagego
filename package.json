@@ -52,7 +52,7 @@
     "sharp": "^0.35.5",
     "sonner": "^2.0.8",
     "yet-another-react-lightbox": "^3.32.2",
-    "zod": "^4.6.2"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
