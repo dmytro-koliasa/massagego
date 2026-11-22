@@ -8,8 +8,8 @@ import {
   type PublicPortal,
 } from "@/lib/portals";
 import {
-  formControlButtonClassName,
   formControlClassName,
+  formPrimaryButtonInlineClassName,
 } from "@/lib/ui-classes";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
@@ -180,7 +180,7 @@ export function CityAutocomplete({
           type="button"
           disabled={queryTooShort || loading}
           onClick={() => void runSearch()}
-          className={formControlButtonClassName}
+          className={formPrimaryButtonInlineClassName}
         >
           {loading ? t.authPleaseWait : t.citySearchAction}
         </button>
