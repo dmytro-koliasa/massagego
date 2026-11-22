@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_ACTIVE_FUTURE_BOOKINGS_PER_CLIENT } from "@/lib/booking-constants";
 import {
   CLIENT_CANCEL_REASON_KEYS,
 } from "@/lib/client-booking-rules";
@@ -38,7 +39,12 @@ export const bookingCreateSchema = z
       .optional()
       .transform((value) => value ?? ""),
     massageType: z.string().trim().optional(),
-    slotStarts: z.array(isoLikeDate).optional(),
+    // Request-size guard aligned with BR-008 total cap (#164). Product still
+    // enforces CLIENT_BOOKING_LIMIT against activeFutureCount + starts.length.
+    slotStarts: z
+      .array(isoLikeDate)
+      .max(MAX_ACTIVE_FUTURE_BOOKINGS_PER_CLIENT)
+      .optional(),
     slotStart: isoLikeDate.optional(),
   })
   .superRefine((value, ctx) => {

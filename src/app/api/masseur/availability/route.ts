@@ -24,6 +24,8 @@ import {
 import { logRouteError } from "@/lib/http/route-error";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
+import { parseWithSchema } from "@/lib/validation/common";
+import { availabilityChangesBatchSchema } from "@/lib/validation/availability";
 
 function statusForSlotError(error: string | undefined) {
   if (error === "slot_in_past" || error === "slot_booked") return 409;
@@ -256,12 +258,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (Array.isArray(body.changes)) {
+    if (Object.prototype.hasOwnProperty.call(body, "changes")) {
+      const parsed = parseWithSchema(availabilityChangesBatchSchema, body);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
       const results = [];
-      for (const change of body.changes) {
-        if (typeof change?.start !== "string" || typeof change?.active !== "boolean") {
-          continue;
-        }
+      for (const change of parsed.data.changes) {
         const result = await applySlotChange(
           gate.userId,
           gate.timeZone,

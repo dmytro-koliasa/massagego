@@ -189,6 +189,16 @@ export function zodErrorCode(error: z.ZodError): string {
       return "invalid_slot";
     }
     if (
+      path === "changes" ||
+      path.startsWith("changes.") ||
+      issue.message === "invalid_changes" ||
+      issue.message === "invalid_start"
+    ) {
+      return issue.message === "invalid_start"
+        ? "invalid_start"
+        : "invalid_changes";
+    }
+    if (
       path === "massageType" ||
       issue.message === "invalid_massage_type"
     ) {
