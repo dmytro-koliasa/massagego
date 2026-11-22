@@ -45,18 +45,18 @@ function AdminLoginContent() {
   }
 
   return (
-    <main className="flex flex-1 flex-col bg-background py-10">
-      <div className="mx-auto w-full max-w-lg flex-1 px-[15px]">
-        <BackNavLink href="/">{t.backHome}</BackNavLink>
-        <div className="mt-8 space-y-3 text-center">
-          <h1 className="font-display text-4xl tracking-[-0.03em] text-foreground">
+    <main className="relative flex flex-1 flex-col bg-background py-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-start gap-8 px-[15px] text-center">
+        <div className="max-w-xl space-y-3">
+          <h1 className="font-display text-4xl tracking-[-0.04em] text-foreground sm:text-5xl">
             {t.adminLoginTitle}
           </h1>
-          <p className="text-sm text-muted">{t.adminDescription}</p>
+          <p className="text-muted">{t.adminDescription}</p>
         </div>
-        <div className="mt-8">
-          <AdminAuthPanel />
-        </div>
+
+        <AdminAuthPanel />
+
+        <BackNavLink href="/">{t.backHome}</BackNavLink>
       </div>
     </main>
   );

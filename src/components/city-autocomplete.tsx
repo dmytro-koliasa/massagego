@@ -7,6 +7,10 @@ import {
   portalRequestHeaders,
   type PublicPortal,
 } from "@/lib/portals";
+import {
+  formControlClassName,
+  formPrimaryButtonInlineClassName,
+} from "@/lib/ui-classes";
 import { CITY_MAX, CITY_QUERY_MIN } from "@/lib/validation";
 
 type CitySuggestion = {
@@ -141,7 +145,7 @@ export function CityAutocomplete({
           </span>
         ) : null}
       </span>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <input
           type="text"
           required={required}
@@ -170,13 +174,13 @@ export function CityAutocomplete({
           }}
           placeholder={placeholder}
           maxLength={CITY_MAX}
-          className="h-12 min-w-0 flex-1 rounded-lg border border-surface-border bg-background/70 px-4 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
+          className={`${formControlClassName} min-w-0 flex-1`}
         />
         <button
           type="button"
           disabled={queryTooShort || loading}
           onClick={() => void runSearch()}
-          className="h-12 shrink-0 rounded-lg border border-surface-border bg-background px-4 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent disabled:opacity-60"
+          className={formPrimaryButtonInlineClassName}
         >
           {loading ? t.authPleaseWait : t.citySearchAction}
         </button>

@@ -10,7 +10,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Preloader } from "@/components/preloader";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Portal } from "@/lib/portals";
-import { portalHomePath } from "@/lib/portals";
+import { isPortalLoginPath, portalHomePath } from "@/lib/portals";
 import { shouldSkipImageOptimization } from "@/lib/upload-url";
 
 function resolvePortal(pathname: string | null): Portal {
@@ -67,6 +67,12 @@ export function SiteHeader() {
   const pathname = usePathname();
   const portal = resolvePortal(pathname);
   const isHome = pathname === "/";
+  // SessionProvider remounts per portal (`key={portal}`); on login pages that
+  // briefly yields status "loading" and flashed an empty accent skeleton (#161).
+  const onLoginPage =
+    isPortalLoginPath(pathname, "client") ||
+    isPortalLoginPath(pathname, "masseur") ||
+    isPortalLoginPath(pathname, "admin");
   const [signingOut, setSigningOut] = useState(false);
 
   const signOutTarget = pathname.startsWith("/client")
@@ -148,7 +154,7 @@ export function SiteHeader() {
             <LanguageSwitcher tone={isHome ? "onDark" : "default"} />
             <ThemeToggle tone={isHome ? "onDark" : "default"} />
 
-            {isHome ? null : status === "loading" ? (
+            {isHome || onLoginPage ? null : status === "loading" ? (
               <span className="h-11 w-36 animate-pulse rounded-lg bg-accent-soft" />
             ) : session?.user ? (
               <div className="flex items-center gap-2 sm:gap-3">

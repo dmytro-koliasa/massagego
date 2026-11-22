@@ -11,7 +11,7 @@ async function waitForClientSession(page: Page) {
 
 async function switchToClientLoginTab(page: Page) {
   const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
+    name: /I am registered already|Я вже зареєстрований/i,
   });
   await expect(loginTab).toBeVisible();
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -33,14 +33,14 @@ export async function signInAsClient(
   await switchToClientLoginTab(page);
 
   await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
+    page.getByRole("button", { name: /Sign in|Увійти/i }),
   ).toBeVisible();
 
   const phoneInput = page.locator('input[type="tel"]').first();
   await phoneInput.fill("");
   await phoneInput.fill(phone);
   await page.locator('input[type="password"]').first().fill(password);
-  await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
+  await page.getByRole("button", { name: /Sign in|Увійти/i }).click();
 
   // Auth can succeed while the login page still shows the redirect preloader.
   // Prefer an explicit navigation once the session is clearly established.

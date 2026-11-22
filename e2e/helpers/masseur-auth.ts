@@ -17,19 +17,19 @@ export async function signInAsMasseur(
   await waitForMasseurSession(page);
 
   const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/,
+    name: /I am registered already|Я вже зареєстрований/i,
   });
   if ((await loginTab.getAttribute("aria-selected")) !== "true") {
     await loginTab.click();
   }
 
   await expect(
-    page.getByRole("button", { name: /Sign in|Увійти/ }),
+    page.getByRole("button", { name: /Sign in|Увійти/i }),
   ).toBeVisible();
 
   await page.locator('input[type="email"]').first().fill(email);
   await page.locator('input[type="password"]').first().fill(password);
-  await page.getByRole("button", { name: /Sign in|Увійти/ }).click();
+  await page.getByRole("button", { name: /Sign in|Увійти/i }).click();
 
   // Auth can succeed while the login page still shows the redirect preloader.
   await expect(

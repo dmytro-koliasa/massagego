@@ -8,10 +8,10 @@ test("client login page is reachable", async ({ page }) => {
 
   // Client portal defaults to the register tab.
   await expect(
-    page.getByRole("tab", { name: /I am registered already|Я вже зареєстрований/ }),
+    page.getByRole("tab", { name: /I am registered already|Я вже зареєстрований/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole("tab", { name: /Register new user|Зареєструвати нового користувача/ }),
+    page.getByRole("tab", { name: /Register new user|Зареєструвати нового користувача/i }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel(/Full name|Повне ім.?я/i).first()).toBeVisible();
   await expect(page.locator('input[type="tel"], input[name="tel"]').first()).toBeVisible();
