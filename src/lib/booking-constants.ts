@@ -9,6 +9,14 @@ export const SLOT_MS = SESSION_MINUTES * 60 * 1000;
 export const DAY_START_HOUR = 5;
 export const DAY_END_HOUR = 23;
 
+/**
+ * Max items in POST /api/masseur/availability `{ changes: [...] }` (#165).
+ * Operational ceiling: one calendar week of working hours (not a new product
+ * rule — request-size only). 7 × (23 − 5) = 126.
+ */
+export const MAX_AVAILABILITY_CHANGES_PER_REQUEST =
+  7 * (DAY_END_HOUR - DAY_START_HOUR);
+
 function calendarTime(totalMinutes: number) {
   const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
   const minutes = String(totalMinutes % 60).padStart(2, "0");
