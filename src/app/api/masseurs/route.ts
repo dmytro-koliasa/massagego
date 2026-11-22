@@ -110,10 +110,13 @@ export async function GET(request: Request) {
     ? { AND: [listedBase, cityWhere] }
     : listedBase;
 
-  const [totalAll, cityRows, candidates] = await Promise.all([
+  // #166: rank with a light select; load full cards only for the page.
+  // Cities: one row per cityPlaceId instead of every listed masseur.
+  const [totalAll, cityRows, rankingRows] = await Promise.all([
     prisma.user.count({ where: listedBase }),
     prisma.user.findMany({
       where: listedBase,
+      distinct: ["cityPlaceId"],
       select: {
         city: true,
         cityPlaceId: true,
@@ -124,12 +127,17 @@ export async function GET(request: Request) {
     }),
     prisma.user.findMany({
       where,
-      select: masseurSelect,
+      select: {
+        id: true,
+        timezone: true,
+        bookingLeadHours: true,
+        createdAt: true,
+      },
     }),
   ]);
 
   const nearestById = await findNearestFreeSlots(
-    candidates.map((masseur) => ({
+    rankingRows.map((masseur) => ({
       id: masseur.id,
       timezone: masseur.timezone,
       bookingLeadHours: masseur.bookingLeadHours,
@@ -137,12 +145,14 @@ export async function GET(request: Request) {
   );
 
   const now = new Date();
-  const ranked = candidates
+  const ranked = rankingRows
     .map((masseur) => {
       const nearestFreeAt = nearestById.get(masseur.id) ?? null;
       const hasFreeTime = nearestFreeAt !== null;
       return {
-        masseur,
+        id: masseur.id,
+        timezone: masseur.timezone,
+        createdAt: masseur.createdAt,
         nearestFreeAt,
         hasFreeTime,
         availabilityLabel: availabilityLabelForNearest(
@@ -155,8 +165,8 @@ export async function GET(request: Request) {
     })
     .sort((a, b) =>
       compareMasseurCatalogOrder(
-        { hasFreeTime: a.hasFreeTime, createdAt: a.masseur.createdAt },
-        { hasFreeTime: b.hasFreeTime, createdAt: b.masseur.createdAt },
+        { hasFreeTime: a.hasFreeTime, createdAt: a.createdAt },
+        { hasFreeTime: b.hasFreeTime, createdAt: b.createdAt },
       ),
     );
 
@@ -167,6 +177,16 @@ export async function GET(request: Request) {
     (safePage - 1) * pageSize,
     safePage * pageSize,
   );
+  const pageIds = pageSlice.map((row) => row.id);
+
+  const pageCards =
+    pageIds.length === 0
+      ? []
+      : await prisma.user.findMany({
+          where: { id: { in: pageIds } },
+          select: masseurSelect,
+        });
+  const cardById = new Map(pageCards.map((card) => [card.id, card]));
 
   const cityMap = new Map<string, string>();
   for (const row of cityRows) {
@@ -192,20 +212,22 @@ export async function GET(request: Request) {
     );
 
   return NextResponse.json({
-    masseurs: pageSlice.map(
-      ({ masseur, nearestFreeAt, hasFreeTime, availabilityLabel }) => {
-        const { timezone, bookingLeadHours, ...card } = masseur;
-        void timezone;
-        void bookingLeadHours;
-        return {
+    masseurs: pageSlice.flatMap((row) => {
+      const masseur = cardById.get(row.id);
+      if (!masseur) return [];
+      const { timezone, bookingLeadHours, ...card } = masseur;
+      void timezone;
+      void bookingLeadHours;
+      return [
+        {
           ...card,
           cityLabel: cityDisplayName(masseur, locale),
-          nearestFreeAt: nearestFreeAt?.toISOString() ?? null,
-          hasFreeTime,
-          availabilityLabel,
-        };
-      },
-    ),
+          nearestFreeAt: row.nearestFreeAt?.toISOString() ?? null,
+          hasFreeTime: row.hasFreeTime,
+          availabilityLabel: row.availabilityLabel,
+        },
+      ];
+    }),
     page: safePage,
     pageSize,
     total,
