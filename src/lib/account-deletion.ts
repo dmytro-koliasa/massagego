@@ -102,6 +102,17 @@ export async function deleteOwnAccount(options: {
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Advisory locks BEFORE User FOR UPDATE. Booking insert takes FOR KEY SHARE
+      // on the masseur/client row; holding FOR UPDATE first then waiting on the
+      // advisory deadlocks with a concurrent book that already holds the advisory
+      // (more visible under Prisma 7 / adapter-pg).
+      if (options.portal === "masseur") {
+        await lockMasseurBookings(tx, user.id);
+      }
+      if (options.portal === "client") {
+        await lockClientBookings(tx, user.id);
+      }
+
       const locked = await tx.$queryRaw<
         { id: string; deletedAt: Date | null }[]
       >`SELECT id, "deletedAt" FROM "User" WHERE id = ${user.id} FOR UPDATE`;
@@ -114,8 +125,6 @@ export async function deleteOwnAccount(options: {
       }
 
       if (options.portal === "masseur") {
-        // Same lock booking create takes (#83) — serialise with concurrent books.
-        await lockMasseurBookings(tx, user.id);
         const futureBookingCount = await tx.booking.count({
           where: {
             masseurId: user.id,
@@ -133,7 +142,6 @@ export async function deleteOwnAccount(options: {
       }
 
       if (options.portal === "client") {
-        await lockClientBookings(tx, user.id);
         const future = await tx.booking.findMany({
           where: {
             clientUserId: user.id,

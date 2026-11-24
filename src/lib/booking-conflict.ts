@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 /** Name of the exclusion constraint added in 20261115120000_booking_no_overlap. */
 export const BOOKING_OVERLAP_CONSTRAINT = "Booking_no_overlapping_active_slots";

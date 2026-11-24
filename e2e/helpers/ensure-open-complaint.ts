@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { DateTime } from "luxon";
+import { createE2EPrismaClient } from "./prisma";
 
 const ZONE = "Europe/Kyiv";
 
@@ -42,13 +42,7 @@ const SUITE: Record<
 };
 
 function testPrisma() {
-  const databaseUrl =
-    process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-  return new PrismaClient(
-    databaseUrl
-      ? { datasources: { db: { url: databaseUrl } } }
-      : undefined,
-  );
+  return createE2EPrismaClient();
 }
 
 /** Seeds an open client→masseur complaint linked to a confirmed booking. */

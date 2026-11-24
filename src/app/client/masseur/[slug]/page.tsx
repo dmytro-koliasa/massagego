@@ -4,7 +4,7 @@ import { isMasseurListed } from "@/lib/masseur-catalog";
 import { portalHomePath } from "@/lib/portals";
 import { userHasPortal } from "@/lib/portals.server";
 import { parseMassageTypes } from "@/lib/massage-types";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MasseurBookingView } from "@/components/masseur-booking-view";
 

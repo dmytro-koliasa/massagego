@@ -12,7 +12,7 @@ import { isExcludedCountryCode } from "@/lib/phone-countries";
 import { userHasPortal } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
 import { CITY_MAX } from "@/lib/validation";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 const DEFAULT_PAGE_SIZE = 9;
 const MAX_PAGE_SIZE = 50;
