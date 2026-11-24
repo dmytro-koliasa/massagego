@@ -1,6 +1,6 @@
 # CPA — P2 stage merged and pinned (hand-off)
 
-- When (UTC) / branch / commits: 2026-11-24 · `feat/002-p2-tests-and-deps` · (CPA commit)
+- When (UTC) / branch / commits: 2026-11-24 · `feat/002-p2-tests-and-deps` · 708ed88
 - Built: pins in RESUME; lint fix for `data-hydrated` (`useSyncExternalStore`); IP rate-limit clears for smoke stability
 - Measured:
   - `npm run typecheck` → exit 0

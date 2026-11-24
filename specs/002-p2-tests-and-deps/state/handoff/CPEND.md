@@ -1,6 +1,6 @@
 # CPEND — Feature done (hand-off)
 
-- When (UTC) / branch / commits: 2026-11-24 · `feat/002-p2-tests-and-deps` · (close commit)
+- When (UTC) / branch / commits: 2026-11-24 · `feat/002-p2-tests-and-deps` · 708ed88
 - Built: all cards T001–T009 + B1–B3 + CPA ticked; `specs/lessons.md` 002 section; locks free
 - Measured: see CPA / T009
 - Decided: owner owns PR merge + closing #182–#186 and updating #92 Phase 8; next product phase P3
