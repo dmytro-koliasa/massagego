@@ -51,7 +51,8 @@ Added this feature: `masseur-gallery`, `masseur-availability-add`, `client-regis
 
 ## Pins
 
-(none yet — CPA lists pins)
+- Prisma 7 upgrade issue: https://github.com/dmytro-koliasa/massagego/issues/193
+- Audit parent: https://github.com/dmytro-koliasa/massagego/issues/186
 
 ## Deploy lock
 
@@ -89,7 +90,7 @@ free
 | T006 | CI e2e-smoke job | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | T007 | Update docs/testing.md | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | B3 | CI smoke + docs | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
-| T008 | npm audit triage + safe fix + Prisma 7 issue | todo | | | |
+| T008 | npm audit triage + safe fix + Prisma 7 issue | done | feat/002-p2-tests-and-deps | (T008 commit) | 2026-11-24 |
 | CPA | P2 stage merged and pinned | todo | | | |
 | T009 | Close: results against success criteria | todo | | | |
 | CPEND | Feature done | todo | | | |

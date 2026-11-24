@@ -139,7 +139,7 @@ Checklist:
 - [x] T006 CI e2e-smoke job — fulfills FR-1, NFR-2, NFR-5, SC-1
 - [x] T007 Update docs/testing.md — fulfills FR-7, SC-6
 - [x] B3 CI smoke + docs
-- [ ] T008 npm audit triage + safe fix + Prisma 7 issue — fulfills FR-6, SC-5
+- [x] T008 npm audit triage + safe fix + Prisma 7 issue — fulfills FR-6, SC-5
 - [ ] CPA P2 stage merged and pinned
 - [ ] T009 Close: results against success criteria
 - [ ] CPEND Feature done
