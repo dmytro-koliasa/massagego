@@ -8,6 +8,10 @@ import {
   lockMasseurBookings,
 } from "@/lib/booking-conflict";
 import { SLOT_MS } from "@/lib/booking-constants";
+import {
+  enforceIpAccountRateLimit,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
 import {
   alignToHour,
@@ -16,6 +20,7 @@ import {
 } from "@/lib/masseur-time";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import {
   masseurBookingCreateSchema,
   parseWithSchema,
@@ -30,6 +35,17 @@ export async function POST(request: Request) {
   try {
     const gate = await requireMasseurSession();
     if ("error" in gate) return gate.error;
+
+    const limited = await enforceIpAccountRateLimit({
+      request,
+      userId: gate.userId,
+      ipScope: "masseur-booking-create:ip",
+      accountScope: "masseur-booking-create:account",
+      ip: RATE_LIMITS.masseurBookingCreate,
+      account: RATE_LIMITS.masseurBookingCreate,
+      locale: resolveRequestLocale(request),
+    });
+    if (limited) return limited;
 
     const body = await request.json();
     const parsed = parseWithSchema(masseurBookingCreateSchema, body);

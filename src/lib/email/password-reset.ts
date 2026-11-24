@@ -64,8 +64,10 @@ export async function createAndSendResetLink(options: {
   if (
     !user?.passwordHash ||
     !user.email?.trim() ||
-    isSyntheticClientEmail(user.email)
+    isSyntheticClientEmail(user.email) ||
+    user.blockedAt
   ) {
+    // Blocked: enumeration-safe — same as unknown account; no token / no mail.
     return { ok: true };
   }
 
@@ -181,9 +183,14 @@ export async function consumeResetToken(options: {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, emailVerified: true, deletedAt: true },
+    select: {
+      id: true,
+      emailVerified: true,
+      deletedAt: true,
+      blockedAt: true,
+    },
   });
-  if (!user || user.deletedAt) {
+  if (!user || user.deletedAt || user.blockedAt) {
     await prisma.verificationToken
       .deleteMany({ where: { identifier: row.identifier } })
       .catch(() => null);

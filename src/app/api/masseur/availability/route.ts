@@ -21,9 +21,14 @@ import {
   CALENDAR_AVAILABILITY_MAX_SPAN_MS,
   parseRequiredDateRange,
 } from "@/lib/date-range";
+import {
+  enforceIpAccountRateLimit,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { parseWithSchema } from "@/lib/validation/common";
 import { availabilityChangesBatchSchema } from "@/lib/validation/availability";
 
@@ -255,6 +260,17 @@ export async function POST(request: Request) {
   const gate = await requireMasseurSession({ withTimeZone: true });
   if ("error" in gate) return gate.error;
 
+  const limited = await enforceIpAccountRateLimit({
+    request,
+    userId: gate.userId,
+    ipScope: "availability-write:ip",
+    accountScope: "availability-write:account",
+    ip: RATE_LIMITS.availabilityWrite,
+    account: RATE_LIMITS.availabilityWrite,
+    locale: resolveRequestLocale(request),
+  });
+  if (limited) return limited;
+
   try {
     const body = await request.json();
 
@@ -326,6 +342,17 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   const gate = await requireMasseurSession({ withTimeZone: true });
   if ("error" in gate) return gate.error;
+
+  const limited = await enforceIpAccountRateLimit({
+    request,
+    userId: gate.userId,
+    ipScope: "availability-write:ip",
+    accountScope: "availability-write:account",
+    ip: RATE_LIMITS.availabilityWrite,
+    account: RATE_LIMITS.availabilityWrite,
+    locale: resolveRequestLocale(request),
+  });
+  if (limited) return limited;
 
   try {
     const body = await request.json();

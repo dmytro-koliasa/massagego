@@ -49,7 +49,11 @@ describe("requirePortalUser", () => {
 
   it("returns the only active session without a hint", async () => {
     masseurAuth.mockResolvedValue({ user: { id: "m1" } });
-    findUnique.mockResolvedValue({ portal: "masseur", deletedAt: null });
+    findUnique.mockResolvedValue({
+      portal: "masseur",
+      deletedAt: null,
+      blockedAt: null,
+    });
 
     const gate = await requirePortalUser();
     expect(gate).toEqual({ ok: true, userId: "m1", portal: "masseur" });
@@ -64,10 +68,10 @@ describe("requirePortalUser", () => {
     findUnique.mockImplementation(
       async ({ where }: { where: { id: string } }) => {
         if (where.id === "c1") {
-          return { portal: "client", deletedAt: null };
+          return { portal: "client", deletedAt: null, blockedAt: null };
         }
         if (where.id === "m1") {
-          return { portal: "masseur", deletedAt: null };
+          return { portal: "masseur", deletedAt: null, blockedAt: null };
         }
         return null;
       },
@@ -83,10 +87,10 @@ describe("requirePortalUser", () => {
     findUnique.mockImplementation(
       async ({ where }: { where: { id: string } }) => {
         if (where.id === "c1") {
-          return { portal: "client", deletedAt: null };
+          return { portal: "client", deletedAt: null, blockedAt: null };
         }
         if (where.id === "m1") {
-          return { portal: "masseur", deletedAt: null };
+          return { portal: "masseur", deletedAt: null, blockedAt: null };
         }
         return null;
       },
@@ -106,11 +110,58 @@ describe("requirePortalUser", () => {
       headerMap({ [PORTAL_REQUEST_HEADER]: "masseur" }),
     );
     clientAuth.mockResolvedValue({ user: { id: "c1" } });
-    findUnique.mockResolvedValue({ portal: "client", deletedAt: null });
+    findUnique.mockResolvedValue({
+      portal: "client",
+      deletedAt: null,
+      blockedAt: null,
+    });
 
     const gate = await requirePortalUser();
     expect(gate.ok).toBe(false);
     if (gate.ok) return;
     expect(gate.response.status).toBe(401);
+  });
+
+  it("returns 403 when the session user is blocked (#177)", async () => {
+    masseurAuth.mockResolvedValue({ user: { id: "m1" } });
+    findUnique.mockResolvedValue({
+      portal: "masseur",
+      deletedAt: null,
+      blockedAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+
+    const gate = await requirePortalUser();
+    expect(gate.ok).toBe(false);
+    if (gate.ok) return;
+    expect(gate.response.status).toBe(403);
+    await expect(gate.response.json()).resolves.toEqual({ error: "forbidden" });
+  });
+
+  it("returns 403 for a blocked hint portal even when the other portal is active", async () => {
+    headersMock.mockResolvedValue(
+      headerMap({ [PORTAL_REQUEST_HEADER]: "masseur" }),
+    );
+    clientAuth.mockResolvedValue({ user: { id: "c1" } });
+    masseurAuth.mockResolvedValue({ user: { id: "m1" } });
+    findUnique.mockImplementation(
+      async ({ where }: { where: { id: string } }) => {
+        if (where.id === "c1") {
+          return { portal: "client", deletedAt: null, blockedAt: null };
+        }
+        if (where.id === "m1") {
+          return {
+            portal: "masseur",
+            deletedAt: null,
+            blockedAt: new Date("2030-01-01T00:00:00.000Z"),
+          };
+        }
+        return null;
+      },
+    );
+
+    const gate = await requirePortalUser();
+    expect(gate.ok).toBe(false);
+    if (gate.ok) return;
+    expect(gate.response.status).toBe(403);
   });
 });

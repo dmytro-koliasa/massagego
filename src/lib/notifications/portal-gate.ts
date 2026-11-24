@@ -21,9 +21,13 @@ async function resolvePortalUser(
   if (!userId) return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { portal: true, deletedAt: true },
+    select: { portal: true, deletedAt: true, blockedAt: true },
   });
-  if (user?.portal === portal && !user.deletedAt) {
+  if (
+    user?.portal === portal &&
+    !user.deletedAt &&
+    !user.blockedAt
+  ) {
     return { ok: true, userId, portal };
   }
   return null;
@@ -34,6 +38,18 @@ function unauthorized(): GateFail {
     ok: false,
     response: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
   };
+}
+
+function forbidden(): GateFail {
+  return {
+    ok: false,
+    response: NextResponse.json({ error: "forbidden" }, { status: 403 }),
+  };
+}
+
+/** Session cookie present but DB membership rejected → 403; else 401. */
+function rejectSession(sessionUserId: string | undefined): GateFail {
+  return sessionUserId ? forbidden() : unauthorized();
 }
 
 function ambiguousPortal(): GateFail {
@@ -56,16 +72,19 @@ export async function requirePortalUser(): Promise<GateResult> {
   const hintRaw = requestHeaders.get(PORTAL_REQUEST_HEADER);
   const hint = isPublicPortal(hintRaw) ? hintRaw : null;
 
+  const clientId = clientSession?.user?.id;
+  const masseurId = masseurSession?.user?.id;
+
   const [client, masseur] = await Promise.all([
-    resolvePortalUser(clientSession?.user?.id, "client"),
-    resolvePortalUser(masseurSession?.user?.id, "masseur"),
+    resolvePortalUser(clientId, "client"),
+    resolvePortalUser(masseurId, "masseur"),
   ]);
 
   if (hint === "client") {
-    return client ?? unauthorized();
+    return client ?? rejectSession(clientId);
   }
   if (hint === "masseur") {
-    return masseur ?? unauthorized();
+    return masseur ?? rejectSession(masseurId);
   }
 
   if (client && masseur) {
@@ -73,5 +92,8 @@ export async function requirePortalUser(): Promise<GateResult> {
   }
   if (client) return client;
   if (masseur) return masseur;
+  if (clientId || masseurId) {
+    return forbidden();
+  }
   return unauthorized();
 }

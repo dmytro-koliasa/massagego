@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  enforceIpAccountRateLimit,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
 import {
   ImageProcessError,
@@ -6,6 +10,7 @@ import {
 } from "@/lib/image-process";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { storeUpload } from "@/lib/uploads";
 
 const MAX_GALLERY_IMAGES = 3;
@@ -32,6 +37,17 @@ export async function GET() {
 export async function POST(request: Request) {
   const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
+
+  const limited = await enforceIpAccountRateLimit({
+    request,
+    userId: gate.userId,
+    ipScope: "gallery-upload:ip",
+    accountScope: "gallery-upload:account",
+    ip: RATE_LIMITS.galleryUploadIp,
+    account: RATE_LIMITS.galleryUploadAccount,
+    locale: resolveRequestLocale(request),
+  });
+  if (limited) return limited;
 
   try {
     const count = await prisma.galleryImage.count({
