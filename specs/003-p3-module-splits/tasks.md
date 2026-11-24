@@ -12,9 +12,9 @@ One batch per stretch. Branch `feat/003-p3-module-splits`. State under `specs/00
 - [x] B2 Split availability calendar (T003)
 - [x] B3 Split masseur dashboard (T004)
 - [x] B4 Split masseur auth panel (T005)
-- [ ] B5 Split i18n (T006)
-- [ ] CPA Checkpoint + comment on #187
-- [ ] T009 / CPEND Results + lessons; then P4
+- [x] B5 Split i18n (T006)
+- [x] CPA Checkpoint + comment on #187
+- [x] T009 / CPEND Results + lessons; then P4
 
 ### T001
 **Do:** branch from master; `state/RESUME.md`; map gate files and UI line counts.
