@@ -49,6 +49,7 @@ describe("createAndSendResetLink origin (#124)", () => {
       email: "masseur@example.com",
       emailVerified: new Date(),
       passwordHash: "hash",
+      blockedAt: null,
     });
   });
 
@@ -99,6 +100,28 @@ describe("createAndSendResetLink origin (#124)", () => {
     expect(createToken).not.toHaveBeenCalled();
   });
 
+  it("does not send or create a token when the account is blocked (#181)", async () => {
+    process.env.AUTH_URL = "https://trusted.example";
+    findPortalUserByEmail.mockResolvedValue({
+      id: "u-blocked",
+      email: "blocked@example.com",
+      emailVerified: new Date(),
+      passwordHash: "hash",
+      blockedAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+
+    const result = await createAndSendResetLink({
+      portal: "masseur",
+      email: "blocked@example.com",
+      locale: "en",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(createToken).not.toHaveBeenCalled();
+    expect(deleteMany).not.toHaveBeenCalled();
+  });
+
   it("mails a reclaim link for unverified accounts (#128 A)", async () => {
     process.env.AUTH_URL = "https://trusted.example";
     findPortalUserByEmail.mockResolvedValue({
@@ -106,6 +129,7 @@ describe("createAndSendResetLink origin (#124)", () => {
       email: "taken@example.com",
       emailVerified: null,
       passwordHash: "hash",
+      blockedAt: null,
     });
 
     await createAndSendResetLink({

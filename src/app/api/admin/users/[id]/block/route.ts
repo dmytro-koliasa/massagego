@@ -36,9 +36,11 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const blockedAt = new Date();
   await prisma.$transaction(async (tx) => {
+    // JWT revoke is passwordChangedAt (#79 / Phase 8 #178), not Session rows.
+    // session.deleteMany remains defense-in-depth for any DB-backed sessions.
     await tx.user.update({
       where: { id },
-      data: { blockedAt },
+      data: { blockedAt, passwordChangedAt: blockedAt },
     });
     await tx.session.deleteMany({ where: { userId: id } });
     await writeAdminAuditLog(
