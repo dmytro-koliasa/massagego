@@ -8,9 +8,9 @@
 
 | card | title | status | commit | date |
 | --- | --- | --- | --- | --- |
-| B1 | Typography | done | (pending) | 2026-11-24 |
-| B2 | Brand-first hero | done | (pending) | 2026-11-24 |
-| B3 | Public header | done | (pending) | 2026-11-24 |
+| B1 | Typography | done | 52370a9 | 2026-11-24 |
+| B2 | Brand-first hero | done | 52370a9 | 2026-11-24 |
+| B3 | Public header | done | 52370a9 | 2026-11-24 |
 | CPA | Merge + close | doing | | 2026-11-24 |
 
 ## Pins
