@@ -7,14 +7,14 @@ State file for the one-card-per-session protocol in
 
 - **Branch:** `feat/001-p1-blocked-access-hardening`
 - **Worktree:** main checkout only
-- **FR-2:** `src/proxy.ts` untouched (no `blockedAt`) — reconfirmed at CPA
+- **FR-2:** `src/proxy.ts` untouched (no `blockedAt`)
 
 ### Baselines (T001)
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Unit tests | `npm run test:unit` | exit 0 (pre-B1 baseline) |
-| CPA full suite | `npm test` + typecheck + `eslint src tests` | exit 0 (2026-11-24) |
+| Unit tests | `npm run test:unit` | exit 0 (pre-B1) |
+| CPA full suite | `npm test` + typecheck + `eslint src tests` | exit 0 |
 
 ## Pins
 
@@ -25,7 +25,7 @@ State file for the one-card-per-session protocol in
 | Reset blocked: no token/send; confirm invalid_token | `tests/unit/auth-password-reset-origin.test.ts`, `tests/unit/password-reset-blocked-confirm.test.ts` | T004 |
 | New rate-limit scope returns 429 | `tests/unit/gallery-rate-limit-route.test.ts` | T006 |
 
-Pins reviewed up to CPA (HEAD after CPA commit).
+Pins reviewed up to CPA (`919bcbb`).
 
 ## Deploy lock
 
@@ -61,6 +61,6 @@ free
 | T005 | Wire FR-3 rate limits | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
 | T006 | Prove rate-limit 429 | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
 | B2 | Rate limits | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
-| CPA | Hardening stage merged and pinned | done | feat/001-p1-blocked-access-hardening | (CPA) | 2026-11-24 |
-| T007 | Results | todo | | | |
-| CPEND | Feature done | todo | | | |
+| CPA | Hardening stage merged and pinned | done | feat/001-p1-blocked-access-hardening | 919bcbb | 2026-11-24 |
+| T007 | Results | done | feat/001-p1-blocked-access-hardening | (close) | 2026-11-24 |
+| CPEND | Feature done | done | feat/001-p1-blocked-access-hardening | (close) | 2026-11-24 |

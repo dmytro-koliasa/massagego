@@ -128,8 +128,8 @@ Checklist:
 - [x] T006 Prove rate-limit 429 for a new scope — fulfills FR-3, SC-4
 - [x] B2 Rate limits
 - [x] CPA Hardening stage merged and pinned
-- [ ] T007 Close: results against success criteria
-- [ ] CPEND Feature done
+- [x] T007 Close: results against success criteria
+- [x] CPEND Feature done
 
 **Who may run beside whom:** none (sequential).
 
