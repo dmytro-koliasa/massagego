@@ -130,9 +130,9 @@ Success criteria measured by: SC-1–SC-6 → T009 (evidence from T002–T008 + 
 Checklist:
 
 - [x] T001 Re-verify, branch, RESUME, code map
-- [ ] T002 Masseur gallery E2E — fulfills FR-2, SC-2
-- [ ] T003 Masseur availability-add E2E — fulfills FR-3, SC-3
-- [ ] B1 Masseur E2E (gallery + availability)
+- [x] T002 Masseur gallery E2E — fulfills FR-2, SC-2
+- [x] T003 Masseur availability-add E2E — fulfills FR-3, SC-3
+- [x] B1 Masseur E2E (gallery + availability)
 - [ ] T004 Client register E2E — fulfills FR-4, SC-4
 - [ ] T005 Client delete-account E2E — fulfills FR-4, SC-4
 - [ ] B2 Client E2E (register + delete)

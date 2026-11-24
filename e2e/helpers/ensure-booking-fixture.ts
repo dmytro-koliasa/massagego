@@ -29,7 +29,9 @@ export type BookingFixtureSuite =
   | "bulkCancel"
   | "slotDeepLink"
   | "slotDeepLinkPulse"
-  | "slotDeepLinkMissing";
+  | "slotDeepLinkMissing"
+  | "gallery"
+  | "availabilityAdd";
 
 export type BookingFixture = {
   clientPhone: string;
@@ -184,6 +186,20 @@ const SUITE_IDS: Record<
     masseurPhone: "+380501000042",
     slug: "e2e-slot-deeplink-missing-masseur",
   },
+  gallery: {
+    clientEmail: "e2e-client-gallery@test.local",
+    clientPhone: "+380501000043",
+    masseurEmail: "e2e-masseur-gallery@test.local",
+    masseurPhone: "+380501000044",
+    slug: "e2e-gallery-masseur",
+  },
+  availabilityAdd: {
+    clientEmail: "e2e-client-availability-add@test.local",
+    clientPhone: "+380501000045",
+    masseurEmail: "e2e-masseur-availability-add@test.local",
+    masseurPhone: "+380501000046",
+    slug: "e2e-availability-add-masseur",
+  },
 };
 
 function suiteMasseurName(suite: BookingFixtureSuite) {
@@ -206,6 +222,8 @@ function suiteMasseurName(suite: BookingFixtureSuite) {
   if (suite === "slotDeepLinkMissing") {
     return "E2E Slot Deep Link Missing Masseur";
   }
+  if (suite === "gallery") return "E2E Gallery Masseur";
+  if (suite === "availabilityAdd") return "E2E Availability Add Masseur";
   return "E2E Booking Masseur";
 }
 
@@ -526,6 +544,9 @@ export async function ensureBookingFixture(
     await prisma.availabilitySlot.deleteMany({
       where: { masseurId: masseur.id },
     });
+    await prisma.galleryImage.deleteMany({
+      where: { masseurId: masseur.id },
+    });
     // Avoid flaky auth/booking 429s across repeated local Playwright runs.
     await prisma.rateLimitBucket.deleteMany({
       where: {
@@ -539,7 +560,9 @@ export async function ensureBookingFixture(
     });
 
     const slotRows =
-      suite === "slotDeepLinkMissing"
+      suite === "slotDeepLinkMissing" ||
+      suite === "gallery" ||
+      suite === "availabilityAdd"
         ? []
         : [
             { masseurId: masseur.id, start, end },
