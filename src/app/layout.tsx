@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { cookies } from 'next/headers';
-import { Roboto } from 'next/font/google';
+import { Cormorant, Source_Sans_3 } from 'next/font/google';
 import { AppToaster } from '@/components/app-toaster';
 import { LanguageProvider } from '@/components/language-provider';
 import { AuthSessionProvider } from '@/components/auth-session-provider';
@@ -12,10 +12,18 @@ import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
 import './globals.css';
 
-const roboto = Roboto({
-	variable: '--font-roboto',
+const display = Cormorant({
+	variable: '--font-display-family',
 	subsets: ['latin', 'cyrillic'],
-	weight: ['300', '400', '500', '700'],
+	weight: ['500', '600', '700'],
+	display: 'swap',
+});
+
+const sans = Source_Sans_3({
+	variable: '--font-sans-family',
+	subsets: ['latin', 'cyrillic'],
+	weight: ['400', '500', '600', '700'],
+	display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -57,7 +65,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 		<html
 			lang={initialLocale === 'uk' ? 'uk' : 'en'}
 			suppressHydrationWarning
-			className={`${roboto.variable} h-full antialiased`}
+			className={`${display.variable} ${sans.variable} h-full antialiased`}
 		>
 			<body className='min-h-full flex flex-col bg-background font-sans text-foreground'>
 				<Script id='serein-prefs-init' strategy='beforeInteractive'>
