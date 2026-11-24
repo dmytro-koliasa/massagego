@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 export const COMPLAINT_BODY_MAX = 500;
 export const COMPLAINT_ADMIN_NOTE_MAX = 1000;

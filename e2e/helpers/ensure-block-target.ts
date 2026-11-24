@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { createE2EPrismaClient } from "./prisma";
 
 const CLIENT_PASSWORD = "E2eClient123!";
 
@@ -22,13 +22,7 @@ const SUITE_IDS: Record<
 };
 
 function testPrisma() {
-  const databaseUrl =
-    process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-  return new PrismaClient(
-    databaseUrl
-      ? { datasources: { db: { url: databaseUrl } } }
-      : undefined,
-  );
+  return createE2EPrismaClient();
 }
 
 /**

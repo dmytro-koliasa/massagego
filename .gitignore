@@ -58,6 +58,9 @@ next-env.d.ts
 /prisma/*.db-journal
 /prisma/*.db-*
 
+# Prisma 7 generated client (postinstall / build runs `prisma generate`)
+/src/generated/prisma
+
 # local agent / IDE tooling
 .agents/
 .claude/

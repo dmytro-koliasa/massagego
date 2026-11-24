@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
-import type { User as PrismaUser } from "@prisma/client";
+import type { User as PrismaUser } from "@/generated/prisma/client";
 import { compare } from "bcryptjs";
 import type { Portal } from "@/lib/portals";
 import { isPortal, portalHomePath } from "@/lib/portals";

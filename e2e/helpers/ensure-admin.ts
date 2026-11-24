@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { createE2EPrismaClient } from "./prisma";
 
 /**
  * Upserts the bootstrap admin on the test DB so E2E login always matches
@@ -17,13 +17,7 @@ export async function ensureAdminForE2E(): Promise<{
     );
   }
 
-  const databaseUrl =
-    process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-  const prisma = new PrismaClient(
-    databaseUrl
-      ? { datasources: { db: { url: databaseUrl } } }
-      : undefined,
-  );
+  const prisma = createE2EPrismaClient();
 
   try {
     const passwordHash = await hash(password, 12);

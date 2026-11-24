@@ -15,7 +15,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PrismaClient } from "@prisma/client";
+import pg from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -44,7 +44,6 @@ loadEnvFile(resolve(ROOT, ".env"));
 const MASSAGEUR_CONSTRAINT = "Booking_no_overlapping_active_slots";
 const CLIENT_CONSTRAINT = "Booking_no_overlapping_active_client_slots";
 
-const prisma = new PrismaClient();
 let failed = false;
 
 function fail(message) {
@@ -56,27 +55,33 @@ function ok(message) {
   console.log(`[db:verify-constraints] OK   ${message}`);
 }
 
-try {
-  if (!process.env.DATABASE_URL?.trim()) {
-    fail("DATABASE_URL is missing");
-    process.exit(1);
-  }
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) {
+  fail("DATABASE_URL is missing");
+  process.exit(1);
+}
 
-  const extensions = await prisma.$queryRaw`
-    SELECT extname FROM pg_extension WHERE extname = 'btree_gist'
-  `;
-  if (extensions.length === 0) {
+const client = new pg.Client({ connectionString: databaseUrl });
+
+try {
+  await client.connect();
+
+  const extensions = await client.query(
+    `SELECT extname FROM pg_extension WHERE extname = 'btree_gist'`,
+  );
+  if (extensions.rowCount === 0) {
     fail("extension btree_gist is not installed");
   } else {
     ok("extension btree_gist");
   }
 
-  const constraints = await prisma.$queryRaw`
-    SELECT conname
-    FROM pg_constraint
-    WHERE conname IN (${MASSAGEUR_CONSTRAINT}, ${CLIENT_CONSTRAINT})
-  `;
-  const names = new Set(constraints.map((row) => row.conname));
+  const constraints = await client.query(
+    `SELECT conname
+     FROM pg_constraint
+     WHERE conname = ANY($1::text[])`,
+    [[MASSAGEUR_CONSTRAINT, CLIENT_CONSTRAINT]],
+  );
+  const names = new Set(constraints.rows.map((row) => row.conname));
   for (const name of [MASSAGEUR_CONSTRAINT, CLIENT_CONSTRAINT]) {
     if (names.has(name)) {
       ok(`constraint ${name}`);
@@ -85,11 +90,11 @@ try {
     }
   }
 
-  const tzRows = await prisma.$queryRaw`SHOW timezone`;
-  const timezone = tzRows[0]?.TimeZone ?? tzRows[0]?.timezone ?? "(unknown)";
+  const tzRows = await client.query(`SHOW timezone`);
+  const timezone = tzRows.rows[0]?.TimeZone ?? tzRows.rows[0]?.timezone ?? "(unknown)";
   console.log(`[db:verify-constraints] INFO timezone=${timezone}`);
 
-  const masseurOverlaps = await prisma.$queryRaw`
+  const masseurOverlaps = await client.query(`
     SELECT count(*)::int AS count
     FROM "Booking" a
     JOIN "Booking" b
@@ -101,15 +106,15 @@ try {
       AND b."status" <> 'cancelled'
       AND a."slotStart" < b."slotStart" + interval '1 hour'
       AND b."slotStart" < a."slotStart" + interval '1 hour'
-  `;
-  const masseurCount = masseurOverlaps[0]?.count ?? 0;
+  `);
+  const masseurCount = masseurOverlaps.rows[0]?.count ?? 0;
   if (masseurCount > 0) {
     fail(`masseur overlapping active pairs: ${masseurCount}`);
   } else {
     ok("masseur overlapping active pairs: 0");
   }
 
-  const clientOverlaps = await prisma.$queryRaw`
+  const clientOverlaps = await client.query(`
     SELECT count(*)::int AS count
     FROM "Booking" a
     JOIN "Booking" b
@@ -123,8 +128,8 @@ try {
       AND b."status" <> 'cancelled'
       AND a."slotStart" < b."slotStart" + interval '1 hour'
       AND b."slotStart" < a."slotStart" + interval '1 hour'
-  `;
-  const clientCount = clientOverlaps[0]?.count ?? 0;
+  `);
+  const clientCount = clientOverlaps.rows[0]?.count ?? 0;
   if (clientCount > 0) {
     fail(`client overlapping active pairs: ${clientCount}`);
   } else {
@@ -137,7 +142,7 @@ try {
   console.error(error instanceof Error ? error.message : error);
   failed = true;
 } finally {
-  await prisma.$disconnect();
+  await client.end().catch(() => {});
 }
 
 if (failed) {
