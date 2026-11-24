@@ -133,9 +133,9 @@ Checklist:
 - [x] T002 Masseur gallery E2E — fulfills FR-2, SC-2
 - [x] T003 Masseur availability-add E2E — fulfills FR-3, SC-3
 - [x] B1 Masseur E2E (gallery + availability)
-- [ ] T004 Client register E2E — fulfills FR-4, SC-4
-- [ ] T005 Client delete-account E2E — fulfills FR-4, SC-4
-- [ ] B2 Client E2E (register + delete)
+- [x] T004 Client register E2E — fulfills FR-4, SC-4
+- [x] T005 Client delete-account E2E — fulfills FR-4, SC-4
+- [x] B2 Client E2E (register + delete)
 - [ ] T006 CI e2e-smoke job — fulfills FR-1, NFR-2, NFR-5, SC-1
 - [ ] T007 Update docs/testing.md — fulfills FR-7, SC-6
 - [ ] B3 CI smoke + docs

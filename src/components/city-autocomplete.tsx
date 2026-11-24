@@ -55,11 +55,17 @@ export function CityAutocomplete({
   const { t } = useLanguage();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -71,11 +77,14 @@ export function CityAutocomplete({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
-  const query = value.trim();
-  const queryTooShort = query.length < CITY_QUERY_MIN;
-
   async function runSearch() {
-    if (queryTooShort || loading) return;
+    // Prefer controlled value; fall back to the live DOM value so automation
+    // that updates the input without React onChange can still search.
+    const liveQuery =
+      value.trim() || inputRef.current?.value.trim() || "";
+    if (liveQuery.length < CITY_QUERY_MIN || loading) {
+      return;
+    }
 
     setLoading(true);
     setSearched(false);
@@ -85,7 +94,7 @@ export function CityAutocomplete({
     try {
       const headers = portal ? portalRequestHeaders(portal) : undefined;
       const response = await fetch(
-        `/api/geocode/city?q=${encodeURIComponent(query)}&lang=${lang}`,
+        `/api/geocode/city?q=${encodeURIComponent(liveQuery)}&lang=${lang}`,
         { headers },
       );
       if (response.status === 429) {
@@ -119,6 +128,7 @@ export function CityAutocomplete({
 
   function pickSuggestion(item: CitySuggestion) {
     onChange(item.label);
+    if (inputRef.current) inputRef.current.value = item.label;
     onSelectCity?.({
       placeId: item.placeId,
       countryCode: item.countryCode,
@@ -135,7 +145,12 @@ export function CityAutocomplete({
   }
 
   return (
-    <div ref={wrapRef} className="relative block text-left">
+    <div
+      ref={wrapRef}
+      className="relative block text-left"
+      data-testid="city-autocomplete"
+      data-hydrated={hydrated ? "true" : "false"}
+    >
       <span className="mb-1.5 block text-sm text-muted">
         {label}
         {required ? (
@@ -147,6 +162,7 @@ export function CityAutocomplete({
       </span>
       <div className="flex items-center gap-2">
         <input
+          ref={inputRef}
           type="text"
           required={required}
           role="combobox"
@@ -154,6 +170,7 @@ export function CityAutocomplete({
           aria-controls={listId}
           aria-autocomplete="list"
           autoComplete="off"
+          data-testid="city-search-input"
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -178,8 +195,11 @@ export function CityAutocomplete({
         />
         <button
           type="button"
-          disabled={queryTooShort || loading}
-          onClick={() => void runSearch()}
+          data-testid="city-search-button"
+          disabled={loading}
+          onClick={() => {
+            void runSearch();
+          }}
           className={formPrimaryButtonInlineClassName}
         >
           {loading ? t.authPleaseWait : t.citySearchAction}
