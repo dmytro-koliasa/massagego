@@ -1,6 +1,8 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  // CJS so Playwright helpers and plain Node can load the client without ESM/CJS clashes.
+  moduleFormat = "cjs"
 }
 
 datasource db {

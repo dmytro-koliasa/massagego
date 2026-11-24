@@ -22,6 +22,8 @@
     "db:studio": "prisma studio",
     "db:up": "docker compose up -d db",
     "db:verify-constraints": "node scripts/db-verify-constraints.mjs",
+    "db:seed-masseurs": "tsx scripts/seed-test-masseurs.ts",
+    "db:backfill-slugs": "tsx scripts/backfill-masseur-slugs.ts",
     "cron:notifications": "node scripts/cron-notifications.mjs",
     "cron:notifications:loop": "node scripts/cron-notifications-loop.mjs",
     "cron:cleanup": "node scripts/cron-cleanup.mjs"
