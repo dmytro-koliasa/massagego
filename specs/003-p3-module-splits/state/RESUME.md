@@ -8,9 +8,9 @@
 
 | card | title | status | commit | date |
 | --- | --- | --- | --- | --- |
-| T001 | Branch + RESUME | done | | 2026-11-24 |
-| B1 / T002 | Session gates move + unify | doing | | 2026-11-24 |
-| B2 | Split availability calendar | todo | | |
+| T001 | Branch + RESUME | done | 507b31a | 2026-11-24 |
+| B1 / T002 | Session gates move + unify | done | 507b31a | 2026-11-24 |
+| B2 | Split availability calendar | doing | | 2026-11-24 |
 | B3 | Split masseur dashboard | todo | | |
 | B4 | Split masseur auth panel | todo | | |
 | B5 | Split i18n | todo | | |
