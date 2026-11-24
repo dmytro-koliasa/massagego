@@ -67,6 +67,10 @@ export function SiteHeader() {
   const pathname = usePathname();
   const portal = resolvePortal(pathname);
   const isHome = pathname === "/";
+  const onAdminSurface = pathname?.startsWith("/admin") ?? false;
+  // Marketing chrome: no Admin; home relies on hero CTAs for portal entry (#190).
+  const showPortalNav = !isHome;
+  const showAdminNav = onAdminSurface;
   // SessionProvider remounts per portal (`key={portal}`); on login pages that
   // briefly yields status "loading" and flashed an empty accent skeleton (#161).
   const onLoginPage =
@@ -125,29 +129,33 @@ export function SiteHeader() {
               MassageGo
             </Link>
 
-            <nav
-              aria-label={t.roleGroupLabel}
-              className="mt-1.5 flex items-center gap-1 sm:gap-2"
-            >
-              <HeaderNavLink
-                href="/masseur/login"
-                label={t.masseurTitle}
-                active={pathname.startsWith("/masseur")}
-                onDark={isHome}
-              />
-              <HeaderNavLink
-                href="/client/login"
-                label={t.clientTitle}
-                active={pathname.startsWith("/client")}
-                onDark={isHome}
-              />
-              <HeaderNavLink
-                href="/admin/login"
-                label={t.adminTitle}
-                active={pathname.startsWith("/admin")}
-                onDark={isHome}
-              />
-            </nav>
+            {showPortalNav ? (
+              <nav
+                aria-label={t.roleGroupLabel}
+                className="mt-1.5 flex items-center gap-1 sm:gap-2"
+              >
+                <HeaderNavLink
+                  href="/masseur/login"
+                  label={t.masseurTitle}
+                  active={pathname.startsWith("/masseur")}
+                  onDark={isHome}
+                />
+                <HeaderNavLink
+                  href="/client/login"
+                  label={t.clientTitle}
+                  active={pathname.startsWith("/client")}
+                  onDark={isHome}
+                />
+                {showAdminNav ? (
+                  <HeaderNavLink
+                    href="/admin/login"
+                    label={t.adminTitle}
+                    active={pathname.startsWith("/admin")}
+                    onDark={isHome}
+                  />
+                ) : null}
+              </nav>
+            ) : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
