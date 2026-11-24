@@ -547,7 +547,8 @@ export async function ensureBookingFixture(
     await prisma.galleryImage.deleteMany({
       where: { masseurId: masseur.id },
     });
-    // Avoid flaky auth/booking 429s across repeated local Playwright runs.
+    // Avoid flaky auth/booking 429s across repeated local Playwright runs
+    // (identifier keys + shared IP budgets used by smoke suites).
     await prisma.rateLimitBucket.deleteMany({
       where: {
         OR: [
@@ -555,6 +556,9 @@ export async function ensureBookingFixture(
           { key: { contains: ids.clientEmail } },
           { key: { contains: ids.masseurEmail } },
           { key: { contains: ids.masseurPhone } },
+          { key: { startsWith: "signin:ip:" } },
+          { key: { startsWith: "register:ip:" } },
+          { key: { startsWith: "geocode:ip:" } },
         ],
       },
     });

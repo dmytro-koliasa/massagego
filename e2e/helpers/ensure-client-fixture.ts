@@ -65,7 +65,9 @@ export async function ensureDeleteClientFixture(): Promise<ClientFixture> {
         OR: [
           { key: { contains: phone } },
           { key: { contains: email } },
+          { key: { startsWith: "signin:ip:" } },
           { key: { startsWith: "register:ip:" } },
+          { key: { startsWith: "geocode:ip:" } },
         ],
       },
     });

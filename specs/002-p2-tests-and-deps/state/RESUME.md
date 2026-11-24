@@ -53,6 +53,10 @@ Added this feature: `masseur-gallery`, `masseur-availability-add`, `client-regis
 
 - Prisma 7 upgrade issue: https://github.com/dmytro-koliasa/massagego/issues/193
 - Audit parent: https://github.com/dmytro-koliasa/massagego/issues/186
+- E2E specs (FR-1): `e2e/masseur-gallery.spec.ts`, `e2e/masseur-availability-add.spec.ts`, `e2e/client-register.spec.ts`, `e2e/client-delete-account.spec.ts`
+- CI smoke list: same four + `home`, `client-login-success`, `masseur-login-success`, `booking-happy-path` in `.github/workflows/ci.yml` job `e2e-smoke`
+- Docs: `docs/testing.md` Continuous integration section mirrors that list
+- Fixture note: smoke clears `signin:ip:` / `register:ip:` / `geocode:ip:` buckets so IP budgets do not flake the 8-file list
 
 ## Deploy lock
 
@@ -91,6 +95,6 @@ free
 | T007 | Update docs/testing.md | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | B3 | CI smoke + docs | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | T008 | npm audit triage + safe fix + Prisma 7 issue | done | feat/002-p2-tests-and-deps | 880e146 | 2026-11-24 |
-| CPA | P2 stage merged and pinned | todo | | | |
-| T009 | Close: results against success criteria | todo | | | |
-| CPEND | Feature done | todo | | | |
+| CPA | P2 stage merged and pinned | done | feat/002-p2-tests-and-deps | (CPA commit) | 2026-11-24 |
+| T009 | Close: results against success criteria | done | feat/002-p2-tests-and-deps | (close commit) | 2026-11-24 |
+| CPEND | Feature done | done | feat/002-p2-tests-and-deps | (close commit) | 2026-11-24 |

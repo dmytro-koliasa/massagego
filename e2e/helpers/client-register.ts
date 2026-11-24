@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { clearAuthRateLimits } from "./clear-auth-rate-limits";
 
 export type RegisteredClient = {
   name: string;
@@ -90,6 +91,7 @@ export async function registerClientViaUi(
   page: Page,
   creds: RegisteredClient = uniqueClientCredentials(),
 ): Promise<RegisteredClient> {
+  await clearAuthRateLimits();
   await page.goto("/client/login", { waitUntil: "domcontentloaded" });
 
   const registerTab = page.getByRole("tab", {
