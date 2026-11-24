@@ -2,15 +2,32 @@ import { NextResponse } from "next/server";
 import { cityDisplayName, toCityWriteData } from "@/lib/city";
 import { requireClientSession } from "@/lib/client-session.server";
 import { createAndSendVerificationLink } from "@/lib/email/verification";
+import {
+  enforceIpAccountRateLimit,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
 import { findPortalUserByEmail } from "@/lib/portals.server";
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import {
   ImageProcessError,
   MAX_UPLOAD_BYTES,
 } from "@/lib/image-process";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { clientProfileSchema, parseWithSchema } from "@/lib/validation";
+
+async function enforceClientProfileWriteLimit(request: Request, userId: string) {
+  return enforceIpAccountRateLimit({
+    request,
+    userId,
+    ipScope: "profile-write:ip",
+    accountScope: "profile-write:account",
+    ip: RATE_LIMITS.profileWriteIp,
+    account: RATE_LIMITS.profileWriteAccount,
+    locale: resolveRequestLocale(request),
+  });
+}
 
 const profileSelect = {
   id: true,
@@ -89,6 +106,9 @@ export async function PATCH(request: Request) {
   const client = await requireClientSession();
   if (!client.ok) return toClientError(client.status);
 
+  const limited = await enforceClientProfileWriteLimit(request, client.userId);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const parsed = parseWithSchema(clientProfileSchema, body);
@@ -166,6 +186,9 @@ export async function POST(request: Request) {
   const client = await requireClientSession();
   if (!client.ok) return toClientError(client.status);
 
+  const limited = await enforceClientProfileWriteLimit(request, client.userId);
+  if (limited) return limited;
+
   try {
     const formData = await request.formData();
     const file = formData.get("photo");
@@ -207,9 +230,12 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const client = await requireClientSession();
   if (!client.ok) return toClientError(client.status);
+
+  const limited = await enforceClientProfileWriteLimit(request, client.userId);
+  if (limited) return limited;
 
   try {
     const current = await prisma.user.findUnique({

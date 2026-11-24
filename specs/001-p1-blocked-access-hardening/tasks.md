@@ -124,9 +124,9 @@ Checklist:
 - [x] T003 requirePortalUser rejects blocked — fulfills FR-4, FR-6, SC-2
 - [x] T004 Password reset/reclaim ignores blocked — fulfills FR-5, SC-3
 - [x] B1 Block path + gates + reset
-- [ ] T005 Wire FR-3 rate limits on write routes — fulfills FR-3
-- [ ] T006 Prove rate-limit 429 for a new scope — fulfills FR-3, SC-4
-- [ ] B2 Rate limits
+- [x] T005 Wire FR-3 rate limits on write routes — fulfills FR-3
+- [x] T006 Prove rate-limit 429 for a new scope — fulfills FR-3, SC-4
+- [x] B2 Rate limits
 - [ ] CPA Hardening stage merged and pinned
 - [ ] T007 Close: results against success criteria
 - [ ] CPEND Feature done

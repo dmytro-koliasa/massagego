@@ -53,10 +53,10 @@ free
 | card | title | status | branch | commit | date (UTC) |
 | --- | --- | --- | --- | --- | --- |
 | T001 | Re-verify, branch, RESUME, code map | done | feat/001-p1-blocked-access-hardening | (no commit) | 2026-11-24 |
-| T002 | Admin block bumps passwordChangedAt | done | feat/001-p1-blocked-access-hardening | (B1) | 2026-11-24 |
-| T003 | requirePortalUser rejects blocked | done | feat/001-p1-blocked-access-hardening | (B1) | 2026-11-24 |
-| T004 | Password reset/reclaim ignores blocked | done | feat/001-p1-blocked-access-hardening | (B1) | 2026-11-24 |
-| B1 | Block path + gates + reset | done | feat/001-p1-blocked-access-hardening | (B1) | 2026-11-24 |
+| T002 | Admin block bumps passwordChangedAt | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
+| T003 | requirePortalUser rejects blocked | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
+| T004 | Password reset/reclaim ignores blocked | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
+| B1 | Block path + gates + reset | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
 | T005 | Wire FR-3 rate limits | todo | | | |
 | T006 | Prove rate-limit 429 | todo | | | |
 | B2 | Rate limits | todo | | | |

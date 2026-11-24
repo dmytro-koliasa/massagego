@@ -32,6 +32,18 @@ export const RATE_LIMITS = {
   geocodeUser: { limit: 30, windowMs: 60 * 60 * 1000 },
   /** City search per IP — covers BR-017 registration without a session (#113). */
   geocodeIp: { limit: 20, windowMs: 60 * 60 * 1000 },
+  /** Masseur gallery upload — Phase 8 #180. */
+  galleryUploadIp: { limit: 20, windowMs: 15 * 60 * 1000 },
+  galleryUploadAccount: { limit: 10, windowMs: 15 * 60 * 1000 },
+  /** Availability POST/PUT. */
+  availabilityWrite: { limit: 60, windowMs: 15 * 60 * 1000 },
+  /** Masseur walk-in booking create. */
+  masseurBookingCreate: { limit: 30, windowMs: 15 * 60 * 1000 },
+  /** Client/masseur profile writes (PATCH/POST/DELETE). */
+  profileWriteIp: { limit: 30, windowMs: 15 * 60 * 1000 },
+  profileWriteAccount: { limit: 20, windowMs: 15 * 60 * 1000 },
+  /** Verify-email resend — mail cost; in addition to app resend_too_soon. */
+  verifyEmailResend: { limit: 5, windowMs: 60 * 60 * 1000 },
 } as const;
 
 /**

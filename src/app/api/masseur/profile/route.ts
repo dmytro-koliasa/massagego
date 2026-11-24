@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { resolveBookingSettings } from "@/lib/booking-settings";
 import { cityDisplayName, toCityWriteData } from "@/lib/city";
+import {
+  enforceIpAccountRateLimit,
+  resolveRequestLocale,
+} from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
 import {
   normalizeMassageTypesInput,
@@ -9,6 +13,7 @@ import {
 } from "@/lib/massage-types";
 import { requireMasseurSession } from "@/lib/masseur-session.server";
 import { prisma } from "@/lib/prisma";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { allocateUniqueSlug, buildSlugBase } from "@/lib/slug";
 import {
   ImageProcessError,
@@ -17,6 +22,18 @@ import {
 import { normalizePhoneForCompare } from "@/lib/telegram/phone";
 import { deleteUpload, storeUpload } from "@/lib/uploads";
 import { masseurProfileSchema, parseWithSchema } from "@/lib/validation";
+
+async function enforceMasseurProfileWriteLimit(request: Request, userId: string) {
+  return enforceIpAccountRateLimit({
+    request,
+    userId,
+    ipScope: "profile-write:ip",
+    accountScope: "profile-write:account",
+    ip: RATE_LIMITS.profileWriteIp,
+    account: RATE_LIMITS.profileWriteAccount,
+    locale: resolveRequestLocale(request),
+  });
+}
 
 const profileSelect = {
   id: true,
@@ -105,6 +122,9 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
+
+  const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
+  if (limited) return limited;
 
   try {
     const body = await request.json();
@@ -197,6 +217,9 @@ export async function POST(request: Request) {
   const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
 
+  const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
+  if (limited) return limited;
+
   try {
     const formData = await request.formData();
     const file = formData.get("photo");
@@ -239,9 +262,12 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const gate = await requireMasseurSession();
   if ("error" in gate) return gate.error;
+
+  const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
+  if (limited) return limited;
 
   try {
     const current = await prisma.user.findUnique({
