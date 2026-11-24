@@ -71,3 +71,63 @@ jobs:
 
       - name: Unit and integration tests
         run: npm test
+
+  e2e-smoke:
+    name: E2E smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: massage
+          POSTGRES_PASSWORD: massage
+          POSTGRES_DB: massage_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U massage -d massage_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: true
+      AUTH_SECRET: ci-test-secret-not-for-production
+      AUTH_URL: http://127.0.0.1:3001
+      BASE_URL: http://127.0.0.1:3001
+      EMAIL_PROVIDER: log
+      DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_test?schema=public
+      TEST_DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_test?schema=public
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Migrate test database
+        run: npm run db:migrate:test
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke specs
+        run: >
+          npx playwright test
+          e2e/home.spec.ts
+          e2e/client-login-success.spec.ts
+          e2e/masseur-login-success.spec.ts
+          e2e/booking-happy-path.spec.ts
+          e2e/masseur-gallery.spec.ts
+          e2e/masseur-availability-add.spec.ts
+          e2e/client-register.spec.ts
+          e2e/client-delete-account.spec.ts

@@ -1,6 +1,6 @@
 # Testing
 
-Local setup for **unit**, **integration**, and **E2E** tests. Continuous integration runs lint, TypeScript, production build, and unit + integration on GitHub Actions (see below). E2E stays local-only for now.
+Local setup for **unit**, **integration**, and **E2E** tests. Continuous integration runs lint, TypeScript, production build, unit + integration, and a **named Playwright smoke set** on GitHub Actions (see below). The full `e2e/` suite stays local-oriented.
 
 ## Prerequisites
 
@@ -81,10 +81,32 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 | Triggers | `pull_request` (all branches) and `push` to `master` |
 | Runner | Free `ubuntu-latest` |
 | Database | Postgres 16 service container → `massage_test` |
-| Steps | `npm ci` → `db:migrate:test` (isolated service DB only) → `lint` → `knip` → `typecheck` → `build` (no migrate; #112) → `npm test` |
-| Not in CI | Playwright E2E, paid runners |
+| Job `lint-and-test` | `npm ci` → `db:migrate:test` → `lint` → `knip` → `typecheck` → `build` (no migrate; #112) → `npm test` |
+| Job `e2e-smoke` | `npm ci` → `db:migrate:test` → `playwright install --with-deps chromium` → **explicit** smoke file list (not full `e2e/`) |
+| Not in CI | Full Playwright suite (`npm run test:e2e`), paid runners, Firefox/WebKit, Blob token |
 
-Dummy `AUTH_SECRET` / `AUTH_URL` / `EMAIL_PROVIDER=log` are set in the workflow env only.
+Dummy `AUTH_SECRET` / `EMAIL_PROVIDER=log` are set in both jobs. `e2e-smoke` sets `AUTH_URL` / `BASE_URL` to `http://127.0.0.1:3001` (Playwright `webServer`). It does **not** set `BLOB_READ_WRITE_TOKEN` (gallery uses local disk uploads).
+
+### CI smoke file list (`e2e-smoke`)
+
+```text
+e2e/home.spec.ts
+e2e/client-login-success.spec.ts
+e2e/masseur-login-success.spec.ts
+e2e/booking-happy-path.spec.ts
+e2e/masseur-gallery.spec.ts
+e2e/masseur-availability-add.spec.ts
+e2e/client-register.spec.ts
+e2e/client-delete-account.spec.ts
+```
+
+Local dry-run of the same set (DB up, `TEST_DATABASE_URL` set):
+
+```bash
+npx playwright test e2e/home.spec.ts e2e/client-login-success.spec.ts e2e/masseur-login-success.spec.ts e2e/booking-happy-path.spec.ts e2e/masseur-gallery.spec.ts e2e/masseur-availability-add.spec.ts e2e/client-register.spec.ts e2e/client-delete-account.spec.ts
+```
+
+Full local suite remains `npm run test:e2e` (all of `e2e/`).
 
 ## E2E (Playwright)
 
