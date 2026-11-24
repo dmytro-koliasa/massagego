@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const since = lastCancellationSince();
   const rows = await prisma.booking.findMany({

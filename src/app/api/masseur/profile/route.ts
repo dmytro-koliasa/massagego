@@ -104,7 +104,7 @@ function toProfileResponse(
 
 export async function GET() {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const user = await prisma.user.findUnique({
     where: { id: gate.userId },
@@ -121,7 +121,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
   if (limited) return limited;
@@ -215,7 +215,7 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
   if (limited) return limited;
@@ -264,7 +264,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceMasseurProfileWriteLimit(request, gate.userId);
   if (limited) return limited;

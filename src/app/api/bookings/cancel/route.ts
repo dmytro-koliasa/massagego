@@ -21,12 +21,7 @@ import { bookingCancelSchema, parseWithSchema } from "@/lib/validation";
 export async function POST(request: Request) {
   try {
     const client = await requireClientSession();
-    if (!client.ok) {
-      return NextResponse.json(
-        { error: client.error },
-        { status: client.status },
-      );
-    }
+    if (!client.ok) return client.response;
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(

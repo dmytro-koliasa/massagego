@@ -34,7 +34,7 @@ function isSlotExpired(start: Date) {
 export async function POST(request: Request) {
   try {
     const gate = await requireMasseurSession();
-    if ("error" in gate) return gate.error;
+    if (!gate.ok) return gate.response;
 
     const limited = await enforceIpAccountRateLimit({
       request,

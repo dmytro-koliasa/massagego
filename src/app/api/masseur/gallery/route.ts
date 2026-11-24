@@ -17,7 +17,7 @@ const MAX_GALLERY_IMAGES = 3;
 
 export async function GET() {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const images = await prisma.galleryImage.findMany({
     where: { masseurId: gate.userId },
@@ -36,7 +36,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceIpAccountRateLimit({
     request,

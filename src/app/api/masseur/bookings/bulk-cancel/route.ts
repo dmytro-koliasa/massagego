@@ -18,7 +18,7 @@ import {
 
 export async function GET() {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const count = await countMasseurFutureBookings(gate.userId);
   return NextResponse.json({ count });
@@ -27,7 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const gate = await requireMasseurSession();
-    if ("error" in gate) return gate.error;
+    if (!gate.ok) return gate.response;
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(

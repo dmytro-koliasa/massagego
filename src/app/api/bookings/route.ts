@@ -61,12 +61,7 @@ function parseAlignedSlots(rawStarts: string[], timeZone: string) {
 export async function GET(request: Request) {
   try {
     const client = await requireClientSession();
-    if (!client.ok) {
-      return NextResponse.json(
-        { error: client.error },
-        { status: client.status },
-      );
-    }
+    if (!client.ok) return client.response;
 
     const { searchParams } = new URL(request.url);
     const range = parseRequiredDateRange(
@@ -135,12 +130,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const client = await requireClientSession();
-    if (!client.ok) {
-      return NextResponse.json(
-        { error: client.error },
-        { status: client.status },
-      );
-    }
+    if (!client.ok) return client.response;
 
     const locale = resolveRequestLocale(request);
     const ipLimit = await checkRateLimit(

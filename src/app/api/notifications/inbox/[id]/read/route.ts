@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { markInAppNotificationRead } from "@/lib/notifications/inbox";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 
 type Params = { params: Promise<{ id: string }> };
 

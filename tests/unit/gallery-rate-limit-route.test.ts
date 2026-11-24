@@ -53,7 +53,7 @@ describe("POST /api/masseur/gallery rate limit (#180)", () => {
     checkRateLimit.mockReset();
     storeUpload.mockReset();
     galleryCount.mockReset();
-    requireMasseurSession.mockResolvedValue({ userId: "m1" });
+    requireMasseurSession.mockResolvedValue({ ok: true, userId: "m1" });
     checkRateLimit.mockResolvedValue({ ok: true });
     galleryCount.mockResolvedValue(0);
   });

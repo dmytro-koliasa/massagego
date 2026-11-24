@@ -25,7 +25,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 import { PORTAL_REQUEST_HEADER } from "@/lib/portals";
 
 function headerMap(values: Record<string, string>) {

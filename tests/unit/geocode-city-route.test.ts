@@ -9,7 +9,7 @@ const fetchNominatimMock = vi.fn();
 const cacheGet = vi.fn();
 const cacheSet = vi.fn();
 
-vi.mock("@/lib/notifications/portal-gate", () => ({
+vi.mock("@/lib/portal-session.server", () => ({
   requirePortalUser: (...args: unknown[]) => requirePortalUser(...args),
 }));
 

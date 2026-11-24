@@ -47,13 +47,6 @@ const profileSelect = {
   preferredLocale: true,
 } as const;
 
-function toClientError(status: 401 | 403) {
-  return NextResponse.json(
-    { error: status === 401 ? "unauthorized" : "forbidden" },
-    { status },
-  );
-}
-
 function toProfile(
   user: {
     id: string;
@@ -88,7 +81,7 @@ function toProfile(
 
 export async function GET() {
   const client = await requireClientSession();
-  if (!client.ok) return toClientError(client.status);
+  if (!client.ok) return client.response;
 
   const user = await prisma.user.findUnique({
     where: { id: client.userId },
@@ -104,7 +97,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const client = await requireClientSession();
-  if (!client.ok) return toClientError(client.status);
+  if (!client.ok) return client.response;
 
   const limited = await enforceClientProfileWriteLimit(request, client.userId);
   if (limited) return limited;
@@ -184,7 +177,7 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   const client = await requireClientSession();
-  if (!client.ok) return toClientError(client.status);
+  if (!client.ok) return client.response;
 
   const limited = await enforceClientProfileWriteLimit(request, client.userId);
   if (limited) return limited;
@@ -232,7 +225,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const client = await requireClientSession();
-  if (!client.ok) return toClientError(client.status);
+  if (!client.ok) return client.response;
 
   const limited = await enforceClientProfileWriteLimit(request, client.userId);
   if (limited) return limited;

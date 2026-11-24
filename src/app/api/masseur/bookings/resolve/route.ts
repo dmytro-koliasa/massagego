@@ -13,7 +13,7 @@ import {
 export async function POST(request: Request) {
   try {
     const gate = await requireMasseurSession({ withTimeZone: true });
-    if ("error" in gate) return gate.error;
+    if (!gate.ok) return gate.response;
 
     const body = await request.json();
     const parsed = parseWithSchema(masseurBookingResolveSchema, body);
