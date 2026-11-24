@@ -90,7 +90,7 @@ free
 | T006 | CI e2e-smoke job | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | T007 | Update docs/testing.md | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
 | B3 | CI smoke + docs | done | feat/002-p2-tests-and-deps | ce5cb75 | 2026-11-24 |
-| T008 | npm audit triage + safe fix + Prisma 7 issue | done | feat/002-p2-tests-and-deps | (T008 commit) | 2026-11-24 |
+| T008 | npm audit triage + safe fix + Prisma 7 issue | done | feat/002-p2-tests-and-deps | 880e146 | 2026-11-24 |
 | CPA | P2 stage merged and pinned | todo | | | |
 | T009 | Close: results against success criteria | todo | | | |
 | CPEND | Feature done | todo | | | |
