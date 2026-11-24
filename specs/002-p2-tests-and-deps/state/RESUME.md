@@ -80,9 +80,9 @@ free
 | card | title | status | branch | commit | date (UTC) |
 | --- | --- | --- | --- | --- | --- |
 | T001 | Re-verify, branch, RESUME, code map | done | feat/002-p2-tests-and-deps | 34da43f | 2026-11-24 |
-| T002 | Masseur gallery E2E | done | feat/002-p2-tests-and-deps | (B1) | 2026-11-24 |
-| T003 | Masseur availability-add E2E | done | feat/002-p2-tests-and-deps | (B1) | 2026-11-24 |
-| B1 | Masseur E2E (gallery + availability) | done | feat/002-p2-tests-and-deps | (B1) | 2026-11-24 |
+| T002 | Masseur gallery E2E | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
+| T003 | Masseur availability-add E2E | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
+| B1 | Masseur E2E (gallery + availability) | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
 | T004 | Client register E2E | todo | | | |
 | T005 | Client delete-account E2E | todo | | | |
 | B2 | Client E2E (register + delete) | todo | | | |
