@@ -136,9 +136,9 @@ Checklist:
 - [x] T004 Client register E2E — fulfills FR-4, SC-4
 - [x] T005 Client delete-account E2E — fulfills FR-4, SC-4
 - [x] B2 Client E2E (register + delete)
-- [ ] T006 CI e2e-smoke job — fulfills FR-1, NFR-2, NFR-5, SC-1
-- [ ] T007 Update docs/testing.md — fulfills FR-7, SC-6
-- [ ] B3 CI smoke + docs
+- [x] T006 CI e2e-smoke job — fulfills FR-1, NFR-2, NFR-5, SC-1
+- [x] T007 Update docs/testing.md — fulfills FR-7, SC-6
+- [x] B3 CI smoke + docs
 - [ ] T008 npm audit triage + safe fix + Prisma 7 issue — fulfills FR-6, SC-5
 - [ ] CPA P2 stage merged and pinned
 - [ ] T009 Close: results against success criteria
