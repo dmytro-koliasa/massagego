@@ -79,7 +79,7 @@ free
 
 | card | title | status | branch | commit | date (UTC) |
 | --- | --- | --- | --- | --- | --- |
-| T001 | Re-verify, branch, RESUME, code map | done | feat/002-p2-tests-and-deps | (pending commit) | 2026-11-24 |
+| T001 | Re-verify, branch, RESUME, code map | done | feat/002-p2-tests-and-deps | 34da43f | 2026-11-24 |
 | T002 | Masseur gallery E2E | todo | | | |
 | T003 | Masseur availability-add E2E | todo | | | |
 | B1 | Masseur E2E (gallery + availability) | todo | | | |
