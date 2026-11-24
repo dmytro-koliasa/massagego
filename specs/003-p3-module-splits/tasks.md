@@ -9,7 +9,7 @@ One batch per stretch. Branch `feat/003-p3-module-splits`. State under `specs/00
 
 - [x] T001 Branch, RESUME, code map of gate call sites + line counts
 - [x] B1 Session gates move + unify shapes (T002)
-- [ ] B2 Split availability calendar (T003)
+- [x] B2 Split availability calendar (T003)
 - [ ] B3 Split masseur dashboard (T004)
 - [ ] B4 Split masseur auth panel (T005)
 - [ ] B5 Split i18n (T006)
