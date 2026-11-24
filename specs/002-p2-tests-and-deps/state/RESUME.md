@@ -83,9 +83,9 @@ free
 | T002 | Masseur gallery E2E | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
 | T003 | Masseur availability-add E2E | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
 | B1 | Masseur E2E (gallery + availability) | done | feat/002-p2-tests-and-deps | b1eab23 | 2026-11-24 |
-| T004 | Client register E2E | done | feat/002-p2-tests-and-deps | (B2 commit) | 2026-11-24 |
-| T005 | Client delete-account E2E | done | feat/002-p2-tests-and-deps | (B2 commit) | 2026-11-24 |
-| B2 | Client E2E (register + delete) | done | feat/002-p2-tests-and-deps | (B2 commit) | 2026-11-24 |
+| T004 | Client register E2E | done | feat/002-p2-tests-and-deps | 155b567 | 2026-11-24 |
+| T005 | Client delete-account E2E | done | feat/002-p2-tests-and-deps | 155b567 | 2026-11-24 |
+| B2 | Client E2E (register + delete) | done | feat/002-p2-tests-and-deps | 155b567 | 2026-11-24 |
 | T006 | CI e2e-smoke job | todo | | | |
 | T007 | Update docs/testing.md | todo | | | |
 | B3 | CI smoke + docs | todo | | | |
