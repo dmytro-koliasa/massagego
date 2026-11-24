@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 import { createTelegramLinkToken } from "@/lib/telegram/link";
 import { telegramConfigured } from "@/lib/telegram/config";
 

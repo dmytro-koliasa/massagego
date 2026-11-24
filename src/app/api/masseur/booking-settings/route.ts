@@ -14,7 +14,7 @@ import {
 
 export async function GET() {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const user = await prisma.user.findUnique({
     where: { id: gate.userId },
@@ -34,7 +34,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   try {
     const body = await request.json();

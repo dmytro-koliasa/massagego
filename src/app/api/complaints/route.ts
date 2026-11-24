@@ -5,7 +5,7 @@ import {
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
 import { logRouteError } from "@/lib/http/route-error";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, RATE_LIMITS, rateLimitKey } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";

@@ -10,7 +10,7 @@ type RouteContext = {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const gate = await requireMasseurSession();
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const { id } = await context.params;
 

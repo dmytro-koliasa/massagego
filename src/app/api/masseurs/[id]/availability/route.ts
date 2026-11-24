@@ -26,12 +26,7 @@ type RouteContext = {
 export async function GET(request: Request, context: RouteContext) {
   try {
     const client = await requireClientSession();
-    if (!client.ok) {
-      return NextResponse.json(
-        { error: client.error },
-        { status: client.status },
-      );
-    }
+    if (!client.ok) return client.response;
 
     const { id } = await context.params;
     const { searchParams } = new URL(request.url);

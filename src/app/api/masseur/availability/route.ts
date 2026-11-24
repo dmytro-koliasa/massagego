@@ -39,7 +39,7 @@ function statusForSlotError(error: string | undefined) {
 
 export async function GET(request: Request) {
   const gate = await requireMasseurSession({ withTimeZone: true });
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const { searchParams } = new URL(request.url);
   const range = parseRequiredDateRange(
@@ -258,7 +258,7 @@ async function applySlotChange(
 
 export async function POST(request: Request) {
   const gate = await requireMasseurSession({ withTimeZone: true });
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceIpAccountRateLimit({
     request,
@@ -341,7 +341,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const gate = await requireMasseurSession({ withTimeZone: true });
-  if ("error" in gate) return gate.error;
+  if (!gate.ok) return gate.response;
 
   const limited = await enforceIpAccountRateLimit({
     request,

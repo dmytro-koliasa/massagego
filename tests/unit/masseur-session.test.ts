@@ -1,5 +1,5 @@
 /**
- * #90 — shared requireMasseurSession gate.
+ * #90 / #187 — shared requireMasseurSession gate (unified ok/response shape).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,9 +29,9 @@ describe("requireMasseurSession (#90)", () => {
   it("returns 401 when there is no session", async () => {
     auth.mockResolvedValue(null);
     const gate = await requireMasseurSession();
-    expect(gate).toHaveProperty("error");
-    if (!("error" in gate)) return;
-    expect(gate.error.status).toBe(401);
+    expect(gate.ok).toBe(false);
+    if (gate.ok) return;
+    expect(gate.response.status).toBe(401);
     expect(findFirst).not.toHaveBeenCalled();
   });
 
@@ -39,23 +39,27 @@ describe("requireMasseurSession (#90)", () => {
     auth.mockResolvedValue({ user: { id: "u1" } });
     findFirst.mockResolvedValue(null);
     const gate = await requireMasseurSession();
-    expect(gate).toHaveProperty("error");
-    if (!("error" in gate)) return;
-    expect(gate.error.status).toBe(403);
+    expect(gate.ok).toBe(false);
+    if (gate.ok) return;
+    expect(gate.response.status).toBe(403);
   });
 
   it("returns userId for membership-only routes", async () => {
     auth.mockResolvedValue({ user: { id: "m1" } });
     findFirst.mockResolvedValue({ id: "m1", timezone: "Europe/Kyiv" });
     const gate = await requireMasseurSession();
-    expect(gate).toEqual({ userId: "m1" });
+    expect(gate).toEqual({ ok: true, userId: "m1" });
   });
 
   it("includes timeZone when requested", async () => {
     auth.mockResolvedValue({ user: { id: "m1" } });
     findFirst.mockResolvedValue({ id: "m1", timezone: "Europe/Kyiv" });
     const gate = await requireMasseurSession({ withTimeZone: true });
-    expect(gate).toEqual({ userId: "m1", timeZone: "Europe/Kyiv" });
+    expect(gate).toEqual({
+      ok: true,
+      userId: "m1",
+      timeZone: "Europe/Kyiv",
+    });
   });
 
   it("rejects blocked/deleted masseurs via the shared query", async () => {

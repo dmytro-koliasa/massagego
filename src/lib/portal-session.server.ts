@@ -12,7 +12,7 @@ import {
 
 type GateOk = { ok: true; userId: string; portal: PublicPortal };
 type GateFail = { ok: false; response: NextResponse };
-type GateResult = GateOk | GateFail;
+export type PortalGateResult = GateOk | GateFail;
 
 async function resolvePortalUser(
   userId: string | undefined,
@@ -62,7 +62,8 @@ function ambiguousPortal(): GateFail {
   };
 }
 
-export async function requirePortalUser(): Promise<GateResult> {
+/** Dual-session portal gate (#88 / #187). Lives outside notifications/. */
+export async function requirePortalUser(): Promise<PortalGateResult> {
   const [clientSession, masseurSession, requestHeaders] = await Promise.all([
     clientAuth(),
     masseurAuth(),

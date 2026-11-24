@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteOwnAccount } from "@/lib/account-deletion";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 
 export async function POST() {
   const gate = await requirePortalUser();

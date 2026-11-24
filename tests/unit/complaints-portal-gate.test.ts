@@ -7,7 +7,7 @@ const requirePortalUser = vi.fn();
 const checkRateLimit = vi.fn();
 const createComplaint = vi.fn();
 
-vi.mock("@/lib/notifications/portal-gate", () => ({
+vi.mock("@/lib/portal-session.server", () => ({
   requirePortalUser: (...args: unknown[]) => requirePortalUser(...args),
 }));
 

@@ -5,7 +5,7 @@ import {
   enforceIpAccountRateLimit,
   resolveRequestLocale,
 } from "@/lib/http/rate-limit-response";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 import { prisma } from "@/lib/prisma";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 

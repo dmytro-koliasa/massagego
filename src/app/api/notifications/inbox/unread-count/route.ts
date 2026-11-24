@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { countUnreadInAppNotifications } from "@/lib/notifications/inbox";
-import { requirePortalUser } from "@/lib/notifications/portal-gate";
+import { requirePortalUser } from "@/lib/portal-session.server";
 
 export async function GET() {
   const gate = await requirePortalUser();

@@ -40,3 +40,20 @@ What to do differently next feature:
 3. Keep CI smoke as an **explicit file list**; never `e2e/` wholesale on every PR.
 4. `npm audit fix --omit=dev` can prune `node_modules` — restore with `npm ci`; never `audit fix --force` for Prisma/Blob majors.
 5. City search E2E: stub `/api/geocode/city`; fill() + Search after hydration, not raw DOM `value=` before React attaches.
+
+## 2026-11-24 — 003-p3-module-splits
+
+Measured (manual / no supervisor on Windows):
+
+| card / batch | kind | size | effort | notes |
+| --- | --- | --- | --- | --- |
+| B1 | backend | M | medium | portal-session + unify `{ok}` shapes |
+| B2–B4 | frontend | M×3 | high | calendar main stays large; dialog/sections seams |
+| B5 | fullstack | M | medium | locale modules; barrel `@/lib/i18n` |
+| CPA | fullstack | S | medium | integration 429 after smoke = polluted rateLimitBucket |
+
+What to do differently next feature:
+
+1. After local smoke/integration, clear TEST DB `rateLimitBucket` before CPA re-verify — shared IP keys look like product regressions.
+2. Prefer folder + barrel over thinning a FullCalendar shell past the orchestration seam.
+3. Gate moves: delete notification-local portal-gate entirely; one server module path.
