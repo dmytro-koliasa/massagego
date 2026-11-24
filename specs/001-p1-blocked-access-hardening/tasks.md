@@ -127,7 +127,7 @@ Checklist:
 - [x] T005 Wire FR-3 rate limits on write routes — fulfills FR-3
 - [x] T006 Prove rate-limit 429 for a new scope — fulfills FR-3, SC-4
 - [x] B2 Rate limits
-- [ ] CPA Hardening stage merged and pinned
+- [x] CPA Hardening stage merged and pinned
 - [ ] T007 Close: results against success criteria
 - [ ] CPEND Feature done
 

@@ -7,24 +7,25 @@ State file for the one-card-per-session protocol in
 
 - **Branch:** `feat/001-p1-blocked-access-hardening`
 - **Worktree:** main checkout only
-- **FR-2:** `src/proxy.ts` untouched (no `blockedAt`)
-
-### Code map (T001) — still accurate; T002–T004 landed
-
-See hand-offs T002–T004 for deltas.
+- **FR-2:** `src/proxy.ts` untouched (no `blockedAt`) — reconfirmed at CPA
 
 ### Baselines (T001)
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Unit tests | `npm run test:unit` | exit 0 — 42 files / 235 tests (pre-B1) |
-| B1 full tests | `npm test` with TEST_DATABASE_URL | unit + integration green (2026-11-24) |
-| typecheck | `npm run typecheck` | green |
-| lint src/tests | `npm run lint -- src tests` | green (repo-root `npm run lint` still noisy on `.cursor/skills`) |
+| Unit tests | `npm run test:unit` | exit 0 (pre-B1 baseline) |
+| CPA full suite | `npm test` + typecheck + `eslint src tests` | exit 0 (2026-11-24) |
 
 ## Pins
 
-(none yet — CPA)
+| rule | pinning test | card |
+| --- | --- | --- |
+| Block bumps passwordChangedAt / JWT stale | `tests/integration/admin-block-jwt.test.ts` | T002 |
+| requirePortalUser rejects blocked | `tests/unit/portal-gate.test.ts` | T003 |
+| Reset blocked: no token/send; confirm invalid_token | `tests/unit/auth-password-reset-origin.test.ts`, `tests/unit/password-reset-blocked-confirm.test.ts` | T004 |
+| New rate-limit scope returns 429 | `tests/unit/gallery-rate-limit-route.test.ts` | T006 |
+
+Pins reviewed up to CPA (HEAD after CPA commit).
 
 ## Deploy lock
 
@@ -57,9 +58,9 @@ free
 | T003 | requirePortalUser rejects blocked | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
 | T004 | Password reset/reclaim ignores blocked | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
 | B1 | Block path + gates + reset | done | feat/001-p1-blocked-access-hardening | 7aa3c8a | 2026-11-24 |
-| T005 | Wire FR-3 rate limits | todo | | | |
-| T006 | Prove rate-limit 429 | todo | | | |
-| B2 | Rate limits | todo | | | |
-| CPA | Hardening stage merged and pinned | todo | | | |
+| T005 | Wire FR-3 rate limits | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
+| T006 | Prove rate-limit 429 | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
+| B2 | Rate limits | done | feat/001-p1-blocked-access-hardening | 75d5089 | 2026-11-24 |
+| CPA | Hardening stage merged and pinned | done | feat/001-p1-blocked-access-hardening | (CPA) | 2026-11-24 |
 | T007 | Results | todo | | | |
 | CPEND | Feature done | todo | | | |
