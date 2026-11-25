@@ -22,17 +22,35 @@
 }
 
 .dark {
-  --background: #0b1210;
-  --foreground: #e8efea;
-  --muted: #9aada3;
-  --accent: #8fbfad;
-  --accent-soft: rgba(143, 191, 173, 0.14);
-  --surface: rgba(18, 28, 24, 0.78);
-  --surface-border: rgba(232, 239, 234, 0.14);
-  --hero-scrim: linear-gradient(105deg, rgba(5, 10, 8, 0.88) 0%, rgba(5, 10, 8, 0.68) 45%, rgba(5, 10, 8, 0.35) 100%);
-  --glow: rgba(143, 191, 173, 0.18);
-  --ring: rgba(143, 191, 173, 0.4);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239aada3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* #198 — reference lighting (dark first); light theme follow-up later */
+  --background: #07070c;
+  --foreground: #f4f2f8;
+  --muted: #9a96a8;
+  --accent: #e879f9;
+  --accent-soft: rgba(232, 121, 249, 0.14);
+  --surface: rgba(16, 14, 28, 0.82);
+  --surface-border: rgba(232, 121, 249, 0.28);
+  --hero-scrim: linear-gradient(
+    160deg,
+    rgba(5, 5, 12, 0.92) 0%,
+    rgba(12, 8, 28, 0.78) 42%,
+    rgba(8, 6, 18, 0.55) 100%
+  );
+  --glow: rgba(168, 85, 247, 0.28);
+  --ring: rgba(232, 121, 249, 0.45);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239a96a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Landing hero atmosphere (#198) — always dark-ref lighting on home */
+.landing-hero {
+  --landing-bg: #05050a;
+  --landing-fg: #f7f5fb;
+  --landing-muted: #a39eb4;
+  --landing-accent: #f0abfc;
+  --landing-accent-strong: #e879f9;
+  --landing-border: rgba(240, 171, 252, 0.45);
+  --landing-card: rgba(12, 10, 22, 0.78);
+  --landing-glow: rgba(168, 85, 247, 0.35);
 }
 
 @theme inline {

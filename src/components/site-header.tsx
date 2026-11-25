@@ -114,7 +114,7 @@ export function SiteHeader() {
       <header
         className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
           isHome
-            ? "border-white/10 bg-[#101110]/55 text-white"
+            ? "border-[rgba(240,171,252,0.22)] bg-[rgba(5,5,10,0.72)] text-white"
             : "border-surface-border bg-background/80 text-foreground"
         }`}
       >

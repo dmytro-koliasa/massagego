@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { cookies } from 'next/headers';
-import { Cormorant, Source_Sans_3 } from 'next/font/google';
+import { Manrope, Unbounded } from 'next/font/google';
 import { AppToaster } from '@/components/app-toaster';
 import { LanguageProvider } from '@/components/language-provider';
 import { AuthSessionProvider } from '@/components/auth-session-provider';
@@ -12,14 +12,14 @@ import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
 import './globals.css';
 
-const display = Cormorant({
+const display = Unbounded({
 	variable: '--font-display-family',
 	subsets: ['latin', 'cyrillic'],
-	weight: ['500', '600', '700'],
+	weight: ['500', '600', '700', '800'],
 	display: 'swap',
 });
 
-const sans = Source_Sans_3({
+const sans = Manrope({
 	variable: '--font-sans-family',
 	subsets: ['latin', 'cyrillic'],
 	weight: ['400', '500', '600', '700'],
