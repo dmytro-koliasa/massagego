@@ -3,26 +3,62 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #eef3f0;
-  --foreground: #14201b;
-  --muted: #5c6f66;
-  --accent: #2f6a58;
-  --accent-soft: #d7e8e0;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-border: rgba(20, 32, 27, 0.12);
+  /* Light app + landing (#198) — same structure/fonts as dark, bright surface */
+  --background: #f5f2f8;
+  --foreground: #16121f;
+  --muted: #6b6578;
+  --accent: #c026d3;
+  --accent-soft: rgba(192, 38, 211, 0.12);
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-border: rgba(192, 38, 211, 0.22);
   --hero-scrim: linear-gradient(
-    105deg,
-    rgba(14, 28, 22, 0.78) 0%,
-    rgba(14, 28, 22, 0.55) 42%,
-    rgba(14, 28, 22, 0.22) 100%
+    160deg,
+    rgba(245, 242, 248, 0.55) 0%,
+    rgba(245, 242, 248, 0.82) 48%,
+    #f5f2f8 100%
   );
-  --glow: rgba(47, 106, 88, 0.22);
-  --ring: rgba(47, 106, 88, 0.35);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235c6f66' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --glow: rgba(192, 38, 211, 0.16);
+  --ring: rgba(192, 38, 211, 0.35);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b6578' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  --landing-bg: #f5f2f8;
+  --landing-fg: #16121f;
+  --landing-muted: #6b6578;
+  --landing-accent: #c026d3;
+  --landing-accent-strong: #a21caf;
+  --landing-border: rgba(192, 38, 211, 0.28);
+  --landing-card: rgba(255, 255, 255, 0.92);
+  --landing-glow: rgba(192, 38, 211, 0.18);
+  --landing-overlay: radial-gradient(
+      ellipse 80% 60% at 70% 20%,
+      rgba(192, 38, 211, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 15% 80%,
+      rgba(168, 85, 247, 0.1),
+      transparent 50%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(245, 242, 248, 0.35) 0%,
+      rgba(245, 242, 248, 0.78) 45%,
+      #f5f2f8 100%
+    );
+  --landing-card-shadow: 0 0 0 1px rgba(192, 38, 211, 0.08),
+    0 18px 40px rgba(22, 18, 31, 0.08);
+  --landing-card-shadow-hover: 0 0 0 1px rgba(192, 38, 211, 0.28),
+    0 22px 48px rgba(192, 38, 211, 0.14);
+  --landing-image-fade: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.95),
+    transparent 55%
+  );
+  --landing-title: #16121f;
+  --landing-photo-opacity: 0.28;
 }
 
 .dark {
-  /* #198 — reference lighting (dark first); light theme follow-up later */
   --background: #07070c;
   --foreground: #f4f2f8;
   --muted: #9a96a8;
@@ -39,10 +75,7 @@
   --glow: rgba(168, 85, 247, 0.28);
   --ring: rgba(232, 121, 249, 0.45);
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239a96a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
 
-/* Landing hero atmosphere (#198) — always dark-ref lighting on home */
-.landing-hero {
   --landing-bg: #05050a;
   --landing-fg: #f7f5fb;
   --landing-muted: #a39eb4;
@@ -51,6 +84,41 @@
   --landing-border: rgba(240, 171, 252, 0.45);
   --landing-card: rgba(12, 10, 22, 0.78);
   --landing-glow: rgba(168, 85, 247, 0.35);
+  --landing-overlay: radial-gradient(
+      ellipse 80% 60% at 70% 20%,
+      rgba(168, 85, 247, 0.28),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 15% 80%,
+      rgba(232, 121, 249, 0.18),
+      transparent 50%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(5, 5, 10, 0.55) 0%,
+      rgba(5, 5, 10, 0.88) 45%,
+      #05050a 100%
+    );
+  --landing-card-shadow: 0 0 0 1px rgba(240, 171, 252, 0.08),
+    0 0 40px rgba(168, 85, 247, 0.12);
+  --landing-card-shadow-hover: 0 0 0 1px rgba(240, 171, 252, 0.35),
+    0 0 48px rgba(232, 121, 249, 0.22);
+  --landing-image-fade: linear-gradient(
+    to top,
+    rgba(5, 5, 10, 0.85),
+    transparent 55%
+  );
+  --landing-title: #ffffff;
+  --landing-photo-opacity: 0.35;
+}
+
+.landing-path-card {
+  box-shadow: var(--landing-card-shadow);
+}
+
+.landing-path-card:hover {
+  box-shadow: var(--landing-card-shadow-hover);
 }
 
 @theme inline {
