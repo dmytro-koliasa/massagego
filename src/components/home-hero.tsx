@@ -11,7 +11,8 @@ export function HomeHero() {
 	const { t } = useLanguage();
 
 	return (
-		<section className='relative min-h-[calc(100dvh-4rem)] overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-fg)]'>
+		<section className='relative -mt-[4.25rem] min-h-dvh overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-fg)]'>
+			{/* Full-bleed media plane — under sticky header, edge-to-edge (both themes) */}
 			<div className='pointer-events-none absolute inset-0'>
 				<Image
 					src={HERO_IMAGE}
@@ -34,7 +35,7 @@ export function HomeHero() {
 				/>
 			</div>
 
-			<div className='relative z-10 mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-6xl flex-col justify-end gap-12 px-[15px] pb-12 pt-28 sm:justify-center sm:pb-16'>
+			<div className='relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-end gap-12 px-[15px] pb-12 pt-[calc(4.25rem+3.5rem)] sm:justify-center sm:pb-16 sm:pt-[calc(4.25rem+4rem)]'>
 				<div className='max-w-3xl space-y-5'>
 					<p
 						className='animate-fade-up font-display text-[clamp(3rem,9vw,5.75rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-[var(--landing-title)]'
