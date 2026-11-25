@@ -27,35 +27,36 @@
   --landing-accent: #c026d3;
   --landing-accent-strong: #a21caf;
   --landing-border: rgba(192, 38, 211, 0.28);
-  --landing-card: rgba(255, 255, 255, 0.92);
-  --landing-glow: rgba(192, 38, 211, 0.18);
+  --landing-card: #ffffff;
+  --landing-glow: rgba(192, 38, 211, 0.14);
   --landing-overlay: radial-gradient(
-      ellipse 80% 60% at 70% 20%,
-      rgba(192, 38, 211, 0.14),
+      ellipse 80% 60% at 70% 15%,
+      rgba(192, 38, 211, 0.1),
       transparent 55%
     ),
     radial-gradient(
-      ellipse 70% 50% at 15% 80%,
-      rgba(168, 85, 247, 0.1),
+      ellipse 70% 50% at 20% 85%,
+      rgba(168, 85, 247, 0.08),
       transparent 50%
     ),
     linear-gradient(
       180deg,
-      rgba(245, 242, 248, 0.35) 0%,
-      rgba(245, 242, 248, 0.78) 45%,
+      rgba(245, 242, 248, 0.45) 0%,
+      rgba(245, 242, 248, 0.88) 50%,
       #f5f2f8 100%
     );
-  --landing-card-shadow: 0 0 0 1px rgba(192, 38, 211, 0.08),
+  --landing-card-shadow: 0 0 0 1px rgba(192, 38, 211, 0.1),
     0 18px 40px rgba(22, 18, 31, 0.08);
-  --landing-card-shadow-hover: 0 0 0 1px rgba(192, 38, 211, 0.28),
+  --landing-card-shadow-hover: 0 0 0 1px rgba(192, 38, 211, 0.3),
     0 22px 48px rgba(192, 38, 211, 0.14);
   --landing-image-fade: linear-gradient(
     to top,
-    rgba(255, 255, 255, 0.95),
-    transparent 55%
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.55) 35%,
+    transparent 70%
   );
   --landing-title: #16121f;
-  --landing-photo-opacity: 0.28;
+  --landing-photo-opacity: 0.22;
 }
 
 .dark {
