@@ -9,6 +9,7 @@ import { useLanguage } from "@/components/language-provider";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Preloader } from "@/components/preloader";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "@/components/theme-provider";
 import type { Portal } from "@/lib/portals";
 import { isPortalLoginPath, portalHomePath } from "@/lib/portals";
 import { shouldSkipImageOptimization } from "@/lib/upload-url";
@@ -63,10 +64,12 @@ function HeaderNavLink({
 
 export function SiteHeader() {
   const { t, locale } = useLanguage();
+  const { theme } = useTheme();
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const portal = resolvePortal(pathname);
   const isHome = pathname === "/";
+  const homeOnDark = isHome && theme === "dark";
   const onAdminSurface = pathname?.startsWith("/admin") ?? false;
   // Marketing chrome: no Admin; home relies on hero CTAs for portal entry (#190).
   const showPortalNav = !isHome;
@@ -113,9 +116,11 @@ export function SiteHeader() {
     <>
       <header
         className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
-          isHome
-            ? "border-white/10 bg-[#101110]/55 text-white"
-            : "border-surface-border bg-background/80 text-foreground"
+          homeOnDark
+            ? "border-[rgba(240,171,252,0.18)] bg-[rgba(5,5,10,0.42)] text-white"
+            : isHome
+              ? "border-[var(--landing-border)] bg-[color-mix(in_srgb,var(--landing-bg)_55%,transparent)] text-[var(--landing-fg)]"
+              : "border-surface-border bg-background/80 text-foreground"
         }`}
       >
         <div className="mx-auto flex h-[4.25rem] w-full max-w-6xl items-center justify-between gap-4 px-[15px]">
@@ -123,7 +128,11 @@ export function SiteHeader() {
             <Link
               href="/"
               className={`shrink-0 font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
-                isHome ? "text-white" : "text-foreground"
+                homeOnDark
+                  ? "text-white"
+                  : isHome
+                    ? "text-[var(--landing-title)]"
+                    : "text-foreground"
               }`}
             >
               MassageGo
@@ -138,20 +147,20 @@ export function SiteHeader() {
                   href="/masseur/login"
                   label={t.masseurTitle}
                   active={pathname.startsWith("/masseur")}
-                  onDark={isHome}
+                  onDark={homeOnDark}
                 />
                 <HeaderNavLink
                   href="/client/login"
                   label={t.clientTitle}
                   active={pathname.startsWith("/client")}
-                  onDark={isHome}
+                  onDark={homeOnDark}
                 />
                 {showAdminNav ? (
                   <HeaderNavLink
                     href="/admin/login"
                     label={t.adminTitle}
                     active={pathname.startsWith("/admin")}
-                    onDark={isHome}
+                    onDark={homeOnDark}
                   />
                 ) : null}
               </nav>
@@ -159,8 +168,8 @@ export function SiteHeader() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <LanguageSwitcher tone={isHome ? "onDark" : "default"} />
-            <ThemeToggle tone={isHome ? "onDark" : "default"} />
+            <LanguageSwitcher tone={homeOnDark ? "onDark" : "default"} />
+            <ThemeToggle tone={homeOnDark ? "onDark" : "default"} />
 
             {isHome || onLoginPage ? null : status === "loading" ? (
               <span className="h-11 w-36 animate-pulse rounded-lg bg-accent-soft" />
