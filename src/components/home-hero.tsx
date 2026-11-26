@@ -2,16 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/language-provider';
 
-const HERO_IMAGE =
-	'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=2400&q=80';
+/** Self-hosted hero (#205): avoid Unsplash hop via `/_next/image` on LCP path. */
+const HERO_IMAGE = '/media/hero.jpg';
 const MASSEUR_CARD_IMAGE = '/media/masseur-card.jpg';
 const CLIENT_CARD_IMAGE = '/media/client-card.jpg';
 
 export function HomeHero() {
 	const { t } = useLanguage();
+	/** Ken Burns after first paint so LCP is not delayed by the animation (#205). */
+	const [heroMotion, setHeroMotion] = useState(false);
 
 	// Keep home scroll locked for client navigations; clear on leave so other routes can scroll.
 	useEffect(() => {
@@ -34,9 +36,17 @@ export function HomeHero() {
 					alt=''
 					fill
 					priority
-					sizes='100vw'
+					fetchPriority='high'
+					decoding='sync'
+					quality={75}
+					sizes='(max-width: 768px) 100vw, 1400px'
 					aria-hidden
-					className='animate-ken-burns object-cover object-center'
+					onLoad={() => {
+						requestAnimationFrame(() => setHeroMotion(true));
+					}}
+					className={`object-cover object-center ${
+						heroMotion ? 'animate-ken-burns' : 'hero-photo-still'
+					}`}
 					style={{ opacity: 'var(--landing-photo-opacity)' }}
 				/>
 				<div
