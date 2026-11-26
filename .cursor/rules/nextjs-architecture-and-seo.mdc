@@ -1,0 +1,46 @@
+---
+description: Next.js App Router architecture and technical SEO guardrails for MassageGo
+alwaysApply: true
+---
+
+# Next.js architecture and SEO (MassageGo)
+
+Stack lock: **Next.js 16.x App Router**, **React 19**, project layout `src/app` + `src/components` + `src/lib`. Prefer this project's conventions and `node_modules/next/dist/docs/` over training data or skill defaults that conflict.
+
+## Server / Client boundaries
+
+- Default to **Server Components**. Keep `page.tsx` / `layout.tsx` as Server Components when practical.
+- Push `"use client"` as **low** in the tree as practical. Every new client boundary needs a clear reason (events, browser APIs, local React state that cannot stay on the server).
+- Do not move database access, secrets, session crypto, or core business rules into Client Components. Keep them server-only (`src/lib`, Route Handlers, Server Actions).
+- Pass **serializable** props across RSC → client boundaries. Avoid leaking non-serializable server objects.
+- Place providers as **deep** as practical (theme/locale/session), not wrapping unrelated static trees when avoidable.
+- Compose server shells that fetch data with small client islands for interaction.
+
+## Rendering, caching, and hydration
+
+- Choose rendering/caching per **route requirements** (public marketing vs authenticated portals). Do not enable Cache Components, PPR, or experimental flags solely because a skill recommends them — this repo does not currently use `cacheComponents`.
+- Prefer less unnecessary client JavaScript. Lazy-load heavy client-only UI when it does not block critical content.
+- Use version-compatible Next/React APIs; verify against installed docs when unsure.
+
+## Technical SEO
+
+- SEO-critical content for public pages must be present in **server-rendered HTML** when practical. Do not load essential indexable copy only via `useEffect`.
+- `"use client"` alone does not remove SSR HTML — verify the raw HTML response for important phrases when SEO matters.
+- Use the Metadata API (`metadata` / `generateMetadata`), correct `metadataBase` when absolute URLs matter, and intentional canonicals.
+- Public routes should be indexable unless product policy says otherwise; authenticated portals (`/client`, `/masseur`, `/admin` and related) stay protected and non-indexable by design.
+- Prefer correct semantic HTML. Add structured data (JSON-LD) only when it matches visible content and a current consumer; do not chase retired Google rich-result types.
+- International copy (en/uk) must stay consistent with the existing locale system; do not invent a parallel i18n architecture.
+
+## Accessibility and performance
+
+- Preserve semantic structure, labels, focus, and keyboard access. Prefer evidence (rendered DOM, audits) over assumptions.
+- Treat Core Web Vitals (LCP, INP, CLS) as measured goals; optimize images/fonts/bundles with project patterns (`next/image`, `next/font`) before speculative rewrites.
+
+## Skills vs project authority
+
+Shared requirements also live in `AGENTS.md` (source of truth across Cursor and Claude Code). Use `seo-audit-hardened` and `massagego-i18n-best-practices` instead of unsafe upstream SEO/i18n substitutes. Bundle audits: `next-bundle-optimizer-hardened` only.
+
+- Skills advise; they do not override approved project architecture.
+- Hierarchy: project decisions → installed Next/React docs → official framework/vendor skills → specialized community skills.
+- Client Components are not inherently bad for SEO; verify HTML, headers, robots/canonicals, and performance instead of blanket bans.
+- Do not change architecture only to match a newly installed skill's preferred pattern.

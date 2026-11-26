@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent skill trees (third-party / markdown tooling, not app source)
+    ".agents/**",
+    ".claude/**",
+    ".cursor/**",
+    ".skills-quarantine/**",
+    "agent-skills/**",
   ]),
   // CommonJS seed/backfill scripts (pre-existing).
   {
