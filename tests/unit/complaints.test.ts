@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertComplaintBookingLink } from "@/lib/complaints";
+import { assertComplaintBookingLink } from "@/lib/complaints-shared";
 
 describe("assertComplaintBookingLink", () => {
   const booking = {

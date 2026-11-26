@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createPrismaClient } from "@/lib/create-prisma-client";
 import type { PrismaClient } from "@/generated/prisma/client";
 

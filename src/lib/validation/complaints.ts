@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   COMPLAINT_ADMIN_NOTE_MAX,
   COMPLAINT_BODY_MAX,
-} from "@/lib/complaints";
+} from "@/lib/complaints-shared";
 
 export const complaintCreateSchema = z.object({
   bookingId: z.string().trim().min(1),
