@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { Manrope, Unbounded } from 'next/font/google';
 import { AppToaster } from '@/components/app-toaster';
@@ -9,6 +8,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
+import { rootMetadata } from '@/lib/seo/public-metadata';
 import {
 	THEME_STORAGE_KEY,
 	readThemeCookie,
@@ -29,11 +29,7 @@ const sans = Manrope({
 	display: 'swap',
 });
 
-export const metadata: Metadata = {
-	title: 'MassageGo — Massage for masseurs and clients',
-	description:
-		'A calm place for masseurs and clients to meet. Sign in as a masseur for your personal page, or continue as a client.',
-};
+export const metadata = rootMetadata();
 
 const prefsInitScript = `
 (() => {
