@@ -1,9 +1,15 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import type { Locale } from '@/lib/i18n';
+import {
+  publicPageMetadata,
+  readLocaleCookie,
+} from '@/lib/seo/public-metadata';
 
-function readLocale(value: string | undefined): Locale {
-  return value === 'uk' || value === 'en' ? value : 'en';
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const locale = readLocaleCookie(cookieStore.get('serein-locale')?.value);
+  return publicPageMetadata('/privacy', locale);
 }
 
 const copy = {
@@ -109,7 +115,7 @@ const copy = {
 
 export default async function PrivacyPage() {
   const cookieStore = await cookies();
-  const locale = readLocale(cookieStore.get('serein-locale')?.value);
+  const locale = readLocaleCookie(cookieStore.get('serein-locale')?.value);
   const c = copy[locale];
 
   return (
