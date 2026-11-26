@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { ModalDialog } from "@/components/modal-dialog";
-import { COMPLAINT_CATEGORIES } from "@/lib/complaints";
+import { COMPLAINT_CATEGORIES } from "@/lib/complaints-shared";
 import {
   portalRequestHeaders,
   type PublicPortal,
