@@ -34,6 +34,14 @@ if [[ -f "$ROOT/skills-lock.json" ]]; then
   else
     fail "skills CLI pin missing"
   fi
+  for name in "${DISABLED[@]}"; do
+    # Require disabled:true near the skill entry (best-effort JSON grep)
+    if node -e "const j=require(process.argv[1]); const s=j.skills[process.argv[2]]; if(!s||s.disabled!==true) process.exit(1)" "$ROOT/skills-lock.json" "$name"; then
+      pass "lockfile disabled $name"
+    else
+      fail "lockfile missing disabled:true for $name"
+    fi
+  done
 else
   fail "skills-lock.json missing"
 fi
