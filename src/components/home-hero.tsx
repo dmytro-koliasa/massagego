@@ -2,17 +2,32 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useLanguage } from '@/components/language-provider';
 
 const HERO_IMAGE =
 	'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=2400&q=80';
+const MASSEUR_CARD_IMAGE = '/media/masseur-card.jpg';
+const CLIENT_CARD_IMAGE = '/media/client-card.jpg';
 
 export function HomeHero() {
 	const { t } = useLanguage();
 
+	// Keep home scroll locked for client navigations; clear on leave so other routes can scroll.
+	useEffect(() => {
+		const html = document.documentElement;
+		const body = document.body;
+		html.style.overflow = 'hidden';
+		body.style.overflow = 'hidden';
+		return () => {
+			html.style.overflow = '';
+			body.style.overflow = '';
+		};
+	}, []);
+
 	return (
-		<section className='relative -mt-[4.25rem] min-h-dvh overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-fg)]'>
-			{/* Full-bleed media plane — under sticky header, edge-to-edge (both themes) */}
+		<section className='relative h-full overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-fg)]'>
+			{/* Full-bleed media plane — under sticky header/footer, edge-to-edge (both themes) */}
 			<div className='pointer-events-none absolute inset-0'>
 				<Image
 					src={HERO_IMAGE}
@@ -35,7 +50,8 @@ export function HomeHero() {
 				/>
 			</div>
 
-			<div className='relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-end gap-12 px-[15px] pb-12 pt-[calc(4.25rem+3.5rem)] sm:justify-center sm:pb-16 sm:pt-[calc(4.25rem+4rem)]'>
+			{/* Vertically centered between fixed header (4.25rem) and home footer (3.5rem / 4rem) */}
+			<div className='relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col justify-center gap-10 px-[15px] pb-[calc(3.5rem+1.5rem)] pt-[calc(4.25rem+1.5rem)] sm:gap-12 sm:pb-[calc(4rem+2rem)] sm:pt-[calc(4.25rem+2rem)]'>
 				<div className='max-w-3xl space-y-5'>
 					<p
 						className='animate-fade-up font-display text-[clamp(3rem,9vw,5.75rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-[var(--landing-title)]'
@@ -70,6 +86,7 @@ export function HomeHero() {
 						description={t.masseurDescription}
 						tag={t.headerPortalMasseur}
 						imageAlt={t.heroAlt}
+						imageSrc={MASSEUR_CARD_IMAGE}
 					/>
 					<PathCard
 						href='/client/login'
@@ -77,6 +94,7 @@ export function HomeHero() {
 						description={t.clientDescription}
 						tag={t.headerPortalClient}
 						imageAlt={t.heroAlt}
+						imageSrc={CLIENT_CARD_IMAGE}
 					/>
 				</div>
 			</div>
@@ -90,12 +108,14 @@ function PathCard({
 	description,
 	tag,
 	imageAlt,
+	imageSrc = HERO_IMAGE,
 }: {
 	href: string;
 	title: string;
 	description: string;
 	tag: string;
 	imageAlt: string;
+	imageSrc?: string;
 }) {
 	return (
 		<Link
@@ -104,15 +124,20 @@ function PathCard({
 		>
 			<div className='relative h-40 w-full overflow-hidden sm:h-44'>
 				<Image
-					src={HERO_IMAGE}
+					src={imageSrc}
 					alt={imageAlt}
 					fill
 					sizes='(max-width: 640px) 100vw, 50vw'
-					className='object-cover object-center transition duration-500 group-hover:scale-[1.04]'
+					className='scale-105 object-cover object-center blur-[2.5px]'
 				/>
 				<div
-					className='absolute inset-0'
+					className='pointer-events-none absolute inset-0'
 					style={{ background: 'var(--landing-image-fade)' }}
+				/>
+				{/* Solid seam so hover transforms don't flicker against the text block */}
+				<div
+					aria-hidden
+					className='pointer-events-none absolute inset-x-0 bottom-0 h-3 bg-[var(--landing-card)]'
 				/>
 			</div>
 
@@ -121,18 +146,18 @@ function PathCard({
 					<span className='block font-display text-lg font-semibold uppercase tracking-[0.06em] text-[var(--landing-title)] sm:text-xl'>
 						{title}
 					</span>
-					<span className='block text-sm leading-relaxed text-[var(--landing-muted)]'>
+					<span className='block text-[calc(0.875rem+2px)] leading-relaxed text-[var(--landing-muted)]'>
 						{description}
 					</span>
 				</div>
 
-				<div className='mt-auto flex items-end justify-between gap-3 pt-2'>
-					<span className='rounded-sm border border-[var(--landing-border)] px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--landing-accent)]'>
+				<div className='mt-auto flex items-center justify-between gap-3 pt-2'>
+					<span className='inline-flex h-9 items-center rounded-sm border border-[var(--landing-border)] px-[13px] text-[calc(0.65rem+1px)] font-semibold uppercase tracking-[0.14em] text-[var(--landing-accent)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--landing-accent)_12%,transparent),0_1px_6px_color-mix(in_srgb,var(--landing-accent)_22%,transparent)] transition duration-300 group-hover:border-[var(--landing-accent)] group-hover:bg-[var(--accent-soft)]'>
 						{tag}
 					</span>
 					<span
 						aria-hidden
-						className='inline-flex h-9 w-9 items-center justify-center rounded-sm border border-[var(--landing-border)] text-[var(--landing-accent)] transition duration-300 group-hover:translate-x-0.5 group-hover:border-[var(--landing-accent)] group-hover:bg-[var(--accent-soft)]'
+						className='inline-flex h-9 w-9 items-center justify-center rounded-sm border border-[var(--landing-border)] text-[var(--landing-accent)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--landing-accent)_12%,transparent),0_1px_6px_color-mix(in_srgb,var(--landing-accent)_22%,transparent)] transition duration-300 group-hover:translate-x-0.5 group-hover:border-[var(--landing-accent)] group-hover:bg-[var(--accent-soft)]'
 					>
 						↗
 					</span>

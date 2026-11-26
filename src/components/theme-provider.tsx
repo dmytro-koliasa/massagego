@@ -6,8 +6,15 @@ import {
   useContext,
   useSyncExternalStore,
 } from "react";
+import {
+  THEME_COOKIE_MAX_AGE,
+  THEME_STORAGE_KEY,
+  isTheme,
+  type Theme,
+} from "@/lib/theme-prefs";
 
-type Theme = "light" | "dark";
+export type { Theme } from "@/lib/theme-prefs";
+export { THEME_STORAGE_KEY } from "@/lib/theme-prefs";
 
 type ThemeContextValue = {
   theme: Theme;
@@ -17,20 +24,23 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const THEME_STORAGE_KEY = "serein-theme";
-
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
   root.style.colorScheme = theme;
 }
 
-function readStoredTheme(): Theme {
+function persistTheme(theme: Theme) {
+  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  document.cookie = `${THEME_STORAGE_KEY}=${theme};path=/;max-age=${THEME_COOKIE_MAX_AGE};samesite=lax`;
+}
+
+function readStoredTheme(fallback: Theme): Theme {
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
+  if (isTheme(stored)) return stored;
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
-    : "light";
+    : fallback;
 }
 
 let currentTheme: Theme = "light";
@@ -41,42 +51,41 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
-function hydrateTheme() {
+function hydrateTheme(fallback: Theme) {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
-  currentTheme = readStoredTheme();
+  currentTheme = readStoredTheme(fallback);
   applyTheme(currentTheme);
-}
-
-function subscribe(listener: () => void) {
-  hydrateTheme();
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function getSnapshot() {
-  hydrateTheme();
-  return currentTheme;
-}
-
-function getServerSnapshot(): Theme {
-  return "light";
+  persistTheme(currentTheme);
 }
 
 function writeTheme(theme: Theme) {
   currentTheme = theme;
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   applyTheme(theme);
+  persistTheme(theme);
   emit();
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+  initialTheme = "light",
+}: {
+  children: React.ReactNode;
+  initialTheme?: Theme;
+}) {
   const theme = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+    (listener) => {
+      hydrateTheme(initialTheme);
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    () => {
+      hydrateTheme(initialTheme);
+      return currentTheme;
+    },
+    () => initialTheme,
   );
 
   const setTheme = useCallback((next: Theme) => {

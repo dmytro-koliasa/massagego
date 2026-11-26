@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { cookies } from 'next/headers';
 import { Manrope, Unbounded } from 'next/font/google';
 import { AppToaster } from '@/components/app-toaster';
@@ -10,6 +9,10 @@ import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
+import {
+	THEME_STORAGE_KEY,
+	readThemeCookie,
+} from '@/lib/theme-prefs';
 import './globals.css';
 
 const display = Unbounded({
@@ -35,7 +38,18 @@ export const metadata: Metadata = {
 const prefsInitScript = `
 (() => {
   try {
-    const storedTheme = localStorage.getItem("serein-theme");
+    // Lock home scroll before first paint (useEffect is too late and shows a gutter scrollbar).
+    const isHome = location.pathname === "/";
+    if (isHome) {
+      document.documentElement.style.overflow = "hidden";
+      const lockBody = () => {
+        if (document.body) document.body.style.overflow = "hidden";
+      };
+      lockBody();
+      document.addEventListener("DOMContentLoaded", lockBody, { once: true });
+    }
+
+    const storedTheme = localStorage.getItem("${THEME_STORAGE_KEY}");
     const theme =
       storedTheme === "light" || storedTheme === "dark"
         ? storedTheme
@@ -44,6 +58,7 @@ const prefsInitScript = `
           : "light";
     document.documentElement.classList.toggle("dark", theme === "dark");
     document.documentElement.style.colorScheme = theme;
+    document.cookie = "${THEME_STORAGE_KEY}=" + theme + ";path=/;max-age=31536000;samesite=lax";
 
     const storedLocale = localStorage.getItem("serein-locale");
     const locale = storedLocale === "uk" || storedLocale === "en" ? storedLocale : "en";
@@ -60,18 +75,25 @@ function readLocaleCookie(value: string | undefined): Locale {
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
 	const cookieStore = await cookies();
 	const initialLocale = readLocaleCookie(cookieStore.get('serein-locale')?.value);
+	const initialTheme = readThemeCookie(cookieStore.get(THEME_STORAGE_KEY)?.value);
 
 	return (
 		<html
 			lang={initialLocale === 'uk' ? 'uk' : 'en'}
 			suppressHydrationWarning
-			className={`${display.variable} ${sans.variable} h-full antialiased`}
+			className={`${display.variable} ${sans.variable} h-full antialiased${
+				initialTheme === 'dark' ? ' dark' : ''
+			}`}
+			style={{ colorScheme: initialTheme }}
 		>
-			<body className='min-h-full flex flex-col bg-background font-sans text-foreground'>
-				<Script id='serein-prefs-init' strategy='beforeInteractive'>
-					{prefsInitScript}
-				</Script>
-				<ThemeProvider>
+			<head>
+				<script
+					id='serein-prefs-init'
+					dangerouslySetInnerHTML={{ __html: prefsInitScript }}
+				/>
+			</head>
+			<body className='flex min-h-dvh flex-col bg-background font-sans text-foreground'>
+				<ThemeProvider initialTheme={initialTheme}>
 					<LanguageProvider initialLocale={initialLocale}>
 						<AuthSessionProvider>
 							<NavigationPreloader />
