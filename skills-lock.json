@@ -1,0 +1,674 @@
+{
+  "version": 2,
+  "skills": {
+    "agent-cost-report": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/agent-cost-report/SKILL.md",
+      "computedHash": "383ad8028e39a6c786fb0d0c44cd3966d95fd756f62e84568ddf26f413dc525f"
+    },
+    "babysit": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/babysit/SKILL.md",
+      "computedHash": "407cb3f1ddfb19e3f841e9353393f9f08e63708c369d2270967aec1952ae7836"
+    },
+    "backup-setup": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/backup-setup/SKILL.md",
+      "computedHash": "9c69435fcf8f3614afed5bf6911ab3a811a0d0cafd46132d4cd58704824bfecd"
+    },
+    "build": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/build/SKILL.md",
+      "computedHash": "005afbc5fceca5d35be1f8bccfe10e8610e35b4a32e27433636c4fac6293ca60"
+    },
+    "build-and-release": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/build-and-release/SKILL.md",
+      "computedHash": "af754b5f1dfc0ac4f0e33f52209bde8326c5e7fb4d3d1d629b77e882abd0bb08"
+    },
+    "ccs-align": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/ccs-align/SKILL.md",
+      "computedHash": "78e8652d8e8b6d9e477a8f27aa78fe745ed557485fbac4e2574704397bb585dd"
+    },
+    "childhood": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/childhood/SKILL.md",
+      "computedHash": "b0e8fe1e4566aca1a546a931d8106fcf49d83965aa49af9179962e7b9d198677"
+    },
+    "cli-a2a": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-a2a/SKILL.md",
+      "computedHash": "86edab28511eb3f000904d7c4416b3a4df38183d727552fefd75f4f4d3ab3e83",
+      "installMode": "copy"
+    },
+    "cli-backup-sync": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-backup-sync/SKILL.md",
+      "computedHash": "c7f881bd5d0ce567a09121de19ffed9821f3145d50fdf75b072b7f3fec0299fa",
+      "installMode": "copy"
+    },
+    "cli-batches": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-batches/SKILL.md",
+      "computedHash": "1536dab749a549fc3e3868beb92d6ffb55b1cb39b8a4c08ff9dcb40a9331fa9a",
+      "installMode": "copy"
+    },
+    "cli-chat": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-chat/SKILL.md",
+      "computedHash": "ac42e052f5c8acd8cc38a78450bdf896a08833eb9ae8659f17648bd0d1ac445f",
+      "installMode": "copy"
+    },
+    "cli-compression": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-compression/SKILL.md",
+      "computedHash": "4a67edef4e11fad2bec9e2da72f80d1dd7c90ab4f2067d30deb8a3eef4e8b99c",
+      "installMode": "copy"
+    },
+    "cli-contexts": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-contexts/SKILL.md",
+      "computedHash": "9af8f5d18285275336c9858bd1d1160312975ee84db4acdbe7393e736a8eccf6",
+      "installMode": "copy"
+    },
+    "cli-cost-usage": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-cost-usage/SKILL.md",
+      "computedHash": "09d11ab429076ba068b8c034b2bbe02a4ddb0e8cf900e386ec1ebafd2d28f83e",
+      "installMode": "copy"
+    },
+    "cli-eval": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-eval/SKILL.md",
+      "computedHash": "36c4ddd2e6b3266575fbd734034ecef72ed4a4b9f1cad255e8eb125489afe903",
+      "installMode": "copy"
+    },
+    "cli-health": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-health/SKILL.md",
+      "computedHash": "395b59ecc7ca86f892d3ef393002e3c19a63f6b8fac14f5a85d55e8fe8ee9db7",
+      "installMode": "copy"
+    },
+    "cli-keys": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-keys/SKILL.md",
+      "computedHash": "fc78a556812fb5efc54bd8cd623bd682f158ee89b05b88865332b0ba800f134a",
+      "installMode": "copy"
+    },
+    "cli-mcp": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-mcp/SKILL.md",
+      "computedHash": "eb951f0694516b9388fa9ad1cdad6248f1a1278f3461b07d29ab773692b105db",
+      "installMode": "copy"
+    },
+    "cli-models": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-models/SKILL.md",
+      "computedHash": "b1ab083958dad9fd94663de1bf18766f61d6f817a6a013f9d9de79cd85609a30",
+      "installMode": "copy"
+    },
+    "cli-plugins-skills": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-plugins-skills/SKILL.md",
+      "computedHash": "4957001feb44d852993e97bbdfbde6ac03ce087df8841b4e00c9ced734cce38e",
+      "installMode": "copy"
+    },
+    "cli-policy-audit": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-policy-audit/SKILL.md",
+      "computedHash": "ec4d7c04baf299e400f2f6463d868da482698111714634f1f73bcc6f5985993c",
+      "installMode": "copy"
+    },
+    "cli-providers": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-providers/SKILL.md",
+      "computedHash": "7e4bc9268ac8d3e78aab2405d40d7290916c8d204fa8344a88f8ddd745a25d82",
+      "installMode": "copy"
+    },
+    "cli-resilience": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-resilience/SKILL.md",
+      "computedHash": "4087f7e321366f32ff58b09048dd1071143bc59ecb7c33ce8490d7674f26372f",
+      "installMode": "copy"
+    },
+    "cli-routing": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-routing/SKILL.md",
+      "computedHash": "7d7731e84b160609666b943c600dde464875a5dc2ff2014d7e84f7fbd44e38ca",
+      "installMode": "copy"
+    },
+    "cli-serve": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-serve/SKILL.md",
+      "computedHash": "4a8d701af19825e28cb6b914d6c754ac50751c904262c7f96da6576ea3705c46",
+      "installMode": "copy"
+    },
+    "cli-setup": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-setup/SKILL.md",
+      "computedHash": "a123c11e469fcbefe7fe0105264d715e1f65ddfaa82757ce4d3dd17d8014396a",
+      "installMode": "copy"
+    },
+    "cli-skill-collector": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-skill-collector/SKILL.md",
+      "computedHash": "9b7d9d866b7eb4ed6795c26834dd93ccd9fd06b605f933eafceabcf408bb6bf1",
+      "installMode": "copy"
+    },
+    "cli-tunnel": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/cli-tunnel/SKILL.md",
+      "computedHash": "728c6c3a82c7ff4b8bfa27713eb519d26b22ba727d7668bad26a4ab3b59a29fc",
+      "installMode": "copy"
+    },
+    "cloud-sync": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/cloud-sync/SKILL.md",
+      "computedHash": "355d33cf7be4bc3fc575457ee961ae0a4df760c661fa45265d4776b61e836ef0"
+    },
+    "community-sweep": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/community-sweep/SKILL.md",
+      "computedHash": "1e54185d09f7af06847f2bd66a21e591c6a241179ac478343cd75907dfa81a55"
+    },
+    "config-codex-cli": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/config-codex-cli/SKILL.md",
+      "computedHash": "084b202cf3eda2b55c804df84ce38d1b79616abe88d6b620a0739679f48bbdbb",
+      "installMode": "copy"
+    },
+    "design-is": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/design-is/SKILL.md",
+      "computedHash": "922a541a777b5a1f9ae8b733cdc504106625d6bf21d8490d51f72d4e96b40850"
+    },
+    "do": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/do/SKILL.md",
+      "computedHash": "4e2b51239a8c93681b77082d6bd516cde0c268a8a395b4ffc4f4385c94a46a1f"
+    },
+    "handoff": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/handoff/SKILL.md",
+      "computedHash": "47d7554158445b2469fed73e6402c8f0752d5e24eaf84b112850a12cb3c10c48"
+    },
+    "headroom": {
+      "source": "headroomlabs-ai/headroom",
+      "commit": "ce0460cfa8598dc939243dbc7aec4b2d35f4e44a",
+      "sourceType": "github",
+      "skillPath": "skills/headroom/SKILL.md",
+      "computedHash": "a8eaac845279b8e3c094d2cd905fe39aed92d492db2dd0c0f23528bf733c725f"
+    },
+    "how-it-works": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/how-it-works/SKILL.md",
+      "computedHash": "eb059548a77f80d5a159862184e0a8edd372c462a203114a8ad76a92d64d7546"
+    },
+    "knowledge-agent": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/knowledge-agent/SKILL.md",
+      "computedHash": "3425e562e1e6817e0c70f19691d77a37846bb7990e390b6ca803dbfb80abb0de"
+    },
+    "learn-codebase": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/learn-codebase/SKILL.md",
+      "computedHash": "0dd06e52864fa37dda04718f7b14e99a52c22d59bb3bd4fd25fdbe48a96d045b"
+    },
+    "make-plan": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/make-plan/SKILL.md",
+      "computedHash": "c76ca979e4a429b5265d005fb124683b019f0cd92c697eee66d9228c53ed8f86"
+    },
+    "mem-search": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/mem-search/SKILL.md",
+      "computedHash": "65e79f9c473a80f8116f4b3de94c679cfe503580a63af2a1b298d348f9f17a34"
+    },
+    "mem-setup": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "cowork/skills/mem-setup/SKILL.md",
+      "computedHash": "fcd9b891dc6b80acb4bba9820366243087d83a0d63b4ae64f5038e03a90bb067"
+    },
+    "mode-creator": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/mode-creator/SKILL.md",
+      "computedHash": "f555f0569217e8f20ce1d3d9403d0902e72060aa592915524710b574d05d198f"
+    },
+    "next-bundle-optimizer": {
+      "source": "vercel/next.js",
+      "ref": "canary",
+      "commit": "26b5790940b7187f5525763b3a0a10985d8fc4be",
+      "sourceType": "github",
+      "skillPath": "skills/next-bundle-optimizer/SKILL.md",
+      "computedHash": "2a2d38e9ba5476f6eef7a86cc1531801b454fdcd5ee8b96745973e01b5d25397",
+      "installMode": "copy",
+      "disabled": true,
+      "disabledReason": "Replaced by next-bundle-optimizer-hardened; do not restore into discovery paths",
+      "replacement": "next-bundle-optimizer-hardened"
+    },
+    "nextjs-seo": {
+      "source": "laguagu/claude-code-nextjs-skills",
+      "commit": "e7bedc697c5122efd9a6f4b94201b4220e46dab1",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-seo/SKILL.md",
+      "computedHash": "b69988f63a7a22d0fa1bcb461a366c035027fe0c4261a57ab27a33d00490d49d"
+    },
+    "oh-my-issues": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/oh-my-issues/SKILL.md",
+      "computedHash": "86c15a9e1a52f7b6ca8cfbfef1546eec1850dda234864b24a9233ad939d6b8eb"
+    },
+    "omni-agents-a2a": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-agents-a2a/SKILL.md",
+      "computedHash": "4e7ee3c6fd1454833993e471079311ef88b7979c77c6b83c9e08d0ce0def072b",
+      "installMode": "copy"
+    },
+    "omni-api-keys": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-api-keys/SKILL.md",
+      "computedHash": "4523dd5a55fc562850e9b99a58108362c2f9b5665b148095199b01fc12fd7f5e",
+      "installMode": "copy"
+    },
+    "omni-auth": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-auth/SKILL.md",
+      "computedHash": "b9a0bb8ec42276ac96df4ae217ab16c9700dacd22f6f549781c72677c8203b35",
+      "installMode": "copy"
+    },
+    "omni-budget": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-budget/SKILL.md",
+      "computedHash": "b6d1e35b4aeeeb0976126e411e61ef903b9f4e90253621b11a79b7e6a049690b",
+      "installMode": "copy"
+    },
+    "omni-cache": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-cache/SKILL.md",
+      "computedHash": "65872c2495e65601a60e72e284a4d693b3e89a800436e7155358521dff83cc75",
+      "installMode": "copy"
+    },
+    "omni-cli-tools": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-cli-tools/SKILL.md",
+      "computedHash": "419f6b546c24e6b2e0981d9e5859b64bab730f08e8889eab46df4cd65dc0072f",
+      "installMode": "copy"
+    },
+    "omni-combos-routing": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-combos-routing/SKILL.md",
+      "computedHash": "ba1bcf6ca3003e615d27ee4d0005864557bfb6da167530dc872598ca2fd2f08f",
+      "installMode": "copy"
+    },
+    "omni-compression": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-compression/SKILL.md",
+      "computedHash": "98c86d63ff6ef7f0c8976b13be96c2f03c1ea253e6d312f3df44f6421b9f16e5",
+      "installMode": "copy"
+    },
+    "omni-context-rtk": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-context-rtk/SKILL.md",
+      "computedHash": "f373165fe5e717cc7e3ca00d062a329e424d2c0c29414919340f3ec347ebcff3",
+      "installMode": "copy"
+    },
+    "omni-db-backups": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-db-backups/SKILL.md",
+      "computedHash": "25ec0bc2f54f22fb17762aa7fdf916ca11f1615cadc864b0c7b33895df67f626",
+      "installMode": "copy"
+    },
+    "omni-github-skills": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-github-skills/SKILL.md",
+      "computedHash": "2841b9862403ca53b0d6f9f5d751b84750854123225960e0c36f55dc0d6befea",
+      "installMode": "copy"
+    },
+    "omni-inference": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-inference/SKILL.md",
+      "computedHash": "0dd6f9310d2f89d2f44852d199f84dcb24c0834f7f54b93bdbfe7007a97c8535",
+      "installMode": "copy"
+    },
+    "omni-mcp": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-mcp/SKILL.md",
+      "computedHash": "ee755516a43bb59aca66347eb1d5cbcb3d70ac426c12ccb9f8d956f2829ef320",
+      "installMode": "copy"
+    },
+    "omni-models": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-models/SKILL.md",
+      "computedHash": "7233c591029b84de8a8f715fd1f50e9c47cd0f6686ca0e6070c4d2573fee5ab3",
+      "installMode": "copy"
+    },
+    "omni-providers": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-providers/SKILL.md",
+      "computedHash": "890962c65ef836c84f263f277d922513779d7d5d51834a81e6724da0098d153b",
+      "installMode": "copy"
+    },
+    "omni-proxies": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-proxies/SKILL.md",
+      "computedHash": "ea39747214d666764e8cca466e159f2c052e311701c497fd25fd445a70da9627",
+      "installMode": "copy"
+    },
+    "omni-resilience": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-resilience/SKILL.md",
+      "computedHash": "bfe3801891ffc75221156e1c7ad58d8d0a8a08e5c202fcf536c9168410d92857",
+      "installMode": "copy"
+    },
+    "omni-settings": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-settings/SKILL.md",
+      "computedHash": "547f66a03cc398c6aaa806e152d2bfa43461fdd9e07f3ab972c964d4216d384e",
+      "installMode": "copy"
+    },
+    "omni-sync-cloud": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-sync-cloud/SKILL.md",
+      "computedHash": "070d600b7295b79cce85da01a2b4e63d6fda193e270497b7e99fcaa577128869",
+      "installMode": "copy"
+    },
+    "omni-tunnels": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-tunnels/SKILL.md",
+      "computedHash": "73c7555b48dd2bf853bddd37216632ad6cd8b165fd0d882d355c125a45a1299f",
+      "installMode": "copy"
+    },
+    "omni-usage-logs": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-usage-logs/SKILL.md",
+      "computedHash": "c305104fcd9dc115f9f6a5e725462e17cb0be711668e55cd08c24b1831599768",
+      "installMode": "copy"
+    },
+    "omni-version-manager": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-version-manager/SKILL.md",
+      "computedHash": "51220b369c16a3d36fca15ce08e16059d072a98ebfad240d7d1a719c7820af9b",
+      "installMode": "copy"
+    },
+    "omni-webhooks": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/omni-webhooks/SKILL.md",
+      "computedHash": "f713120c1d65c1c676a1c21afca33110a57f66caf2a0336995a10fa668583aa7",
+      "installMode": "copy"
+    },
+    "owner-goals": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/owner-goals/SKILL.md",
+      "computedHash": "affddf6b17b823e4f9f19fb74eab727fa538ccbf89a61101d9276bf051ea3434"
+    },
+    "pathfinder": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/pathfinder/SKILL.md",
+      "computedHash": "cbd848af3f3a9cf73e44c55b6175bca1c67db2458645b5f554a4d12cc925a5f2"
+    },
+    "ponytail": {
+      "source": "cheaper-inference/OmniRoute",
+      "commit": "5ffa68e835442a12ed1204a2eebf4076c298aecb",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "01f5285e76e1b8bed14a9b89c3b3978b5dbdacd2a426d75e57a5180fea6f85aa",
+      "installMode": "copy"
+    },
+    "release": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/release/SKILL.md",
+      "computedHash": "0f428347abc0a42e0837abe5bc8f87ca6251c7eedb74d757bdea5734507a7bec"
+    },
+    "request-progress": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/request-progress/SKILL.md",
+      "computedHash": "1b3051cca343ca5dc2ebe4dde01682e60c9dd6526cf60f50c605668a6dc7cd29"
+    },
+    "schema": {
+      "source": "coreyhaines31/marketingskills",
+      "commit": "8fd2fcade2fd6629026e9dfe6d133b55b36968b9",
+      "sourceType": "github",
+      "skillPath": "skills/schema/SKILL.md",
+      "computedHash": "f8704ea70fc7d7ff985b9d902e52bac2d455baa6678b803b4306c8afb99997b1"
+    },
+    "screenpipe": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/screenpipe/SKILL.md",
+      "computedHash": "c37ee62a5fafc1ce342543e545647879ce8d16af75405be33e5020507feca864"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "commit": "8fd2fcade2fd6629026e9dfe6d133b55b36968b9",
+      "sourceType": "github",
+      "skillPath": "skills/seo-audit/SKILL.md",
+      "computedHash": "537ccf84d4a257cb1b6a9a3643fe56738632989768e1823ffe206ad1c64cd68a",
+      "disabled": true,
+      "disabledReason": "Replaced by seo-audit-hardened; do not restore into discovery paths",
+      "replacement": "seo-audit-hardened"
+    },
+    "smart-explore": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/smart-explore/SKILL.md",
+      "computedHash": "094a6320da6b471e3750b9f7735f7582daa1d732c445d7dea1a59a28b2718075"
+    },
+    "standup": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/standup/SKILL.md",
+      "computedHash": "ab64daa7894e1a05d493881b849ce11d75c4ab9fa1c2c423b9f61f8acc486281"
+    },
+    "timeline-report": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/timeline-report/SKILL.md",
+      "computedHash": "150edfb2b4275abcda962d7f3231a187c73782a5bc0e6e783e70a66e0fed330f"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "f711ed8b16162eaa712abbcdbbae6c926f86c57e60127735fecc3ad0dd85b3fa"
+    },
+    "version-bump": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/version-bump/SKILL.md",
+      "computedHash": "9e1221832a903ea5221ef8cb4337506a865ccb3e5fc136df5239fd0d6c487492"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "5994e4cfd86144903d2ba750f862b9e36af15e3297aac983679e347b99f6cb71"
+    },
+    "weekly-digests": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/weekly-digests/SKILL.md",
+      "computedHash": "bc6315d83812c79f4bcde07775fd9869a8ac503784c997e66fb25cca9800d003"
+    },
+    "what-the": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/what-the/SKILL.md",
+      "computedHash": "658b9de124cd93af770da5af19080f43c4d445996b8332b1aea391b60a9093e1"
+    },
+    "wowerpoint": {
+      "source": "thedotmack/claude-mem",
+      "commit": "af2fa241d45cd6b342262f55b64e997eb62befce",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/wowerpoint/SKILL.md",
+      "computedHash": "ec1b616957d9fad1a48ebb0375af8ae894c91f84bb56f9c203bf60166d656df2"
+    },
+    "massagego-i18n-best-practices": {
+      "sourceType": "local",
+      "skillPath": "agent-skills/massagego-i18n-best-practices/SKILL.md",
+      "hardened": false,
+      "custom": true
+    },
+    "next-bundle-optimizer-hardened": {
+      "sourceType": "local",
+      "skillPath": "agent-skills/next-bundle-optimizer-hardened/SKILL.md",
+      "upstream": "vercel/next.js@26b5790940b7187f5525763b3a0a10985d8fc4be",
+      "hardened": true
+    },
+    "seo-audit-hardened": {
+      "sourceType": "local",
+      "skillPath": "agent-skills/seo-audit-hardened/SKILL.md",
+      "upstream": "coreyhaines31/marketingskills@8fd2fcade2fd6629026e9dfe6d133b55b36968b9",
+      "hardened": true
+    }
+  },
+  "skillsCliVersion": "1.9.0",
+  "notes": "Unsafe originals next-bundle-optimizer and seo-audit are disabled. Use *-hardened from agent-skills/. Restore via agent-skills/scripts only. Security Review required before skill updates."
+}

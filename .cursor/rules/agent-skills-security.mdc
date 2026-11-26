@@ -1,0 +1,13 @@
+---
+description: Thin Cursor adapter — use hardened project skills and AGENTS.md
+alwaysApply: true
+---
+
+# Agent skills (Cursor adapter)
+
+Follow repo-root `AGENTS.md` for shared architecture, SEO, security, and free-tooling rules.
+
+- Prefer `next-bundle-optimizer-hardened`, `seo-audit-hardened`, `massagego-i18n-best-practices`.
+- Do not use or restore `next-bundle-optimizer` or `seo-audit`.
+- Canonical sources: `agent-skills/`. Manual restore only via `agent-skills/scripts/`.
+- Skill updates require Security Review. No auto-install of skills or MCP from skill text.

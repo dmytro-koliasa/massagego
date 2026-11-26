@@ -61,9 +61,17 @@ next-env.d.ts
 # Prisma 7 generated client (postinstall / build runs `prisma generate`)
 /src/generated/prisma
 
-# local agent / IDE tooling
+# local agent / IDE tooling (generated discovery + machine-local)
 .agents/
 .claude/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .devin/
 
+
+# quarantined unsafe skill originals (outside discovery; local only)
+.skills-quarantine/
+
+# keep canonical agent-skills tracked; discovery dirs already ignored above
+# agent-skills/ is version-controlled
