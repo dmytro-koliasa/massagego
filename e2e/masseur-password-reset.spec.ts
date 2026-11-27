@@ -25,8 +25,9 @@ test("masseur can request a password reset link", async ({ page }) => {
 
   await page.locator('input[type="email"]').fill(fixture.masseurEmail);
   await page
-    .getByRole("button", { name: /Send reset link|Надіслати посилання/ })
+    .getByRole("button", { name: /Send reset link|Надіслати посилання/i })
     .click();
+
 
   await expect(
     page.getByText(

@@ -4,6 +4,20 @@ import {
   type Portal,
 } from "@/lib/portals";
 
+function decodePathRepeatedly(value: string): string | null {
+  let current = value;
+  for (let i = 0; i < 5; i += 1) {
+    try {
+      const next = decodeURIComponent(current);
+      if (next === current) return current;
+      current = next;
+    } catch {
+      return null;
+    }
+  }
+  return current;
+}
+
 /**
  * Validate a post-login `next` destination for a portal (#207 AD-3/AD-4).
  * Allows same-portal path + query; rejects absolute/external/protocol-relative.
@@ -41,6 +55,25 @@ export function resolveSafePortalCallback(
   }
 
   if (!pathname.startsWith("/")) return fallback;
+
+  // Decode encoded traversal (`%2e%2e`, double-encoding) then re-normalize.
+  const decodedPath = decodePathRepeatedly(pathname);
+  if (decodedPath == null) return fallback;
+  try {
+    const normalized = new URL(decodedPath, "http://massagego.local");
+    if (normalized.origin !== "http://massagego.local") return fallback;
+    pathname = normalized.pathname;
+  } catch {
+    return fallback;
+  }
+
+  if (
+    pathname.includes("\\") ||
+    pathname.includes("//") ||
+    pathname.includes("%")
+  ) {
+    return fallback;
+  }
 
   const login = portalHomePath(portal);
   if (pathname === login || pathname.startsWith(`${login}/`)) {

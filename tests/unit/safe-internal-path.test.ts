@@ -56,6 +56,60 @@ describe("resolveSafePortalCallback (#207)", () => {
     );
     expect(resolveSafePortalCallback("admin", "/client")).toBe("/admin");
   });
+
+  it("rejects encoded, double-encoded, and malformed redirect tricks (#207 SR)", () => {
+    // Encoded protocol-relative / open-redirect probes
+    expect(resolveSafePortalCallback("client", "/%2f%2fevil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "/%2F%2Fevil.example")).toBe(
+      "/client",
+    );
+    expect(
+      resolveSafePortalCallback("client", "/%252f%252fevil.example"),
+    ).toBe("/client");
+    expect(resolveSafePortalCallback("client", "/\\evil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "\\\\evil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "http:evil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "/client@evil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "///evil.example")).toBe(
+      "/client",
+    );
+    expect(resolveSafePortalCallback("client", "/client/../masseur")).toBe(
+      "/client",
+    );
+    expect(
+      resolveSafePortalCallback("client", "/client/%2e%2e/masseur"),
+    ).toBe("/client");
+    expect(
+      resolveSafePortalCallback("client", "/client/%252e%252e/masseur"),
+    ).toBe("/client");
+    expect(resolveSafePortalCallback("client", "?city=all")).toBe("/client");
+    expect(resolveSafePortalCallback("client", "client")).toBe("/client");
+  });
+
+  it("allows legitimate catalog deep links after query decoding", () => {
+    expect(
+      resolveSafePortalCallback(
+        "client",
+        "/client?city=id%3Ae2e-place-kyiv&page=2",
+      ),
+    ).toBe("/client?city=id%3Ae2e-place-kyiv&page=2");
+    expect(
+      resolveSafePortalCallback("masseur", "/masseur/notifications"),
+    ).toBe("/masseur/notifications");
+    expect(
+      resolveSafePortalCallback("admin", "/admin/complaints?tab=open"),
+    ).toBe("/admin/complaints?tab=open");
+  });
 });
 
 describe("portalContinuePath (#207)", () => {
