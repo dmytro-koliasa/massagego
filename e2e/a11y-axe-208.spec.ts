@@ -164,16 +164,26 @@ test.describe("axe WCAG AA authenticated (#208)", () => {
       name: /Switch to (light|dark) theme/i,
     });
     await expect(themeToggle).toBeVisible();
-    // Prefer the real control; fall back to the same storage/DOM writes the
-    // theme provider uses so the matrix is not blocked by click races.
-    await themeToggle.click();
-    await page.evaluate(() => {
-      localStorage.setItem("serein-theme", "dark");
-      document.documentElement.classList.add("dark");
-      document.documentElement.style.colorScheme = "dark";
-      document.cookie =
-        "serein-theme=dark;path=/;max-age=31536000;samesite=lax";
-    });
+    const beforeDark = await page.locator("html").evaluate((el) =>
+      el.classList.contains("dark"),
+    );
+    if (!beforeDark) {
+      await themeToggle.click();
+    }
+    const toggledDark = await page
+      .locator("html")
+      .evaluate((el) => el.classList.contains("dark"))
+      .catch(() => false);
+    if (!toggledDark) {
+      // Fallback only if the control click did not apply (harness race).
+      await page.evaluate(() => {
+        localStorage.setItem("serein-theme", "dark");
+        document.documentElement.classList.add("dark");
+        document.documentElement.style.colorScheme = "dark";
+        document.cookie =
+          "serein-theme=dark;path=/;max-age=31536000;samesite=lax";
+      });
+    }
     await expect
       .poll(
         async () =>
@@ -188,13 +198,24 @@ test.describe("axe WCAG AA authenticated (#208)", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: /Client space|Простір клієнта/i }),
     ).toBeVisible({ timeout: 15_000 });
-    await page.evaluate(() => {
-      localStorage.setItem("serein-theme", "dark");
-      document.documentElement.classList.add("dark");
-      document.documentElement.style.colorScheme = "dark";
-      document.cookie =
-        "serein-theme=dark;path=/;max-age=31536000;samesite=lax";
-    });
+    const portalDark = await page.locator("html").evaluate((el) =>
+      el.classList.contains("dark"),
+    );
+    if (!portalDark) {
+      const portalToggle = page.getByRole("button", {
+        name: /Switch to (light|dark) theme/i,
+      });
+      if (await portalToggle.isVisible()) {
+        await portalToggle.click();
+      }
+    }
+    await expect
+      .poll(
+        async () =>
+          page.locator("html").evaluate((el) => el.classList.contains("dark")),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
     await assertNoSeriousA11y(
       page,
       "client-catalog-dark-mobile",

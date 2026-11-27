@@ -2,7 +2,7 @@
 
 **Branch:** `feat/208-a11y-runtime-quality`  
 **Baseline master:** `9164f09` (post #207 / PR #218)  
-**Status:** Implementation started after owner “продолжай” — recommended AD-1…AD-6 treated as approved.
+**Status:** Verification complete on branch; stop before PR pending owner approval.
 
 ## Approved decisions
 
@@ -55,12 +55,16 @@ Product redesign; new features; paid a11y SaaS; Vercel Preview remediation; clai
 | AD doc | This file |
 | `@axe-core/playwright` | **Added** as `devDependency` `^4.13.0` + `e2e/helpers/axe.ts` + `e2e/a11y-axe-208.spec.ts` |
 | Baseline scans (prod) | Public + login + authenticated client/masseur/admin + dark/mobile — **PASS** (serious/critical) |
-| Confirmed fixes | (1) Light contrast tokens + inactive labels (2) Inline privacy/terms underline (3) Dark `--accent-foreground` on filled accent controls (4) Availability `text-red-700 dark:text-red-400` (5) Brand touch target + signed-in header de-clutter |
-| Harness | Axe waits for `.animate-fade-up` opacity; authenticated axe describe is **serial** (local Postgres accept-queue under 6 workers); `skipDuplicates` on fixture `createMany`; E2E Prisma connect timeout 30s |
-| E2E stability spot-check | admin block/dismiss/resolve + ConfirmDialog Escape + portal theme/locale — **PASS** (`--retries=0`) |
-| Keyboard / focus matrix | `e2e/a11y-keyboard-208.spec.ts` + `confirm-dialog-escape` — **PASS** (Tab/Enter on home/login/catalog/dashboard; ConfirmDialog focus-in + Escape; EN↔UK locale; theme via keyboard) |
+| Confirmed fixes | (1) Light contrast tokens + inactive labels (2) Inline privacy/terms underline (3) Dark `--accent-foreground` on filled accent controls incl. admin Unblock / ConfirmDialog (4) Availability `text-red-700 dark:text-red-400` (5) Brand `min-h-11` + authenticated portal nav hidden only below `sm` (desktop nav preserved) |
+| Harness | Axe waits for `.animate-fade-up` opacity; authenticated axe describe is **serial**; `skipDuplicates` on fixture `createMany`; E2E Prisma connect timeout 30s; dark axe prefers real theme toggle (force only as fallback) |
+| E2E stability spot-check | admin block/dismiss/resolve + ConfirmDialog Escape + portal theme/locale — **PASS** |
+| Full Playwright suite | **56 passed**, **1 flaky** (masseur-dashboard axe color-contrast once; **PASS on retry** with `retries: 1`); final sanitized reports = 0 serious/critical |
+| Keyboard / focus matrix | `e2e/a11y-keyboard-208.spec.ts` + `confirm-dialog-escape` — **PASS** (incl. Escape restores focus to Block) |
+| Code Review (Bugbot) | Findings addressed: header scope narrowed to mobile; admin Unblock accent-foreground; dark axe toggle-first; Escape focus assert |
+| Security Review | **No issues** |
+| Quality gates | lint **PASS**; typecheck **PASS**; unit+integration **66/66 PASS**; production `next build` **PASS** |
 | Screen reader | Full NVDA/VoiceOver **not run** (optional stretch). Semantic roles/names covered via Playwright + axe. |
-| Environment | Docker Postgres healthy. Prefer Node ≥20.19 locally (`nvs use 20.19.0`) so `prisma generate` / migrate work; Node 20.18 hits Prisma/`zeptomatch` ESM issues. |
+| Environment | Docker Postgres healthy. Prefer Node ≥20.19 locally (`nvs use 20.19.0`). |
 ## Findings (sanitized)
 
 | ID | Severity | Surfaces | Status |
@@ -69,7 +73,8 @@ Product redesign; new features; paid a11y SaaS; Vercel Preview remediation; clai
 | link-in-text-block | serious | Notification settings + register privacy/terms inline links | **Fixed** (`underline`) |
 | color-contrast | serious | Dark filled `bg-accent` + `text-white` (~2.46:1) | **Fixed** (`--accent-foreground`) |
 | color-contrast | serious | Dark `text-red-700` availability labels | **Fixed** (`dark:text-red-400`) |
-| target-size | serious | Brand link obscured by signed-in mobile header chrome | **Fixed** (hide portal nav when authenticated; compact session cluster; `min-h-11` brand) |
+| target-size | serious | Brand link obscured by signed-in mobile header chrome | **Fixed** (`min-h-11` brand; portal nav `hidden sm:flex` when authenticated; compact session cluster) |
+| color-contrast | serious | Admin Unblock still `text-white` on accent (Bugbot) | **Fixed** (`text-accent-foreground`) |
 
 ## Limitations (honest)
 
@@ -77,5 +82,6 @@ Product redesign; new features; paid a11y SaaS; Vercel Preview remediation; clai
 - No NVDA/VoiceOver pass in this issue.
 - Lighthouse a11y category not collected (axe + keyboard used as primary free evidence).
 - Local parallel fixture load can stress Postgres; authenticated axe describe stays serial.
+- One masseur-dashboard axe color-contrast flake observed under full parallel suite; passed on retry; final report clean.
 
 **Status:** Verification + confirmed fixes complete on branch; stop before PR pending owner.

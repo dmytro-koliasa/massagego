@@ -193,7 +193,7 @@ test.describe("a11y keyboard matrix (#208)", () => {
 
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
-    await expect(blockBtn).toBeVisible();
+    await expect(blockBtn).toBeFocused();
 
     done();
   });

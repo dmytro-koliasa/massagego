@@ -72,10 +72,11 @@ export function SiteHeader() {
   const homeOnDark = isHome && theme === "dark";
   const onAdminSurface = pathname?.startsWith("/admin") ?? false;
   // Marketing chrome: no Admin; home relies on hero CTAs for portal entry (#190).
-  // Hide portal role links once signed in — they crowd the brand on mobile and
-  // obscure the touch target (WCAG 2.2 target-size / #208).
-  const showPortalNav = !isHome && status !== "authenticated";
+  // On authenticated mobile, portal role links overlap the brand touch target
+  // (WCAG 2.2 target-size / #208) — hide only below `sm`, keep desktop nav.
+  const showPortalNav = !isHome;
   const showAdminNav = onAdminSurface;
+  const hidePortalNavOnMobileAuth = status === "authenticated";
   // SessionProvider remounts per portal (`key={portal}`); on login pages that
   // briefly yields status "loading" and flashed an empty accent skeleton (#161).
   const onLoginPage =
@@ -143,7 +144,11 @@ export function SiteHeader() {
             {showPortalNav ? (
               <nav
                 aria-label={t.roleGroupLabel}
-                className="mt-1.5 flex items-center gap-1 sm:gap-2"
+                className={`mt-1.5 items-center gap-1 sm:gap-2 ${
+                  hidePortalNavOnMobileAuth
+                    ? "hidden sm:flex"
+                    : "flex"
+                }`}
               >
                 <HeaderNavLink
                   href="/masseur/login"
