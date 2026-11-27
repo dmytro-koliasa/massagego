@@ -104,8 +104,8 @@ npm run test:e2e
 ## Accessibility (axe / #208)
 
 - Dev dependency: `@axe-core/playwright` (not shipped to the client bundle).
-- Helper: `e2e/helpers/axe.ts` — WCAG 2.x A/AA tags; writes sanitized JSON under `docs/quality/` (rule ids + CSS targets only; no HTML/PII).
-- Spec: `e2e/a11y-axe-208.spec.ts` — fails on **serious/critical** violations only. Automated scans do **not** prove full WCAG conformance.
+- Helper: `e2e/helpers/axe.ts` — WCAG 2.x A/AA tags; waits for `.animate-fade-up` paint stability; writes sanitized JSON under `docs/quality/` (rule ids + CSS targets only; no HTML/PII).
+- Spec: `e2e/a11y-axe-208.spec.ts` — fails on **serious/critical** violations only. Public describe stays parallel; authenticated describe is **serial** to avoid local Postgres connection storms under many workers. Automated scans do **not** prove full WCAG conformance.
 - Prefer production `next build` + `next start` with Playwright `reuseExistingServer` for evidence runs.
 
 ## E2E (Playwright)

@@ -54,13 +54,20 @@ Product redesign; new features; paid a11y SaaS; Vercel Preview remediation; clai
 | Branch + In Progress comment | Done |
 | AD doc | This file |
 | `@axe-core/playwright` | **Added** as `devDependency` `^4.13.0` + `e2e/helpers/axe.ts` + `e2e/a11y-axe-208.spec.ts` |
-| Baseline scans (prod) | Public `/`, `/privacy`, `/terms` — **PASS** after contrast fix; client/masseur login — **PASS**; admin login + authenticated portals — **BLOCKED** locally (Docker Desktop / Postgres `ECONNREFUSED`) |
-| Confirmed fix | Light-theme `--accent` / `--muted` / accent-soft + inactive lang/tab labels for WCAG AA color-contrast |
-| Environment notes | Local Node `v20.18.0` < Prisma engine gate `20.19+`; `prisma generate` also hits `@prisma/dev`/`zeptomatch` ESM `ERR_REQUIRE_ESM`. Workaround used: `npm ci --ignore-scripts` + existing generated client + `next build --webpack`. Prefer upgrading Node ≥20.19 when possible. |
+| Baseline scans (prod) | Public + login + authenticated client/masseur/admin + dark/mobile — **PASS** (serious/critical) |
+| Confirmed fixes | (1) Light contrast tokens + inactive labels (2) Inline privacy/terms underline (3) Dark `--accent-foreground` on filled accent controls (4) Availability `text-red-700 dark:text-red-400` (5) Brand touch target + signed-in header de-clutter |
+| Harness | Axe waits for `.animate-fade-up` opacity; authenticated axe describe is **serial** (local Postgres accept-queue under 6 workers); `skipDuplicates` on fixture `createMany`; E2E Prisma connect timeout 30s |
+| E2E stability spot-check | admin block/dismiss/resolve + ConfirmDialog Escape + portal theme/locale — **PASS** (`--retries=0`) |
+| Environment | Docker Postgres healthy. Prefer Node ≥20.19 locally (`nvs use 20.19.0`) so `prisma generate` / migrate work; Node 20.18 hits Prisma/`zeptomatch` ESM issues. |
 
 ## Findings (sanitized)
 
 | ID | Severity | Surfaces | Status |
 | --- | --- | --- | --- |
-| color-contrast | serious | Light accent links + muted controls on `accent-soft` | **Fixed** (token + label color) |
-| Auth portal axe | — | admin login / client / masseur authenticated | **BLOCKED** until Postgres available |
+| color-contrast | serious | Light accent / muted on soft backgrounds | **Fixed** |
+| link-in-text-block | serious | Notification settings + register privacy/terms inline links | **Fixed** (`underline`) |
+| color-contrast | serious | Dark filled `bg-accent` + `text-white` (~2.46:1) | **Fixed** (`--accent-foreground`) |
+| color-contrast | serious | Dark `text-red-700` availability labels | **Fixed** (`dark:text-red-400`) |
+| target-size | serious | Brand link obscured by signed-in mobile header chrome | **Fixed** (hide portal nav when authenticated; compact session cluster; `min-h-11` brand) |
+
+Automated axe ≠ full WCAG conformance. Manual keyboard matrix and remaining harness hardening continue on this branch.

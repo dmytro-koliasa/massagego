@@ -266,11 +266,17 @@ export function NotificationSettingsView({
 							</p>
 							<p className='text-xs text-muted'>
 								{t.telegramPrivacyNotice}{' '}
-								<Link href='/privacy' className='text-accent underline-offset-2 hover:underline'>
+								<Link
+									href='/privacy'
+									className='text-accent underline underline-offset-2'
+								>
 									{t.telegramPrivacyLink}
 								</Link>{' '}
 								{t.telegramAnd}{' '}
-								<Link href='/terms' className='text-accent underline-offset-2 hover:underline'>
+								<Link
+									href='/terms'
+									className='text-accent underline underline-offset-2'
+								>
 									{t.telegramTermsLink}
 								</Link>
 								.
@@ -281,7 +287,7 @@ export function NotificationSettingsView({
 										type='button'
 										disabled={pending || !telegram.configured}
 										onClick={() => void connectTelegram()}
-										className='rounded-[var(--radius-control)] bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-60'
+										className='rounded-[var(--radius-control)] bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-60'
 									>
 										{t.telegramConnect}
 									</button>

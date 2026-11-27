@@ -178,7 +178,7 @@ export function SlotActionDialog({
 						type='button'
 						disabled={resolvePending || isSlotExpired(slotAction.startIso)}
 						onClick={() => void resolveBookedSlot('available')}
-						className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+						className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 					>
 						{resolvePending ? t.authPleaseWait : t.availabilityMakeAvailable}
 					</button>
@@ -232,7 +232,7 @@ export function SlotActionDialog({
 								current ? { ...current, mode: 'book' } : current,
 							)
 						}
-						className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+						className='flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 					>
 						{t.availabilityBookForClient}
 					</button>
@@ -348,7 +348,7 @@ export function SlotActionDialog({
 						<button
 							type='submit'
 							disabled={bookPending}
-							className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+							className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 						>
 							{bookPending ? t.authPleaseWait : t.availabilityBookSubmit}
 						</button>

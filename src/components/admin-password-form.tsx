@@ -87,7 +87,7 @@ export function AdminPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white disabled:opacity-60"
+        className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground disabled:opacity-60"
       >
         {t.adminPasswordSubmit}
       </button>

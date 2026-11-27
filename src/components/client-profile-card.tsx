@@ -383,7 +383,7 @@ export function ClientProfileCard() {
 						type='button'
 						disabled={completePending}
 						onClick={() => void saveProfileComplete()}
-						className='mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+						className='mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 					>
 						{completePending ? t.authPleaseWait : t.profileCompleteSave}
 					</button>
@@ -428,7 +428,7 @@ export function ClientProfileCard() {
 							</div>
 						)}
 						<span className='pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100 group-focus-visible:bg-black/40 group-focus-visible:opacity-100'>
-							<span className='flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-accent/55 text-white'>
+							<span className='flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-accent/55 text-accent-foreground'>
 								<CameraIcon />
 							</span>
 						</span>
@@ -439,7 +439,7 @@ export function ClientProfileCard() {
 							type='button'
 							disabled={photoPending}
 							onClick={() => setPhotoModalOpen(true)}
-							className='h-11 w-full rounded-lg bg-accent text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+							className='h-11 w-full rounded-lg bg-accent text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 						>
 							{image ? t.profilePhotoChange : t.profilePhotoAdd}
 						</button>
@@ -528,7 +528,7 @@ export function ClientProfileCard() {
 						type='button'
 						disabled={pending}
 						onClick={() => void saveName()}
-						className='h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+						className='h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 					>
 						{pending ? t.authPleaseWait : t.profileSave}
 					</button>

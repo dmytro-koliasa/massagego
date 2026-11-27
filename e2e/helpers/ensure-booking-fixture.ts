@@ -575,7 +575,10 @@ export async function ensureBookingFixture(
               : []),
           ];
     if (slotRows.length > 0) {
-      await prisma.availabilitySlot.createMany({ data: slotRows });
+      await prisma.availabilitySlot.createMany({
+        data: slotRows,
+        skipDuplicates: true,
+      });
     }
 
     let bookingId: string | undefined;
@@ -608,6 +611,7 @@ export async function ensureBookingFixture(
           { ...shared, slotStart: start },
           { ...shared, slotStart: neighborStart },
         ],
+        skipDuplicates: true,
       });
     }
 

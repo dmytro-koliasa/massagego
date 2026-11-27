@@ -114,7 +114,7 @@ export function BookingRulesSection({
 					type='button'
 					disabled={bookingRulesPending}
 					onClick={onSaveBookingRules}
-					className='h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+					className='h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 				>
 					{bookingRulesPending ? t.authPleaseWait : t.bookingRulesSave}
 				</button>

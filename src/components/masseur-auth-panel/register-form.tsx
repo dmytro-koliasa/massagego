@@ -154,14 +154,14 @@ export function RegisterFormFooter({
       <p className="text-center text-xs text-muted">
         <a
           href="/privacy"
-          className="text-accent underline-offset-2 hover:underline"
+          className="text-accent underline underline-offset-2"
         >
           {t.telegramPrivacyLink}
         </a>
         {" · "}
         <a
           href="/terms"
-          className="text-accent underline-offset-2 hover:underline"
+          className="text-accent underline underline-offset-2"
         >
           {t.telegramTermsLink}
         </a>

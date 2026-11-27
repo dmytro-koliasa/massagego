@@ -62,6 +62,33 @@ export function isSeriousOrCritical(v: {
 }
 
 /**
+ * Wait until entrance animations / fonts settle so axe color-contrast is not
+ * measured against mid-fade opacity (home `.animate-fade-up` is 0.9s + delay).
+ */
+export async function waitForA11yPaintStable(page: Page): Promise<void> {
+  // Cap fonts.ready — it can hang under parallel Chromium load.
+  await page.evaluate(async () => {
+    await Promise.race([
+      document.fonts.ready,
+      new Promise<void>((resolve) => setTimeout(resolve, 2_000)),
+    ]);
+  });
+  await page.waitForFunction(
+    () => {
+      const nodes = document.querySelectorAll(".animate-fade-up");
+      if (nodes.length === 0) return true;
+      return [...nodes].every(
+        (el) => Number(getComputedStyle(el).opacity) >= 0.99,
+      );
+    },
+    undefined,
+    { timeout: 5_000 },
+  ).catch(() => {
+    /* pages without the animation, or reduced-motion, still scan */
+  });
+}
+
+/**
  * Run axe against the current page (WCAG A/AA tags only — not best-practice noise).
  * Does not claim full WCAG conformance.
  */
@@ -69,6 +96,8 @@ export async function scanPageWcagAa(
   page: Page,
   label: string,
 ): Promise<AxeScanSummary> {
+  await waitForA11yPaintStable(page);
+
   const raw = await new AxeBuilder({ page })
     .withTags([...WCAG_AA_TAGS])
     .analyze();

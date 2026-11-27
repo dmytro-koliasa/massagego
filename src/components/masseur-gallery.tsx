@@ -174,7 +174,7 @@ export function MasseurGallery({
             type="button"
             disabled={uploading || loading || images.length >= 3}
             onClick={() => setModalOpen(true)}
-            className="mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="mt-4 h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
           >
             {t.galleryAddPhoto}
           </button>
@@ -303,7 +303,7 @@ export function MasseurGallery({
             type="button"
             disabled={Boolean(deletingId)}
             onClick={() => void confirmDelete()}
-            className="h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="h-11 rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
           >
             {deletingId ? t.authPleaseWait : t.galleryDeleteConfirmAction}
           </button>

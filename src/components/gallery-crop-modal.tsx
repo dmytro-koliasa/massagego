@@ -209,7 +209,7 @@ export function GalleryCropModal({
               type="button"
               disabled={busy || remainingSlots <= 0}
               onClick={() => fileInputRef.current?.click()}
-              className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+              className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
             >
               {pickButtonLabel}
             </button>
@@ -259,7 +259,7 @@ export function GalleryCropModal({
                       }}
                       className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
                         aspectOption === value
-                          ? "bg-accent text-white"
+                          ? "bg-accent text-accent-foreground"
                           : "border border-surface-border bg-background/70 text-foreground hover:border-accent/50 hover:text-accent"
                       }`}
                     >
@@ -323,7 +323,7 @@ export function GalleryCropModal({
           type="button"
           disabled={busy || !imageSrc || !croppedAreaPixels}
           onClick={() => void handleSave()}
-          className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+          className="h-11 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
         >
           {busy
             ? t.authPleaseWait

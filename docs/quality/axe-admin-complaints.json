@@ -1,0 +1,7 @@
+{
+  "label": "admin-complaints",
+  "url": "http://127.0.0.1:3001/admin/complaints",
+  "violationCount": 0,
+  "seriousOrCritical": [],
+  "otherViolations": []
+}

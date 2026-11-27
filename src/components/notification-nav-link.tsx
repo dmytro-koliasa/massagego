@@ -66,7 +66,7 @@ export function NotificationNavLink({ href, portal }: Props) {
 			<span>{t.notifNavLink}</span>
 			{badge ? (
 				<span
-					className='inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white'
+					className='inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-accent-foreground'
 					aria-label={t.notifUnreadBadgeLabel.replace('{count}', String(count))}
 				>
 					{badge}

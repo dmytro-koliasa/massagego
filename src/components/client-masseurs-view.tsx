@@ -256,7 +256,7 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 													className={`mt-1 text-left text-sm font-medium ${
 														masseur.hasFreeTime
 															? 'text-[color:var(--accent)]'
-															: 'text-red-700'
+															: 'text-red-700 dark:text-red-400'
 													}`}
 												>
 													{masseur.availabilityLabel}
@@ -317,7 +317,7 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 												className={`px-4 py-3 text-sm font-medium ${
 													masseur.hasFreeTime
 														? 'text-[color:var(--accent)]'
-														: 'text-red-700'
+														: 'text-red-700 dark:text-red-400'
 												}`}
 											>
 												{masseur.availabilityLabel}
@@ -374,7 +374,7 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 										onClick={() => navigateCatalog(cityFilter, pageNumber)}
 										className={`flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-medium tracking-[0.04em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
 											active
-												? 'border-accent bg-accent text-white'
+												? 'border-accent bg-accent text-accent-foreground'
 												: 'border-surface-border bg-background text-foreground hover:border-accent/40'
 										}`}
 									>

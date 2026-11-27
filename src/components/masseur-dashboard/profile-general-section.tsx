@@ -117,7 +117,7 @@ export function ProfileGeneralSection({
 							</div>
 						)}
 						<span className='pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100 group-focus-visible:bg-black/40 group-focus-visible:opacity-100'>
-							<span className='flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-accent/55 text-white'>
+							<span className='flex h-11 w-11 items-center justify-center rounded-lg border border-white bg-accent/55 text-accent-foreground'>
 								<CameraIcon />
 							</span>
 						</span>
@@ -128,7 +128,7 @@ export function ProfileGeneralSection({
 							type='button'
 							disabled={photoPending}
 							onClick={() => onPhotoModalOpenChange(true)}
-							className='h-11 w-full rounded-lg bg-accent text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+							className='h-11 w-full rounded-lg bg-accent text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 						>
 							{image ? t.profilePhotoChange : t.profilePhotoAdd}
 						</button>
@@ -231,7 +231,7 @@ export function ProfileGeneralSection({
 										onClick={() => onToggleMassageType(id)}
 										className={`rounded-lg px-3 py-1.5 text-center text-xs font-medium transition ${
 											selected
-												? 'bg-accent text-white'
+												? 'bg-accent text-accent-foreground'
 												: 'border border-surface-border bg-background/70 text-foreground hover:border-accent/50 hover:text-accent'
 										}`}
 									>
@@ -245,7 +245,7 @@ export function ProfileGeneralSection({
 									type='button'
 									aria-pressed
 									onClick={() => onToggleMassageType(id)}
-									className='rounded-lg bg-accent px-3 py-1.5 text-center text-xs font-medium text-white transition hover:opacity-90'
+									className='rounded-lg bg-accent px-3 py-1.5 text-center text-xs font-medium text-accent-foreground transition hover:opacity-90'
 								>
 									{getMassageTypeLabel(id, locale)}
 								</button>

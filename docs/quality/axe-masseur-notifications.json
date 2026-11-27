@@ -1,0 +1,7 @@
+{
+  "label": "masseur-notifications",
+  "url": "http://127.0.0.1:3001/masseur/notifications",
+  "violationCount": 0,
+  "seriousOrCritical": [],
+  "otherViolations": []
+}

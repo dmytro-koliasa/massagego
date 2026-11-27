@@ -421,7 +421,7 @@ export function MasseurBookingView({
                 <button
                   type="submit"
                   disabled={pending || !bookingEnabled}
-                  className="h-12 rounded-lg bg-accent px-6 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  className="h-12 rounded-lg bg-accent px-6 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
                 >
                   {pending ? t.authPleaseWait : t.bookingSubmit}
                 </button>

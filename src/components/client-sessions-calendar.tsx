@@ -513,7 +513,7 @@ export function ClientSessionsCalendar() {
               setSessionAction(null);
               requestCancel(target);
             }}
-            className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90"
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90"
           >
             {t.sessionActionsCancel}
           </button>

@@ -35,7 +35,7 @@ function formatSerious(summary: AxeScanSummary): string {
     .join("\n");
 }
 
-test.describe("axe WCAG AA (#208)", () => {
+test.describe("axe WCAG AA public (#208)", () => {
   test.setTimeout(120_000);
 
   test("public marketing and legal pages", async ({ page }) => {
@@ -80,6 +80,15 @@ test.describe("axe WCAG AA (#208)", () => {
     ).toBeVisible({ timeout: 15_000 });
     await assertNoSeriousA11y(page, "admin-login", "axe-admin-login.json");
   });
+});
+
+/**
+ * Serial: parallel fixture upserts + Next RSC against local Postgres briefly
+ * terminate connections under 6 workers (harness, not product). Keep CI retries.
+ */
+test.describe("axe WCAG AA authenticated (#208)", () => {
+  test.describe.configure({ mode: "serial" });
+  test.setTimeout(120_000);
 
   test("authenticated client catalog and notifications", async ({ page }) => {
     const fixture = await ensureBookingFixture("book");
@@ -141,6 +150,55 @@ test.describe("axe WCAG AA (#208)", () => {
       page,
       "admin-complaints",
       "axe-admin-complaints.json",
+    );
+  });
+
+  test("home and client catalog: dark theme + mobile viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 15_000 });
+    const themeToggle = page.getByRole("button", {
+      name: /Switch to (light|dark) theme/i,
+    });
+    await expect(themeToggle).toBeVisible();
+    // Prefer the real control; fall back to the same storage/DOM writes the
+    // theme provider uses so the matrix is not blocked by click races.
+    await themeToggle.click();
+    await page.evaluate(() => {
+      localStorage.setItem("serein-theme", "dark");
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+      document.cookie =
+        "serein-theme=dark;path=/;max-age=31536000;samesite=lax";
+    });
+    await expect
+      .poll(
+        async () =>
+          page.locator("html").evaluate((el) => el.classList.contains("dark")),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
+    await assertNoSeriousA11y(page, "home-dark-mobile", "axe-home-dark-mobile.json");
+
+    const fixture = await ensureBookingFixture("book");
+    await signInAsClient(page, fixture.clientPhone, fixture.clientPassword);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Client space|Простір клієнта/i }),
+    ).toBeVisible({ timeout: 15_000 });
+    await page.evaluate(() => {
+      localStorage.setItem("serein-theme", "dark");
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+      document.cookie =
+        "serein-theme=dark;path=/;max-age=31536000;samesite=lax";
+    });
+    await assertNoSeriousA11y(
+      page,
+      "client-catalog-dark-mobile",
+      "axe-client-catalog-dark-mobile.json",
     );
   });
 });

@@ -150,7 +150,7 @@ export function ReportUserDialog({
           <button
             type="submit"
             disabled={pending}
-            className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
           >
             {pending ? t.authPleaseWait : t.complaintSubmit}
           </button>

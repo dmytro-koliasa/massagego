@@ -186,7 +186,7 @@ export function AdminComplaintsPanel() {
               }}
               className={`rounded-lg px-3 py-1.5 text-sm transition ${
                 filter === item.id
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-accent-foreground"
                   : "text-muted hover:bg-surface hover:text-foreground"
               }`}
             >
@@ -275,7 +275,7 @@ export function AdminComplaintsPanel() {
                         adminNote: notes[row.id] ?? "",
                       })
                     }
-                    className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                    className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
                   >
                     {t.complaintStatusResolved}
                   </button>

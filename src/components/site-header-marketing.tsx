@@ -64,7 +64,7 @@ export function SiteHeaderMarketing() {
 				<div className="flex min-w-0 items-center gap-4 sm:gap-6">
 					<Link
 						href="/"
-						className={`shrink-0 font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
+						className={`inline-flex min-h-11 shrink-0 items-center font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
 							homeOnDark
 								? "text-white"
 								: isHome

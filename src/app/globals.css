@@ -9,6 +9,8 @@
   --foreground: #16121f;
   --muted: #585270;
   --accent: #7e22ce;
+  /* Text on filled accent controls (WCAG AA vs --accent). */
+  --accent-foreground: #ffffff;
   --accent-soft: rgba(126, 34, 206, 0.14);
   --surface: rgba(255, 255, 255, 0.9);
   --surface-border: rgba(126, 34, 206, 0.22);
@@ -65,6 +67,8 @@
   --foreground: #f4f2f8;
   --muted: #9a96a8;
   --accent: #e879f9;
+  /* Dark text on light accent fill — white-on-#e879f9 fails AA (~2.46:1). */
+  --accent-foreground: #07070c;
   --accent-soft: rgba(232, 121, 249, 0.14);
   --surface: rgba(16, 14, 28, 0.82);
   --surface-border: rgba(232, 121, 249, 0.28);
@@ -130,6 +134,7 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
   --color-surface: var(--surface);
   --color-surface-border: var(--surface-border);

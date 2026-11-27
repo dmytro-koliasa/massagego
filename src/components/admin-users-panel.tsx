@@ -111,7 +111,7 @@ export function AdminUsersPanel() {
               }}
               className={`h-9 rounded-[var(--radius-control)] px-3 text-sm transition ${
                 filter === item.id
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-accent-foreground"
                   : "border border-surface-border text-foreground hover:bg-accent-soft"
               }`}
             >

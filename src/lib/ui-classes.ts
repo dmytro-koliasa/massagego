@@ -9,11 +9,11 @@ export const formControlButtonClassName =
 	'box-border inline-flex h-12 shrink-0 items-center justify-center rounded-none border border-surface-border bg-background px-4 py-0 text-sm font-medium leading-none text-foreground transition hover:border-accent/50 hover:text-accent disabled:opacity-60';
 
 export const formPrimaryButtonClassName =
-	'flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
+	'flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-accent text-sm font-semibold tracking-[0.02em] text-accent-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Same accent fill as Create Account, sized for inline actions (e.g. city Search). */
 export const formPrimaryButtonInlineClassName =
-	'box-border inline-flex h-12 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent px-4 text-sm font-semibold tracking-[0.02em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
+	'box-border inline-flex h-12 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent px-4 text-sm font-semibold tracking-[0.02em] text-accent-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 
 export const formCardClassName =
 	'w-full max-w-md rounded-2xl border border-surface-border bg-surface p-6 sm:p-8';

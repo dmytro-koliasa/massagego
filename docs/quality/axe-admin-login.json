@@ -1,0 +1,7 @@
+{
+  "label": "admin-login",
+  "url": "http://127.0.0.1:3001/admin/login",
+  "violationCount": 0,
+  "seriousOrCritical": [],
+  "otherViolations": []
+}

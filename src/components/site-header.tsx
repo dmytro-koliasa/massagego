@@ -72,7 +72,9 @@ export function SiteHeader() {
   const homeOnDark = isHome && theme === "dark";
   const onAdminSurface = pathname?.startsWith("/admin") ?? false;
   // Marketing chrome: no Admin; home relies on hero CTAs for portal entry (#190).
-  const showPortalNav = !isHome;
+  // Hide portal role links once signed in — they crowd the brand on mobile and
+  // obscure the touch target (WCAG 2.2 target-size / #208).
+  const showPortalNav = !isHome && status !== "authenticated";
   const showAdminNav = onAdminSurface;
   // SessionProvider remounts per portal (`key={portal}`); on login pages that
   // briefly yields status "loading" and flashed an empty accent skeleton (#161).
@@ -127,7 +129,7 @@ export function SiteHeader() {
           <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <Link
               href="/"
-              className={`shrink-0 font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
+              className={`inline-flex min-h-11 shrink-0 items-center font-display text-[1.65rem] leading-none tracking-[-0.03em] transition hover:opacity-80 ${
                 homeOnDark
                   ? "text-white"
                   : isHome
@@ -167,14 +169,14 @@ export function SiteHeader() {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher tone={homeOnDark ? "onDark" : "default"} />
             <ThemeToggle tone={homeOnDark ? "onDark" : "default"} />
 
             {isHome || onLoginPage ? null : status === "loading" ? (
               <span className="h-11 w-36 animate-pulse rounded-lg bg-accent-soft" />
             ) : session?.user ? (
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 <div className="hidden min-w-0 text-right sm:block">
                   <p className="truncate text-sm font-medium tracking-[0.01em] text-foreground">
                     {displayName}
@@ -206,15 +208,11 @@ export function SiteHeader() {
                   )}
                 </div>
 
-                <span className="rounded-lg bg-accent-soft px-3 py-1.5 text-sm font-medium tracking-[0.02em] text-muted sm:hidden">
-                  {portalLabel}
-                </span>
-
                 <button
                   type="button"
                   onClick={handleSignOut}
                   disabled={signingOut}
-                  className="flex h-11 items-center rounded-lg border border-surface-border bg-surface px-4 text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-11 items-center rounded-lg border border-surface-border bg-surface px-2.5 text-sm font-medium tracking-[0.02em] text-foreground transition hover:border-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
                 >
                   {t.dashboardSignOut}
                 </button>

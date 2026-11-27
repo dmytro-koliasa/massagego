@@ -158,7 +158,7 @@ export function CancelBookingDialog({
 					type='button'
 					disabled={pending}
 					onClick={submit}
-					className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60'
+					className='h-11 rounded-lg bg-accent px-4 text-sm font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-60'
 				>
 					{pending ? t.authPleaseWait : t.bookingCancelConfirmAction}
 				</button>
