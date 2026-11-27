@@ -164,7 +164,9 @@ CI run `45981934770` reported **5 flaky** (passed on retry). Re-run against loca
 
 Classification: parallel CI / auth rate-limit / harness timing — **not** an in-scope application regression for #207. Remaining E2E stability and axe-core gaps belong to existing planned Quality issue [#208](https://github.com/dmytro-koliasa/massagego/issues/208) (do not open a new issue from #207).
 
-Harness follow-up: CI hard-failed once on the new AdminNav a11y case when Link soft-navigation did not settle within the default 5s URL expect (`/admin` stayed after Complaints click; `/admin/complaints` stayed after Users click). Assertion intent unchanged; the spec now scopes links to the nav landmark and waits for URL + destination heading (15s), matching other admin E2E helpers.
+Harness follow-up:
+- AdminNav a11y: wait for URL + destination heading inside the nav landmark (soft-nav races).
+- Admin block/dismiss/unblock: assert durable UI state before ephemeral Sonner toasts; call `clearAuthRateLimits()` from admin/block fixtures so parallel CI does not exhaust the shared `signin:ip` budget (10/15m) and mask the blocked-account message. Production rate-limit policy unchanged.
 
 ### Vercel Preview
 

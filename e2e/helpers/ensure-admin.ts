@@ -1,4 +1,5 @@
 import { hash } from "bcryptjs";
+import { clearAuthRateLimits } from "./clear-auth-rate-limits";
 import { createE2EPrismaClient } from "./prisma";
 
 /**
@@ -16,6 +17,8 @@ export async function ensureAdminForE2E(): Promise<{
       "ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD are required for admin E2E",
     );
   }
+
+  await clearAuthRateLimits();
 
   const prisma = createE2EPrismaClient();
 

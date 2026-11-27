@@ -1,4 +1,5 @@
 import { hash } from "bcryptjs";
+import { clearAuthRateLimits } from "./clear-auth-rate-limits";
 import { createE2EPrismaClient } from "./prisma";
 
 const CLIENT_PASSWORD = "E2eClient123!";
@@ -76,14 +77,8 @@ export async function ensureBlockTargetClient(
       select: { id: true },
     });
 
-    await prisma.rateLimitBucket.deleteMany({
-      where: {
-        OR: [
-          { key: { contains: ids.phone } },
-          { key: { contains: ids.email } },
-        ],
-      },
-    });
+    // Keys are hashed (`scope:sha256`); wipe shared IP/fail budgets via helper.
+    await clearAuthRateLimits();
 
     return {
       id: client.id,

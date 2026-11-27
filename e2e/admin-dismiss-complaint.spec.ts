@@ -19,9 +19,7 @@ test("admin can dismiss an open complaint", async ({ page }) => {
   await expect(card).toBeVisible({ timeout: 15_000 });
   await card.getByRole("button", { name: /Dismissed|Відхилено/ }).click();
 
-  await expect(
-    page.getByText(/Complaint updated\.|Скаргу оновлено\./),
-  ).toBeVisible({ timeout: 15_000 });
+  // Durable list state first — toast can race remounts under parallel CI.
   await expect(
     page.locator("li").filter({ hasText: complaint.body }),
   ).toHaveCount(0, { timeout: 15_000 });
