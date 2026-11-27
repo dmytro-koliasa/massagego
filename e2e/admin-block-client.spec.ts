@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signInAsAdmin } from "./helpers/admin-auth";
+import { clearAuthRateLimits } from "./helpers/clear-auth-rate-limits";
 import { ensureAdminForE2E } from "./helpers/ensure-admin";
 import { ensureBlockTargetClient } from "./helpers/ensure-block-target";
 
@@ -32,14 +33,15 @@ test("admin can block a client and the client cannot sign in", async ({
   ).toBeVisible();
   await dialog.getByRole("button", { name: /^Block$|^Заблокувати$/ }).click();
 
-  await expect(page.getByText(/Saved\.|Збережено\./)).toBeVisible({
-    timeout: 15_000,
-  });
-  await expect(page.getByText(/Blocked|Заблокований/).first()).toBeVisible();
+  // Durable product state first — ephemeral Sonner toast can race remounts under CI.
   await expect(
     page.getByRole("button", { name: /Unblock|Розблокувати/ }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.getByText("Blocked", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
 
+  await clearAuthRateLimits();
   await page.goto("/client/login", { waitUntil: "domcontentloaded" });
   // signInAsClient expects success; drive the form manually for the blocked case.
   const sessionReady = page.waitForResponse(

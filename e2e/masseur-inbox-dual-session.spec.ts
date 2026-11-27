@@ -41,17 +41,8 @@ test("dual portal cookies: masseur inbox works; bare fetch is ambiguous", async 
   );
   await expect(unreadBadge).toBeVisible({ timeout: 20_000 });
 
-  const inboxResponse = page.waitForResponse(
-    (res) =>
-      res.url().includes("/api/notifications/inbox") &&
-      !res.url().includes("unread") &&
-      res.request().method() === "GET" &&
-      res.request().headers()["x-portal"] === "masseur",
-    { timeout: 60_000 },
-  );
+  // #207: inbox is RSC-seeded; open must not depend on a client GET.
   await page.getByRole("link", { name: /Notifications|Сповіщення/ }).click();
-  const inboxRes = await inboxResponse;
-  expect(inboxRes.ok()).toBeTruthy();
 
   await expect(page).toHaveURL(/\/masseur\/notifications\/?$/);
   await expect(

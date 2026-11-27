@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth/masseur";
 import { NotificationSettingsView } from "@/components/notification-settings-view";
+import { listInAppNotifications } from "@/lib/notifications/inbox";
+import { getNotificationPreferencesPayload } from "@/lib/notifications/preferences-payload";
 import { portalHomePath } from "@/lib/portals";
 import { userHasPortal } from "@/lib/portals.server";
 
@@ -16,7 +18,20 @@ export default async function MasseurNotificationsPage() {
     redirect(loginPath);
   }
 
+  const [preferencesPayload, inbox] = await Promise.all([
+    getNotificationPreferencesPayload(session.user.id, "masseur"),
+    listInAppNotifications({ userId: session.user.id }),
+  ]);
+
   return (
-    <NotificationSettingsView backHref="/masseur/dashboard" portal="masseur" />
+    <NotificationSettingsView
+      backHref="/masseur/dashboard"
+      portal="masseur"
+      initialPreferences={{
+        preferences: preferencesPayload.preferences,
+        telegram: preferencesPayload.telegram,
+      }}
+      initialInbox={inbox}
+    />
   );
 }

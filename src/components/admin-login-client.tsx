@@ -8,20 +8,17 @@ import { BackNavLink } from "@/components/back-nav-link";
 import { AdminAuthPanel } from "@/components/admin-auth-panel";
 import { useLanguage } from "@/components/language-provider";
 import { Preloader } from "@/components/preloader";
-import { portalDefaultCallback } from "@/lib/portals";
+import { resolveSafePortalCallback } from "@/lib/safe-internal-path";
 
 function AdminLoginContent() {
   const { t } = useLanguage();
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next");
-  const callbackUrl =
-    nextPath &&
-    nextPath.startsWith("/admin") &&
-    !nextPath.startsWith("/admin/login")
-      ? nextPath
-      : portalDefaultCallback("admin");
+  const callbackUrl = resolveSafePortalCallback(
+    "admin",
+    searchParams.get("next"),
+  );
 
   useEffect(() => {
     const error = searchParams.get("error");

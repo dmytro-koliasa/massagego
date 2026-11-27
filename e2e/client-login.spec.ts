@@ -17,6 +17,7 @@ test("client login page is reachable", async ({ page }) => {
   await expect(page.locator('input[type="tel"], input[name="tel"]').first()).toBeVisible();
   await expect(page.locator('input[type="password"]').first()).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /Create account|Створити акаунт/ }),
+    page.getByRole("button", { name: /Create account|Створити акаунт/i }),
   ).toBeVisible();
 });
+

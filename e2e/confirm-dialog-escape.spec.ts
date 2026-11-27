@@ -37,5 +37,12 @@ test("Escape closes the admin ConfirmDialog without applying the action", async 
   await expect(
     page.getByRole("button", { name: /^Block$|^Заблокувати$/ }),
   ).toBeVisible();
-  await expect(page.getByText(/Blocked|Заблокований/)).toHaveCount(0);
+  // Exact match: avoid false positives on the always-visible "Blocked at" label.
+  await expect(
+    page.getByText("Blocked", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Заблокований", { exact: true }),
+  ).toHaveCount(0);
 });
+

@@ -27,8 +27,9 @@ test("client can request a password reset link", async ({ page }) => {
   await phoneInput.fill(fixture.clientPhone);
 
   await page
-    .getByRole("button", { name: /Send reset link|Надіслати посилання/ })
+    .getByRole("button", { name: /Send reset link|Надіслати посилання/i })
     .click();
+
 
   await expect(
     page.getByText(

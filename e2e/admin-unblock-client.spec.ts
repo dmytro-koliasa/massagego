@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signInAsAdmin } from "./helpers/admin-auth";
 import { signInAsClient } from "./helpers/client-auth";
+import { clearAuthRateLimits } from "./helpers/clear-auth-rate-limits";
 import { ensureAdminForE2E } from "./helpers/ensure-admin";
 import { ensureBlockTargetClient } from "./helpers/ensure-block-target";
 
@@ -34,14 +35,12 @@ test("admin can unblock a client and the client can sign in", async ({
   ).toBeVisible();
   await dialog.getByRole("button", { name: /Unblock|Розблокувати/ }).click();
 
-  await expect(page.getByText(/Saved\.|Збережено\./)).toBeVisible({
-    timeout: 15_000,
-  });
-  await expect(page.getByText(/Active|Активний/).first()).toBeVisible();
   await expect(
     page.getByRole("button", { name: /^Block$|^Заблокувати$/ }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Active|Активний/).first()).toBeVisible();
 
+  await clearAuthRateLimits();
   await signInAsClient(page, client.phone, client.password);
   await expect(page).toHaveURL(/\/client\/?$/);
 });

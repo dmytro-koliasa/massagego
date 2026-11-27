@@ -55,18 +55,10 @@ test("masseur sees inbox badge after client books and clears it on open", async 
     );
     await expect(unreadBadge).toBeVisible({ timeout: 20_000 });
 
-    const inboxResponse = page.waitForResponse(
-      (res) =>
-        res.url().includes("/api/notifications/inbox") &&
-        !res.url().includes("unread") &&
-        res.request().method() === "GET",
-      { timeout: 60_000 },
-    );
+    // #207: inbox is RSC-seeded; do not require a duplicate client GET on open.
     await page
       .getByRole("link", { name: /Notifications|Сповіщення/ })
       .click();
-    const inboxRes = await inboxResponse;
-    expect(inboxRes.ok()).toBeTruthy();
 
     await expect(page).toHaveURL(/\/masseur\/notifications\/?$/);
     await expect(
