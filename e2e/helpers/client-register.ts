@@ -152,10 +152,13 @@ export async function registerClientViaUi(
     `register POST ${response.status()}: ${await response.text()}`,
   ).toBeTruthy();
 
+  // SiteHeader hides Sign out on portal login routes; wait for auth redirect
+  // off /client/login before asserting session chrome. Avoid a racing
+  // page.goto while router.push("/client") is still settling (ERR_ABORTED).
+  await expect(page).toHaveURL(/\/client(?!\/login)/, { timeout: 30_000 });
   await expect(
     page.getByRole("button", { name: /Sign out|Вийти/ }),
-  ).toBeVisible({ timeout: 30_000 });
-  await page.goto("/client", { waitUntil: "domcontentloaded" });
+  ).toBeVisible({ timeout: 15_000 });
   await expect(page).toHaveURL(/\/client\/?$/, { timeout: 15_000 });
 
   return creds;

@@ -42,11 +42,12 @@ export async function signInAsClient(
   await page.locator('input[type="password"]').first().fill(password);
   await page.getByRole("button", { name: /Sign in|Увійти/i }).click();
 
-  // Auth can succeed while the login page still shows the redirect preloader.
-  // Prefer an explicit navigation once the session is clearly established.
+  // SiteHeader hides Sign out on portal login routes (#161). Wait until auth
+  // navigation leaves /client/login, then assert session chrome. Do not race a
+  // hard goto against the in-flight router.push from sign-in.
+  await expect(page).toHaveURL(/\/client(?!\/login)/, { timeout: 30_000 });
   await expect(
     page.getByRole("button", { name: /Sign out|Вийти/ }),
-  ).toBeVisible({ timeout: 20_000 });
-  await page.goto("/client", { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/\/client\/?$/, { timeout: 10_000 });
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(page).toHaveURL(/\/client\/?$/, { timeout: 15_000 });
 }
