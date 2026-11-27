@@ -18,8 +18,14 @@ type InboxItem = {
 	bookingId: string | null;
 };
 
+export type InboxSeed = {
+	items: InboxItem[];
+	nextCursor: string | null;
+};
+
 type Props = {
 	portal: PublicPortal;
+	initialInbox?: InboxSeed;
 };
 
 function formatWhen(iso: string, locale: string): string {
@@ -31,15 +37,18 @@ function formatWhen(iso: string, locale: string): string {
 	}).format(date);
 }
 
-export function NotificationInboxSection({ portal }: Props) {
+export function NotificationInboxSection({ portal, initialInbox }: Props) {
 	const { t, locale } = useLanguage();
 	const router = useRouter();
-	const [items, setItems] = useState<InboxItem[]>([]);
-	const [nextCursor, setNextCursor] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
+	const [items, setItems] = useState<InboxItem[]>(initialInbox?.items ?? []);
+	const [nextCursor, setNextCursor] = useState<string | null>(
+		initialInbox?.nextCursor ?? null,
+	);
+	const [loading, setLoading] = useState(!initialInbox);
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [pending, setPending] = useState(false);
 	const portalHeaders = portalRequestHeaders(portal);
+	const seeded = Boolean(initialInbox);
 
 	async function load(cursor?: string | null) {
 		const url = cursor
@@ -54,6 +63,7 @@ export function NotificationInboxSection({ portal }: Props) {
 	}
 
 	useEffect(() => {
+		if (seeded) return;
 		let cancelled = false;
 		void (async () => {
 			setLoading(true);
@@ -71,8 +81,8 @@ export function NotificationInboxSection({ portal }: Props) {
 		return () => {
 			cancelled = true;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- reload when locale labels change
-	}, [t.notifInboxLoadError]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- seed skips hydrate fetch; else reload on locale label change
+	}, [t.notifInboxLoadError, seeded]);
 
 	async function loadMore() {
 		if (!nextCursor || loadingMore) return;

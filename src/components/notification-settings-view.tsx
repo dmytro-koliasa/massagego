@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BackNavLink } from '@/components/back-nav-link';
 import { useLanguage } from '@/components/language-provider';
-import { NotificationInboxSection } from '@/components/notification-inbox-section';
+import {
+	NotificationInboxSection,
+	type InboxSeed,
+} from '@/components/notification-inbox-section';
 import type { NotificationEventType } from '@/lib/notifications/types';
 import { portalRequestHeaders, type PublicPortal } from '@/lib/portals';
 
@@ -42,18 +45,35 @@ const EVENT_LABEL_KEYS: Record<
 	booking_reminder: 'notifEventBookingReminder',
 };
 
+type PreferencesSeed = {
+	preferences: PrefRow[];
+	telegram: TelegramState;
+};
+
 type Props = {
 	backHref: string;
 	portal: PublicPortal;
+	initialPreferences?: PreferencesSeed;
+	initialInbox?: InboxSeed;
 };
 
-export function NotificationSettingsView({ backHref, portal }: Props) {
+export function NotificationSettingsView({
+	backHref,
+	portal,
+	initialPreferences,
+	initialInbox,
+}: Props) {
 	const { t } = useLanguage();
-	const [preferences, setPreferences] = useState<PrefRow[]>([]);
-	const [telegram, setTelegram] = useState<TelegramState | null>(null);
-	const [loading, setLoading] = useState(true);
+	const [preferences, setPreferences] = useState<PrefRow[]>(
+		initialPreferences?.preferences ?? [],
+	);
+	const [telegram, setTelegram] = useState<TelegramState | null>(
+		initialPreferences?.telegram ?? null,
+	);
+	const [loading, setLoading] = useState(!initialPreferences);
 	const [pending, setPending] = useState(false);
 	const portalHeaders = portalRequestHeaders(portal);
+	const seeded = Boolean(initialPreferences);
 
 	async function load() {
 		setLoading(true);
@@ -76,6 +96,7 @@ export function NotificationSettingsView({ backHref, portal }: Props) {
 	}
 
 	useEffect(() => {
+		if (seeded) return;
 		let cancelled = false;
 		void (async () => {
 			if (cancelled) return;
@@ -84,8 +105,8 @@ export function NotificationSettingsView({ backHref, portal }: Props) {
 		return () => {
 			cancelled = true;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- reload on locale label change only
-	}, [t.notifLoadError]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- seed skips hydrate fetch; mutations still call load()
+	}, [t.notifLoadError, seeded]);
 
 	async function toggle(
 		eventType: NotificationEventType,
@@ -218,7 +239,10 @@ export function NotificationSettingsView({ backHref, portal }: Props) {
 					<p className='text-sm text-muted'>{t.notifPageSupport}</p>
 				</div>
 
-				<NotificationInboxSection portal={portal} />
+				<NotificationInboxSection
+					portal={portal}
+					initialInbox={initialInbox}
+				/>
 
 				<section className='mt-8 rounded-2xl border border-surface-border bg-surface p-4 sm:p-6'>
 					<h2 className='text-base font-semibold text-foreground'>
