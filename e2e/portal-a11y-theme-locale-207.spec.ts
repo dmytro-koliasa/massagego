@@ -156,17 +156,28 @@ test.describe("portal a11y/theme/locale (#207)", () => {
     });
     await expect(nav).toBeVisible();
 
-    const complaints = page.getByRole("link", {
+    // Scope to AdminNav landmark; wait for destination URL+heading (soft-nav races).
+    const complaints = nav.getByRole("link", {
       name: /Complaints|Скарги/i,
     });
     await complaints.focus();
     await expect(complaints).toBeFocused();
-    await complaints.click();
-    await expect(page).toHaveURL(/\/admin\/complaints/);
+    await Promise.all([
+      page.waitForURL(/\/admin\/complaints/, { timeout: 15_000 }),
+      complaints.click(),
+    ]);
+    await expect(
+      page.getByRole("heading", { name: /Complaints|Скарги/i }),
+    ).toBeVisible({ timeout: 15_000 });
 
-    const users = page.getByRole("link", { name: /Users|Користувачі/i });
-    await users.click();
-    await expect(page).toHaveURL(/\/admin\/?$/);
+    const users = nav.getByRole("link", { name: /Users|Користувачі/i });
+    await Promise.all([
+      page.waitForURL(/\/admin\/?$/, { timeout: 15_000 }),
+      users.click(),
+    ]);
+    await expect(
+      page.getByRole("heading", { name: /Users|Користувачі/ }),
+    ).toBeVisible({ timeout: 15_000 });
 
     await toggleTheme(page);
     await toggleLocale(page);

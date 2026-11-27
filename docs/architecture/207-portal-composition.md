@@ -164,6 +164,8 @@ CI run `45981934770` reported **5 flaky** (passed on retry). Re-run against loca
 
 Classification: parallel CI / auth rate-limit / harness timing — **not** an in-scope application regression for #207. Remaining E2E stability and axe-core gaps belong to existing planned Quality issue [#208](https://github.com/dmytro-koliasa/massagego/issues/208) (do not open a new issue from #207).
 
+Harness follow-up: CI hard-failed once on the new AdminNav a11y case when Link soft-navigation did not settle within the default 5s URL expect (`/admin` stayed after Complaints click; `/admin/complaints` stayed after Users click). Assertion intent unchanged; the spec now scopes links to the nav landmark and waits for URL + destination heading (15s), matching other admin E2E helpers.
+
 ### Vercel Preview
 
 Preview deployments on this PR report **FAIL**. Exact root cause of the current preview failure was **not independently verified**: `npx vercel inspect <deployment> --logs` stalled with no usable output. Do not treat the underlying cause as confirmed. Local and GitHub Actions production builds remain **PASS**. Per owner decision, this previously accepted Preview failure is non-blocking for #207; do not change deployment configuration in this issue.
