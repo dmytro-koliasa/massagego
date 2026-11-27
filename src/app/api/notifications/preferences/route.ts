@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import { requirePortalUser } from "@/lib/portal-session.server";
-import {
-  getNotificationPreferences,
-  saveNotificationPreferences,
-} from "@/lib/notifications/prefs";
+import { saveNotificationPreferences } from "@/lib/notifications/prefs";
 import type { PrefPatch } from "@/lib/notifications/prefs";
-import { getTelegramStatus } from "@/lib/telegram/account";
-import {
-  telegramBotUsername,
-  telegramConfigured,
-} from "@/lib/telegram/config";
+import { getNotificationPreferencesPayload } from "@/lib/notifications/preferences-payload";
 import { parseWithSchema } from "@/lib/validation";
 import { notificationPreferencesPatchSchema } from "@/lib/validation/notifications";
 
@@ -17,19 +10,11 @@ export async function GET() {
   const gate = await requirePortalUser();
   if (!gate.ok) return gate.response;
 
-  const [preferences, telegram] = await Promise.all([
-    getNotificationPreferences(gate.userId, gate.portal),
-    getTelegramStatus(gate.userId),
-  ]);
-  return NextResponse.json({
-    preferences,
-    portal: gate.portal,
-    telegram: {
-      ...telegram,
-      configured: telegramConfigured(),
-      botUsername: telegramBotUsername(),
-    },
-  });
+  const payload = await getNotificationPreferencesPayload(
+    gate.userId,
+    gate.portal,
+  );
+  return NextResponse.json(payload);
 }
 
 export async function PATCH(request: Request) {

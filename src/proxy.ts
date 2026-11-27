@@ -7,6 +7,7 @@ import {
   portalHomePath,
   type Portal,
 } from "@/lib/portals";
+import { portalContinuePath } from "@/lib/safe-internal-path";
 
 async function readPortalToken(req: NextRequest, portal: Portal) {
   return getToken({
@@ -34,7 +35,10 @@ export async function proxy(request: NextRequest) {
     const token = await readPortalToken(request, "masseur");
     if (!token?.sub || token.portal !== "masseur") {
       const loginUrl = new URL(portalHomePath("masseur"), request.url);
-      loginUrl.searchParams.set("next", path);
+      loginUrl.searchParams.set(
+        "next",
+        portalContinuePath(path, request.nextUrl.search),
+      );
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
@@ -44,7 +48,10 @@ export async function proxy(request: NextRequest) {
     const token = await readPortalToken(request, "client");
     if (!token?.sub || token.portal !== "client") {
       const loginUrl = new URL(portalHomePath("client"), request.url);
-      loginUrl.searchParams.set("next", path);
+      loginUrl.searchParams.set(
+        "next",
+        portalContinuePath(path, request.nextUrl.search),
+      );
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
@@ -54,7 +61,10 @@ export async function proxy(request: NextRequest) {
     const token = await readPortalToken(request, "admin");
     if (!token?.sub || token.portal !== "admin") {
       const loginUrl = new URL(portalHomePath("admin"), request.url);
-      loginUrl.searchParams.set("next", path);
+      loginUrl.searchParams.set(
+        "next",
+        portalContinuePath(path, request.nextUrl.search),
+      );
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();

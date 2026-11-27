@@ -5,6 +5,7 @@ import {
   portalAuthBasePath,
   portalHomePath,
 } from "@/lib/portals";
+import { portalContinuePath } from "@/lib/safe-internal-path";
 
 const useSecureCookies = process.env.NODE_ENV === "production";
 
@@ -80,14 +81,20 @@ export function createPortalAuthConfig(portal: Portal): NextAuthConfig {
         if (portal === "masseur" && path.startsWith("/masseur/dashboard")) {
           if (isLoggedIn) return true;
           const loginUrl = new URL(portalHomePath("masseur"), request.nextUrl);
-          loginUrl.searchParams.set("next", path);
+          loginUrl.searchParams.set(
+            "next",
+            portalContinuePath(path, request.nextUrl.search),
+          );
           return Response.redirect(loginUrl);
         }
 
         if (portal === "client" && (path === "/client" || path.startsWith("/client/"))) {
           if (isLoggedIn) return true;
           const loginUrl = new URL(portalHomePath("client"), request.nextUrl);
-          loginUrl.searchParams.set("next", path);
+          loginUrl.searchParams.set(
+            "next",
+            portalContinuePath(path, request.nextUrl.search),
+          );
           return Response.redirect(loginUrl);
         }
 
@@ -98,7 +105,10 @@ export function createPortalAuthConfig(portal: Portal): NextAuthConfig {
         ) {
           if (isLoggedIn) return true;
           const loginUrl = new URL(portalHomePath("admin"), request.nextUrl);
-          loginUrl.searchParams.set("next", path);
+          loginUrl.searchParams.set(
+            "next",
+            portalContinuePath(path, request.nextUrl.search),
+          );
           return Response.redirect(loginUrl);
         }
 
