@@ -122,23 +122,24 @@ Small compressed increases; no DAL/Prisma client leak.
 | Suite | Result |
 | --- | --- |
 | Non-admin Playwright (grep-invert admin/ConfirmDialog) | **34 passed / 34** |
-| Admin bootstrap tests | **BLOCKED** — `ADMIN_BOOTSTRAP_EMAIL` / `PASSWORD` empty in local `.env` |
+| Admin suite (login, block, unblock, complaints, ConfirmDialog Escape) | **PASS** with isolated CI-only `ADMIN_BOOTSTRAP_*` on `massage_test` (not production) |
 | Catalog URL / deep-link / malicious next | PASS |
 | Booking + availability (#216) | PASS |
 | Notification inbox after seed (updated assertions) | PASS |
+| Targeted a11y/theme/locale (`e2e/portal-a11y-theme-locale-207.spec.ts`) | **PASS** (5/5) |
 
-E2E adaptations (in-scope): inbox tests no longer require hydrate `GET /api/notifications/inbox`; case-insensitive auth button matchers for dictionary Title Case.
+E2E adaptations (in-scope): inbox tests no longer require hydrate `GET /api/notifications/inbox`; case-insensitive auth button matchers for dictionary Title Case; ConfirmDialog Escape asserts exact status text (avoids matching the always-visible “Blocked at” label). CI `e2e-smoke` now runs the full Playwright suite with isolated admin bootstrap env.
 
 ### SEO / a11y / browser
 
 | Check | Result |
 | --- | --- |
-| Login pages `robots` | `noindex, nofollow, nocache` PASS |
+| Login / portal layouts `robots` (`portalRobots`) | `noindex, nofollow, nocache` PASS (unchanged) |
 | Home `robots` | `index, follow` PASS |
-| Automated axe/Lighthouse a11y | **NOT RUN** (no approved axe workflow in-repo) |
-| Role/label E2E coverage | PASS (partial) |
-| Theme switch dedicated suite | **NOT RUN** |
-| Locale dedicated suite | **NOT RUN** (bilingual selectors exercised) |
+| Automated axe/Lighthouse a11y | **NOT RUN** (axe-core only transitive; no approved `@axe-core/playwright` workflow) |
+| Role/label/keyboard E2E (catalog, logins, notifications, AdminShell) | **PASS** |
+| Theme toggle on changed surfaces | **PASS** (targeted #207 suite) |
+| Locale toggle EN↔UK on changed surfaces | **PASS** (targeted #207 suite) |
 | Hydration console errors in perf capture | none observed |
 
 ### Quality gates after verification fixes

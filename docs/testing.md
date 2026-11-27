@@ -82,31 +82,24 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 | Runner | Free `ubuntu-latest` |
 | Database | Postgres 16 service container → `massage_test` |
 | Job `lint-and-test` | `npm ci` → `db:migrate:test` → `lint` → `knip` → `typecheck` → `build` (no migrate; #112) → `npm test` |
-| Job `e2e-smoke` | `npm ci` → `db:migrate:test` → `playwright install --with-deps chromium` → **explicit** smoke file list (not full `e2e/`) |
-| Not in CI | Full Playwright suite (`npm run test:e2e`), paid runners, Firefox/WebKit, Blob token |
+| Job `e2e-smoke` | `npm ci` → `db:migrate:test` → `playwright install --with-deps chromium` → **full** `npx playwright test` (all of `e2e/`, including admin) |
+| Not in CI | Paid runners, Firefox/WebKit, Blob token |
 
-Dummy `AUTH_SECRET` / `EMAIL_PROVIDER=log` are set in both jobs. `e2e-smoke` sets `AUTH_URL` / `BASE_URL` to `http://127.0.0.1:3001` (Playwright `webServer`). It does **not** set `BLOB_READ_WRITE_TOKEN` (gallery uses local disk uploads).
+Dummy `AUTH_SECRET` / `EMAIL_PROVIDER=log` are set in both jobs. `e2e-smoke` sets `AUTH_URL` / `BASE_URL` to `http://127.0.0.1:3001` (Playwright `webServer`). It does **not** set `BLOB_READ_WRITE_TOKEN` (gallery uses local disk uploads). Isolated CI-only `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` are set for `massage_test` admin upserts (not production accounts).
 
-### CI smoke file list (`e2e-smoke`)
+### CI E2E (`e2e-smoke`)
 
-```text
-e2e/home.spec.ts
-e2e/client-login-success.spec.ts
-e2e/masseur-login-success.spec.ts
-e2e/booking-happy-path.spec.ts
-e2e/masseur-gallery.spec.ts
-e2e/masseur-availability-add.spec.ts
-e2e/client-register.spec.ts
-e2e/client-delete-account.spec.ts
-```
-
-Local dry-run of the same set (DB up, `TEST_DATABASE_URL` set):
+Runs the full Playwright suite:
 
 ```bash
-npx playwright test e2e/home.spec.ts e2e/client-login-success.spec.ts e2e/masseur-login-success.spec.ts e2e/booking-happy-path.spec.ts e2e/masseur-gallery.spec.ts e2e/masseur-availability-add.spec.ts e2e/client-register.spec.ts e2e/client-delete-account.spec.ts
+npx playwright test
 ```
 
-Full local suite remains `npm run test:e2e` (all of `e2e/`).
+Local equivalent (DB up, `TEST_DATABASE_URL` and admin bootstrap env set):
+
+```bash
+npm run test:e2e
+```
 
 ## E2E (Playwright)
 

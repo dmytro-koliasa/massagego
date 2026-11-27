@@ -100,6 +100,9 @@ jobs:
       EMAIL_PROVIDER: log
       DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_test?schema=public
       TEST_DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_test?schema=public
+      # Isolated CI-only admin bootstrap for massage_test (not a production account).
+      ADMIN_BOOTSTRAP_EMAIL: admin-ci@massage.test
+      ADMIN_BOOTSTRAP_PASSWORD: CiAdminE2e-NotProd-2026!
 
     steps:
       - name: Checkout
@@ -120,14 +123,5 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E smoke specs
-        run: >
-          npx playwright test
-          e2e/home.spec.ts
-          e2e/client-login-success.spec.ts
-          e2e/masseur-login-success.spec.ts
-          e2e/booking-happy-path.spec.ts
-          e2e/masseur-gallery.spec.ts
-          e2e/masseur-availability-add.spec.ts
-          e2e/client-register.spec.ts
-          e2e/client-delete-account.spec.ts
+      - name: Run full Playwright E2E suite
+        run: npx playwright test
