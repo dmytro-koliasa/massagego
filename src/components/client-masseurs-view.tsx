@@ -3,7 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import {
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	useTransition,
+} from 'react';
 import { BackNavLink } from '@/components/back-nav-link';
 import { ClientProfileCard } from '@/components/client-profile-card';
 import { useLanguage } from '@/components/language-provider';
@@ -67,6 +73,7 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [viewMode, setViewMode] = useState<ViewMode>('grid');
+	const navGeneration = useRef(0);
 
 	const {
 		masseurs,
@@ -91,8 +98,11 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 	}, [cities, cityFilter, router]);
 
 	function navigateCatalog(nextCity: string, nextPage: number) {
+		const generation = ++navGeneration.current;
+		const href = buildClientCatalogHref({ city: nextCity, page: nextPage });
 		startTransition(() => {
-			router.push(buildClientCatalogHref({ city: nextCity, page: nextPage }));
+			if (generation !== navGeneration.current) return;
+			router.push(href);
 		});
 	}
 
@@ -156,6 +166,7 @@ export function ClientMasseursView({ initialCatalog }: Props) {
 							<div className='flex flex-wrap items-center gap-3 self-start sm:self-auto'>
 								<select
 									value={cityFilter}
+									disabled={loading}
 									onChange={event => {
 										navigateCatalog(event.target.value, 1);
 									}}

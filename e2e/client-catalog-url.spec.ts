@@ -2,17 +2,36 @@ import { expect, test, type Page } from "@playwright/test";
 import { signInAsClient } from "./helpers/client-auth";
 import { ensureBookingFixture } from "./helpers/ensure-booking-fixture";
 
+async function switchToClientLoginTab(page: Page) {
+  const loginTab = page.getByRole("tab", {
+    name: /I am registered already|Я вже зареєстрований/i,
+  });
+  await expect(loginTab).toBeVisible({ timeout: 15_000 });
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await loginTab.click();
+    if ((await loginTab.getAttribute("aria-selected")) === "true") {
+      return;
+    }
+    await page.waitForTimeout(250);
+  }
+  await expect(loginTab).toHaveAttribute("aria-selected", "true");
+}
+
+async function waitForClientSessionOnLogin(page: Page) {
+  await page.waitForResponse(
+    (res) =>
+      res.url().includes("/api/auth/client/session") && res.status() < 500,
+    { timeout: 30_000 },
+  );
+}
+
 async function signInOnCurrentClientLoginPage(
   page: Page,
   phone: string,
   password: string,
 ) {
-  const loginTab = page.getByRole("tab", {
-    name: /I am registered already|Я вже зареєстрований/i,
-  });
-  await expect(loginTab).toBeVisible({ timeout: 15_000 });
-  await loginTab.click();
-  await expect(loginTab).toHaveAttribute("aria-selected", "true");
+  await waitForClientSessionOnLogin(page);
+  await switchToClientLoginTab(page);
 
   const phoneInput = page.locator('input[type="tel"]').first();
   await phoneInput.fill("");
@@ -22,6 +41,7 @@ async function signInOnCurrentClientLoginPage(
 }
 
 test.describe("client catalog URL filters (#207)", () => {
+  test.describe.configure({ mode: "serial" });
   test.setTimeout(90_000);
 
   test("unauthenticated deep link restores city filter after login", async ({
@@ -63,6 +83,7 @@ test.describe("client catalog URL filters (#207)", () => {
 
     await citySelect.selectOption({ value: "all" });
     await expect(page).toHaveURL(/\/client\?city=all/);
+    await expect(citySelect).toBeEnabled({ timeout: 15_000 });
 
     const values = await citySelect.evaluate((el: HTMLSelectElement) =>
       Array.from(el.options)
@@ -73,8 +94,10 @@ test.describe("client catalog URL filters (#207)", () => {
 
     const city = values[0]!;
     await citySelect.selectOption({ value: city });
-    await expect(page).toHaveURL(/[?&]city=/);
-    expect(new URL(page.url()).searchParams.get("city")).toBe(city);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("city"))
+      .toBe(city);
+    await expect(citySelect).toHaveValue(city);
 
     await page.goBack();
     await expect(page).toHaveURL(/\/client\?city=all/);
