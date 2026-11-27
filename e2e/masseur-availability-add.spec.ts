@@ -62,6 +62,16 @@ test("masseur can add an availability hour and keep it after save", async ({
     post.ok(),
     `availability POST ${post.status()}: ${await post.text()}`,
   ).toBeTruthy();
+  const postBody = post.request().postDataJSON() as {
+    changes?: Array<{ start?: string; active?: boolean }>;
+  };
+  expect(
+    postBody.changes?.some(
+      (change) =>
+        change.start === fixture.slotStartIso && change.active === true,
+    ),
+    `availability POST must include seeded slot ${fixture.slotStartIso}`,
+  ).toBeTruthy();
 
   await expect(
     page.getByText(/Profile saved\.|Профіль збережено\./),
