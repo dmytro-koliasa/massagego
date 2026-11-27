@@ -1,11 +1,6 @@
 import { cookies } from 'next/headers';
 import { Manrope, Unbounded } from 'next/font/google';
-import { AppToaster } from '@/components/app-toaster';
 import { LanguageProvider } from '@/components/language-provider';
-import { AuthSessionProvider } from '@/components/auth-session-provider';
-import { NavigationPreloader } from '@/components/navigation-preloader';
-import { SiteFooter } from '@/components/site-footer';
-import { SiteHeader } from '@/components/site-header';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Locale } from '@/lib/i18n';
 import { rootMetadata } from '@/lib/seo/public-metadata';
@@ -91,13 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 			<body className='flex min-h-dvh flex-col bg-background font-sans text-foreground'>
 				<ThemeProvider initialTheme={initialTheme}>
 					<LanguageProvider initialLocale={initialLocale}>
-						<AuthSessionProvider>
-							<NavigationPreloader />
-							<SiteHeader />
-							{children}
-							<SiteFooter />
-							<AppToaster />
-						</AuthSessionProvider>
+						{children}
 					</LanguageProvider>
 				</ThemeProvider>
 			</body>
