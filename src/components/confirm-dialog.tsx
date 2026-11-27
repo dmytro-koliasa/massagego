@@ -54,8 +54,10 @@ export function ConfirmDialog({
 					type='button'
 					disabled={pending}
 					onClick={onConfirm}
-					className={`h-10 rounded-[var(--radius-control)] px-4 text-sm font-medium text-white disabled:opacity-60 ${
-						danger ? 'bg-red-600 hover:bg-red-700' : 'bg-accent hover:opacity-90'
+					className={`h-10 rounded-[var(--radius-control)] px-4 text-sm font-medium disabled:opacity-60 ${
+						danger
+							? 'bg-red-600 text-white hover:bg-red-700'
+							: 'bg-accent text-accent-foreground hover:opacity-90'
 					}`}
 				>
 					{pending ? '…' : confirmLabel}

@@ -106,6 +106,7 @@ npm run test:e2e
 - Dev dependency: `@axe-core/playwright` (not shipped to the client bundle).
 - Helper: `e2e/helpers/axe.ts` — WCAG 2.x A/AA tags; waits for `.animate-fade-up` paint stability; writes sanitized JSON under `docs/quality/` (rule ids + CSS targets only; no HTML/PII).
 - Spec: `e2e/a11y-axe-208.spec.ts` — fails on **serious/critical** violations only. Public describe stays parallel; authenticated describe is **serial** to avoid local Postgres connection storms under many workers. Automated scans do **not** prove full WCAG conformance.
+- Keyboard matrix: `e2e/a11y-keyboard-208.spec.ts` (Tab/Enter, locale, theme, ConfirmDialog focus + Escape); complements `e2e/confirm-dialog-escape.spec.ts`.
 - Prefer production `next build` + `next start` with Playwright `reuseExistingServer` for evidence runs.
 
 ## E2E (Playwright)
