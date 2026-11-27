@@ -2,13 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { BackNavLink } from '@/components/back-nav-link';
 import { ClientProfileCard } from '@/components/client-profile-card';
 import { useLanguage } from '@/components/language-provider';
 import { ClientSessionsCalendar } from '@/components/client-sessions-calendar';
 import { NotificationNavLink } from '@/components/notification-nav-link';
+import { buildClientCatalogHref } from '@/lib/catalog-url';
 import { shouldSkipImageOptimization } from '@/lib/upload-url';
 
 export type MasseurCard = {
@@ -38,15 +39,12 @@ type LocalizedMasseur = {
 	availabilityLabel: string;
 };
 
-const MASSEURS_PAGE_SIZE = 9;
-const CITY_FILTER_DEFAULT = 'default';
-
 type CityOption = {
 	value: string;
 	label: string;
 };
 
-type MasseursResponse = {
+export type ClientCatalogSeed = {
 	masseurs: MasseurCard[];
 	page: number;
 	pageSize: number;
@@ -54,87 +52,49 @@ type MasseursResponse = {
 	totalAll: number;
 	totalPages: number;
 	cities: CityOption[];
-	cityFilter?: string;
-	defaultCityFilter?: string;
+	cityFilter: string;
+	defaultCityFilter: string;
+	clientCityKey: string | null;
+	clientCityLabel: string | null;
 };
 
-export function ClientMasseursView() {
+type Props = {
+	initialCatalog: ClientCatalogSeed;
+};
+
+export function ClientMasseursView({ initialCatalog }: Props) {
 	const { t, locale } = useLanguage();
-	const [masseurs, setMasseurs] = useState<MasseurCard[]>([]);
-	const [cities, setCities] = useState<CityOption[]>([]);
-	const [total, setTotal] = useState(0);
-	const [totalAll, setTotalAll] = useState(0);
-	const [totalPages, setTotalPages] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(false);
+	const router = useRouter();
+	const [isPending, startTransition] = useTransition();
 	const [viewMode, setViewMode] = useState<ViewMode>('grid');
-	const [cityFilter, setCityFilter] = useState(CITY_FILTER_DEFAULT);
-	const [page, setPage] = useState(1);
 
-	function beginLoad() {
-		setLoading(true);
-		setError(false);
-	}
-
-	if (
-		cityFilter !== 'all' &&
-		cityFilter !== CITY_FILTER_DEFAULT &&
-		cities.length > 0 &&
-		!cities.some(city => city.value === cityFilter)
-	) {
-		setCityFilter('all');
-		setPage(1);
-		beginLoad();
-	}
+	const {
+		masseurs,
+		cities,
+		total,
+		totalAll,
+		totalPages,
+		cityFilter,
+		page,
+	} = initialCatalog;
 
 	useEffect(() => {
-		let cancelled = false;
+		if (
+			cityFilter !== 'all' &&
+			cities.length > 0 &&
+			!cities.some(city => city.value === cityFilter)
+		) {
+			startTransition(() => {
+				router.replace(buildClientCatalogHref({ city: 'all', page: 1 }));
+			});
+		}
+	}, [cities, cityFilter, router]);
 
-		(async () => {
-			try {
-				const params = new URLSearchParams({
-					page: String(page),
-					pageSize: String(MASSEURS_PAGE_SIZE),
-				});
-				if (cityFilter !== 'all' && cityFilter !== CITY_FILTER_DEFAULT) {
-					params.set('city', cityFilter);
-				}
-
-				const response = await fetch(`/api/masseurs?${params.toString()}`, {
-					cache: 'no-store',
-				});
-				if (!response.ok) throw new Error('failed');
-
-				const data = (await response.json()) as MasseursResponse;
-				if (cancelled) return;
-
-				setMasseurs(data.masseurs);
-				setCities(data.cities ?? []);
-				setTotal(data.total);
-				setTotalAll(data.totalAll);
-				setTotalPages(Math.max(1, data.totalPages));
-
-				if (cityFilter === CITY_FILTER_DEFAULT) {
-					setCityFilter(data.defaultCityFilter ?? data.cityFilter ?? 'all');
-				}
-
-				if (data.page !== page) {
-					setPage(data.page);
-				}
-			} catch {
-				if (!cancelled) {
-					setError(true);
-					toast.error(t.masseursLoadError);
-				}
-			} finally {
-				if (!cancelled) setLoading(false);
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [page, cityFilter, t.masseursLoadError]);
+	function navigateCatalog(nextCity: string, nextPage: number) {
+		startTransition(() => {
+			router.push(buildClientCatalogHref({ city: nextCity, page: nextPage }));
+		});
+	}
 
 	const localizedMasseurs: LocalizedMasseur[] = useMemo(
 		() =>
@@ -162,8 +122,9 @@ export function ClientMasseursView() {
 		[totalPages],
 	);
 
-	const showToolbar = !error && totalAll > 0;
+	const showToolbar = totalAll > 0;
 	const showPagination = showToolbar && totalPages > 1 && total > 0;
+	const loading = isPending;
 
 	return (
 		<main className='flex flex-1 flex-col bg-background py-10'>
@@ -196,9 +157,7 @@ export function ClientMasseursView() {
 								<select
 									value={cityFilter}
 									onChange={event => {
-										setCityFilter(event.target.value);
-										setPage(1);
-										beginLoad();
+										navigateCatalog(event.target.value, 1);
 									}}
 									aria-label={t.masseursCityFilterLabel}
 									className='h-12 min-w-[12rem] text-foreground'
@@ -247,7 +206,7 @@ export function ClientMasseursView() {
 
 					{loading ? (
 						<p className='text-sm text-muted'>{t.masseursLoading}</p>
-					) : error || totalAll === 0 ? (
+					) : totalAll === 0 ? (
 						<p className='rounded-lg border border-dashed border-surface-border px-6 py-12 text-center text-muted'>
 							{t.masseursEmpty}
 						</p>
@@ -261,11 +220,7 @@ export function ClientMasseursView() {
 							{cityFilter !== 'all' && totalAll > 0 ? (
 								<button
 									type='button'
-									onClick={() => {
-										setCityFilter('all');
-										setPage(1);
-										beginLoad();
-									}}
+									onClick={() => navigateCatalog('all', 1)}
 									className='mt-4 h-11 rounded-lg border border-surface-border px-5 text-sm font-medium text-foreground transition hover:border-accent/50 hover:text-accent'
 								>
 									{t.masseursShowAllCities}
@@ -379,10 +334,7 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page <= 1}
-								onClick={() => {
-									setPage(1);
-									beginLoad();
-								}}
+								onClick={() => navigateCatalog(cityFilter, 1)}
 								aria-label={t.masseursPaginationFirst}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -391,10 +343,9 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page <= 1}
-								onClick={() => {
-									setPage(current => Math.max(1, current - 1));
-									beginLoad();
-								}}
+								onClick={() =>
+									navigateCatalog(cityFilter, Math.max(1, page - 1))
+								}
 								aria-label={t.masseursPaginationPrev}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -409,10 +360,7 @@ export function ClientMasseursView() {
 										type='button'
 										disabled={loading}
 										aria-current={active ? 'page' : undefined}
-										onClick={() => {
-											setPage(pageNumber);
-											beginLoad();
-										}}
+										onClick={() => navigateCatalog(cityFilter, pageNumber)}
 										className={`flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-medium tracking-[0.04em] transition disabled:cursor-not-allowed disabled:opacity-45 ${
 											active
 												? 'border-accent bg-accent text-white'
@@ -427,10 +375,9 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page >= totalPages}
-								onClick={() => {
-									setPage(current => Math.min(totalPages, current + 1));
-									beginLoad();
-								}}
+								onClick={() =>
+									navigateCatalog(cityFilter, Math.min(totalPages, page + 1))
+								}
 								aria-label={t.masseursPaginationNext}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
@@ -439,10 +386,7 @@ export function ClientMasseursView() {
 							<button
 								type='button'
 								disabled={loading || page >= totalPages}
-								onClick={() => {
-									setPage(totalPages);
-									beginLoad();
-								}}
+								onClick={() => navigateCatalog(cityFilter, totalPages)}
 								aria-label={t.masseursPaginationLast}
 								className='flex h-10 w-10 items-center justify-center rounded-lg border border-surface-border bg-background text-base font-medium text-foreground transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-45'
 							>
