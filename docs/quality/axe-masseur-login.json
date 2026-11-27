@@ -1,0 +1,7 @@
+{
+  "label": "masseur-login",
+  "url": "http://127.0.0.1:3001/masseur/login",
+  "violationCount": 0,
+  "seriousOrCritical": [],
+  "otherViolations": []
+}

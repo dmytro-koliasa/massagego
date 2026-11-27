@@ -1,0 +1,7 @@
+{
+  "label": "client-login",
+  "url": "http://127.0.0.1:3001/client/login",
+  "violationCount": 0,
+  "seriousOrCritical": [],
+  "otherViolations": []
+}

@@ -16,7 +16,7 @@ export function TabButton({
       className={`rounded-[calc(var(--radius-control)-2px)] px-3 py-2.5 text-sm font-medium tracking-[0.02em] transition ${
         active
           ? "bg-surface text-foreground shadow-sm"
-          : "text-muted hover:text-foreground"
+          : "text-foreground/75 hover:text-foreground"
       }`}
     >
       {label}

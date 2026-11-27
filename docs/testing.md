@@ -101,6 +101,13 @@ Local equivalent (DB up, `TEST_DATABASE_URL` and admin bootstrap env set):
 npm run test:e2e
 ```
 
+## Accessibility (axe / #208)
+
+- Dev dependency: `@axe-core/playwright` (not shipped to the client bundle).
+- Helper: `e2e/helpers/axe.ts` — WCAG 2.x A/AA tags; writes sanitized JSON under `docs/quality/` (rule ids + CSS targets only; no HTML/PII).
+- Spec: `e2e/a11y-axe-208.spec.ts` — fails on **serious/critical** violations only. Automated scans do **not** prove full WCAG conformance.
+- Prefer production `next build` + `next start` with Playwright `reuseExistingServer` for evidence runs.
+
 ## E2E (Playwright)
 
 - Config: `playwright.config.ts`

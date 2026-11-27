@@ -57,7 +57,7 @@ function LangOption({
             : "bg-surface text-foreground shadow-sm"
           : onDark
             ? "text-white/70 hover:text-white"
-            : "text-muted hover:text-foreground"
+            : "text-foreground/75 hover:text-foreground"
       }`}
     >
       {label}
