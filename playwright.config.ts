@@ -29,6 +29,8 @@ if (!process.env.TEST_DATABASE_URL) {
 }
 
 const port = Number(process.env.E2E_PORT ?? "3001");
+// Keep browser origin and Auth.js AUTH_URL on the same host. Mixing
+// localhost vs 127.0.0.1 breaks session cookies for local E2E (#216).
 const baseURL = process.env.BASE_URL ?? `http://127.0.0.1:${port}`;
 
 export default defineConfig({
@@ -54,6 +56,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ...process.env,
+      // Force after spreading process.env so a developer .env AUTH_URL cannot
+      // disagree with Playwright baseURL (localhost vs 127.0.0.1).
       AUTH_URL: baseURL,
       // Avoid real provider calls (Resend/etc.) during local Playwright runs.
       EMAIL_PROVIDER: "log",

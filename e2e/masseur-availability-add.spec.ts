@@ -1,37 +1,7 @@
-import { expect, type Page, test } from "@playwright/test";
-import { DateTime } from "luxon";
+import { expect, test } from "@playwright/test";
+import { selectEmptyCalendarHour } from "./helpers/calendar-select";
 import { ensureBookingFixture } from "./helpers/ensure-booking-fixture";
 import { signInAsMasseur } from "./helpers/masseur-auth";
-
-const ZONE = "Europe/Kyiv";
-
-async function selectEmptyCalendarHour(page: Page, slotStartIso: string) {
-  const local = DateTime.fromISO(slotStartIso, { zone: "utc" }).setZone(ZONE);
-  const dateStr = local.toFormat("yyyy-MM-dd");
-  const timeStr = local.toFormat("HH:mm:ss");
-
-  const lane = page.locator(`.fc-timegrid-slot-lane[data-time="${timeStr}"]`);
-  const col = page.locator(`.fc-timegrid-col[data-date="${dateStr}"]`);
-  await expect(lane).toBeVisible({ timeout: 20_000 });
-  await expect(col).toBeVisible({ timeout: 20_000 });
-  await lane.scrollIntoViewIfNeeded();
-
-  const laneBox = await lane.boundingBox();
-  const colBox = await col.boundingBox();
-  if (!laneBox || !colBox) {
-    throw new Error(`Missing calendar boxes for ${dateStr} ${timeStr}`);
-  }
-
-  const x = colBox.x + colBox.width / 2;
-  const yStart = laneBox.y + 2;
-  const yEnd = laneBox.y + Math.max(laneBox.height - 2, 12);
-
-  // FullCalendar `select` needs a drag, not a bare click.
-  await page.mouse.move(x, yStart);
-  await page.mouse.down();
-  await page.mouse.move(x, yEnd, { steps: 6 });
-  await page.mouse.up();
-}
 
 test("masseur can add an availability hour and keep it after save", async ({
   page,
@@ -91,6 +61,16 @@ test("masseur can add an availability hour and keep it after save", async ({
   expect(
     post.ok(),
     `availability POST ${post.status()}: ${await post.text()}`,
+  ).toBeTruthy();
+  const postBody = post.request().postDataJSON() as {
+    changes?: Array<{ start?: string; active?: boolean }>;
+  };
+  expect(
+    postBody.changes?.some(
+      (change) =>
+        change.start === fixture.slotStartIso && change.active === true,
+    ),
+    `availability POST must include seeded slot ${fixture.slotStartIso}`,
   ).toBeTruthy();
 
   await expect(
