@@ -264,6 +264,11 @@ select:not(.PhoneInputCountrySelect):disabled {
   animation: ken-burns 28s ease-out forwards;
 }
 
+/* First paint for LCP (#205): match ken-burns start scale before motion starts */
+.hero-photo-still {
+  transform: scale(1.14) translate3d(0, 0, 0);
+}
+
 .animate-soft-pulse {
   animation: soft-pulse 5s ease-in-out infinite;
 }
