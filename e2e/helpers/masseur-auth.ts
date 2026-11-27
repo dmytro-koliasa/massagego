@@ -31,10 +31,15 @@ export async function signInAsMasseur(
   await page.locator('input[type="password"]').first().fill(password);
   await page.getByRole("button", { name: /Sign in|Увійти/i }).click();
 
-  // Auth can succeed while the login page still shows the redirect preloader.
+  // SiteHeader hides Sign out on portal login routes (#161). Wait until auth
+  // navigation leaves /masseur/login, then assert session chrome (#216).
+  await expect(page).toHaveURL(/\/masseur(?!\/login)/, { timeout: 30_000 });
   await expect(
     page.getByRole("button", { name: /Sign out|Вийти/ }),
-  ).toBeVisible({ timeout: 20_000 });
+  ).toBeVisible({ timeout: 15_000 });
   await page.goto("/masseur/dashboard", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/masseur\/dashboard\/?$/, { timeout: 10_000 });
+  await expect(
+    page.getByRole("button", { name: /Sign out|Вийти/ }),
+  ).toBeVisible({ timeout: 10_000 });
 }
