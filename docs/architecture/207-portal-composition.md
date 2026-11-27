@@ -149,6 +149,25 @@ E2E adaptations (in-scope): inbox tests no longer require hydrate `GET /api/noti
 - Lint / typecheck: run as part of verification commit gate
 - Production build: PASS
 
+### Pre-merge flaky E2E recheck (retries disabled)
+
+CI run `45981934770` reported **5 flaky** (passed on retry). Re-run against local production (`next build` + `next start`, `--retries=0 --workers=1`, isolated CI-only `ADMIN_BOOTSTRAP_*` on `massage_test`):
+
+| Spec | Result |
+| --- | --- |
+| `admin-dismiss-complaint` | **PASS** |
+| `admin-block-client` | **PASS** |
+| `booking-masseur-report` | **PASS** |
+| `client-delete-account` | **PASS** |
+| `portal-a11y-theme-locale-207` (admin shell nav) | **PASS** |
+| Attention: `confirm-dialog-escape`, `admin-unblock-client` | **PASS** |
+
+Classification: parallel CI / auth rate-limit / harness timing — **not** an in-scope application regression for #207. Remaining E2E stability and axe-core gaps belong to existing planned Quality issue [#208](https://github.com/dmytro-koliasa/massagego/issues/208) (do not open a new issue from #207).
+
+### Vercel Preview
+
+Preview deployments on this PR report **FAIL**. Exact root cause of the current preview failure was **not independently verified**: `npx vercel inspect <deployment> --logs` stalled with no usable output. Do not treat the underlying cause as confirmed. Local and GitHub Actions production builds remain **PASS**. Per owner decision, this previously accepted Preview failure is non-blocking for #207; do not change deployment configuration in this issue.
+
 ## Behavior preservation
 
 Booking rules, gallery mutations, calendar E2E (#216), auth workflows, API contracts, schema, i18n architecture, and theme behavior are unchanged except the approved AD-3 URL persistence for the client catalog.
